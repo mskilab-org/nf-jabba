@@ -5,20 +5,47 @@
         "https://github.com/nf-core/modules.git": {
             "modules": {
                 "nf-core": {
+                    "bwa/index": {
+                        "branch": "master",
+                        "git_sha": "bfed129da5134b4439b1821c917972570d44d39c",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "bwa/mem": {
+                        "branch": "master",
+                        "git_sha": "3dc300ddcaa563c1e3503477557c0e0def6df2ce",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "bwamem2/mem": {
+                        "branch": "master",
+                        "git_sha": "0460d316170f75f323111b4a2c0a2989f0c32013",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
                     "custom/dumpsoftwareversions": {
                         "branch": "master",
                         "git_sha": "76cc4938c1f6ea5c7d83fed1eeffc146787f9543",
-                        "installed_by": ["modules"]
+                        "installed_by": [
+                            "modules"
+                        ]
                     },
                     "fastqc": {
                         "branch": "master",
                         "git_sha": "c8e35eb2055c099720a75538d1b8adb3fb5a464c",
-                        "installed_by": ["modules"]
+                        "installed_by": [
+                            "modules"
+                        ]
                     },
                     "multiqc": {
                         "branch": "master",
                         "git_sha": "f2d63bd5b68925f98f572eed70993d205cc694b7",
-                        "installed_by": ["modules"]
+                        "installed_by": [
+                            "modules"
+                        ]
                     }
                 }
             }

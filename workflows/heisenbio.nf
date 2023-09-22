@@ -50,6 +50,13 @@ include { FASTQC                      } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
+
+// Load BWA MEM for alignment
+include { BWA_MEM                     } from '../modules/nf-core/bwa/mem/main'
+include { BWA_INDEX                   } from '../modules/nf-core/bwa/index/main' 
+include { BWAMEM2_MEM                 } from '../modules/nf-core/bwamem2/mem/main'
+
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
