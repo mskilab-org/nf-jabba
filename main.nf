@@ -3,7 +3,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     nf-core/heisenbio
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://github.com/nf-core/heisenbio
+    Github : https://tanubrata/nf-core/heisenbio
     Website: https://nf-co.re/heisenbio
     Slack  : https://nfcore.slack.com/channels/heisenbio
 ----------------------------------------------------------------------------------------
