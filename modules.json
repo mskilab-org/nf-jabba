@@ -47,9 +47,23 @@
                             "modules"
                         ]
                     },
+                    "dragmap/align": {
+                        "branch": "master",
+                        "git_sha": "603ecbd9f45300c9788f197d2a15a005685b4220",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
                     "ensemblvep/download": {
                         "branch": "master",
                         "git_sha": "9f9e1fc31cb35876922070c0e601ae05abae5cae",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "fastp": {
+                        "branch": "master",
+                        "git_sha": "d497a4868ace3302016ea8ed4b395072d5e833cd",
                         "installed_by": [
                             "modules"
                         ]
@@ -103,6 +117,13 @@
                             "modules"
                         ]
                     },
+                    "gridss/gridss": {
+                        "branch": "master",
+                        "git_sha": "911696ea0b62df80e900ef244d7867d177971f73",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
                     "mosdepth": {
                         "branch": "master",
                         "git_sha": "ebb27711cd5f4de921244bfa81c676504072d31c",
@@ -125,6 +146,13 @@
                         ]
                     },
                     "samtools/collatefastq": {
+                        "branch": "master",
+                        "git_sha": "911696ea0b62df80e900ef244d7867d177971f73",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "samtools/convert": {
                         "branch": "master",
                         "git_sha": "911696ea0b62df80e900ef244d7867d177971f73",
                         "installed_by": [
@@ -166,9 +194,23 @@
                             "modules"
                         ]
                     },
+                    "sentieon/bwamem": {
+                        "branch": "master",
+                        "git_sha": "149b4746c6e16ef84f64db5bb245d5b9495fdc3f",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
                     "snpeff/download": {
                         "branch": "master",
                         "git_sha": "4d584d5cf6ed5f7363a51cdb4b3eb25398e9e537",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "svaba": {
+                        "branch": "master",
+                        "git_sha": "911696ea0b62df80e900ef244d7867d177971f73",
                         "installed_by": [
                             "modules"
                         ]

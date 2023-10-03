@@ -124,7 +124,7 @@ class WorkflowHeisenbio {
         def input = null
             if (!params.input && !params.build_only_index) {
                 switch (params.step) {
-                    case 'mapping':                 Nextflow.error("Can't start with step $params.step without samplesheet")
+                    case 'alignment':                 Nextflow.error("Can't start with step $params.step without samplesheet")
                                                     break
                     case 'markduplicates':          log.warn("Using file ${params.outdir}/csv/mapped.csv");
                                                     input = params.outdir + "/csv/mapped.csv"
