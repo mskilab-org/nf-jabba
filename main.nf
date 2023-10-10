@@ -50,7 +50,11 @@ params.known_indels_vqsr     = WorkflowMain.getGenomeAttribute(params, 'known_in
 //params.vep_cache_version     = WorkflowMain.getGenomeAttribute(params, 'vep_cache_version')
 //params.vep_genome            = WorkflowMain.getGenomeAttribute(params, 'vep_genome')
 //params.vep_species           = WorkflowMain.getGenomeAttribute(params, 'vep_species')
-
+params.indel_mask            = WorkflowMain.getGenomeAttribute(params, 'indel_mask')
+params.germ_sv_db            = WorkflowMain.getGenomeAttribute(params, 'germ_sv_db')
+params.simple_seq_db         = WorkflowMain.getGenomeAttribute(params, 'simple_seq_db')
+params.blacklist_gridss      = WorkflowMain.getGenomeAttribute(params, 'blacklist_gridss')
+params.pon_gridss            = WorkflowMain.getGenomeAttribute(params, 'pon_gridss')
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

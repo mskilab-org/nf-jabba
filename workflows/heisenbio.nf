@@ -52,7 +52,15 @@ def checkPathParamList = [
 // only check if we are using the tools
 if (params.tools && params.tools.contains("snpeff")) checkPathParamList.add(params.snpeff_cache)
 if (params.tools && params.tools.contains("vep"))    checkPathParamList.add(params.vep_cache)
+
 if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.indel_mask)
+if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.germ_sv_db)
+if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.simple_seq_db)
+
+if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.blacklist_gridss)
+if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.pon_gridss)
+
+
 // Validate input parameters
 WorkflowHeisenbio.initialise(params, log)
 
@@ -202,8 +210,11 @@ known_indels       = params.known_indels       ? Channel.fromPath(params.known_i
 known_snps         = params.known_snps         ? Channel.fromPath(params.known_snps).collect()        : Channel.value([])
 mappability        = params.mappability        ? Channel.fromPath(params.mappability).collect()       : Channel.value([])
 pon                = params.pon                ? Channel.fromPath(params.pon).collect()               : Channel.value([]) // PON is optional for Mutect2 (but highly recommended)
-indel_mask         = params.indel_mask         ? Channel.fromPath(params.indel_mask).collect()        : Channel.empty() 
-
+indel_mask         = params.indel_mask         ? Channel.fromPath(params.indel_mask).collect()        : Channel.empty()   // This is the indel mask for SVABA
+germ_sv_db         = params.germ_sv_db         ? Channel.fromPath(params.germ_sv_db).collect()        : Channel.empty()   // This is the germline SV mask for Svaba
+simple_seq_db      = params.simple_seq_db      ? Channel.fromPath(params.simple_seq_db).collect()     : Channel.empty()   // This is the file containing sites of simple DNA that can confuse the contig re-alignment for SVABA
+blacklist_gridss   = params.blacklist_gridss   ? Channel.fromPath(params.blacklist_gridss).collect()  : Channel.empty()   // This is the mask for gridss SV calls
+pon_gridss         = params.pon_gridss         ? Channel.fromPath(params.pon_gridss).collect()        : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
 ascat_genome       = params.ascat_genome       ?: Channel.empty()
 dbsnp_vqsr         = params.dbsnp_vqsr         ? Channel.value(params.dbsnp_vqsr) : Channel.empty()
@@ -251,6 +262,7 @@ include { CHANNEL_ALIGN_CREATE_CSV                    } from '../subworkflows/lo
 include { CHANNEL_MARKDUPLICATES_CREATE_CSV           } from '../subworkflows/local/channel_markduplicates_create_csv/main'
 include { CHANNEL_BASERECALIBRATOR_CREATE_CSV         } from '../subworkflows/local/channel_baserecalibrator_create_csv/main'
 include { CHANNEL_APPLYBQSR_CREATE_CSV                } from '../subworkflows/local/channel_applybqsr_create_csv/main'
+include { CHANNEL_SVCALLING_CREATE_CSV                } from '../subworkflows/local/channel_svcalling_create_csv/main'
 
 // Download annotation cache if needed
 include { PREPARE_CACHE                               } from '../subworkflows/local/prepare_cache/main'
@@ -271,13 +283,13 @@ include { FASTQC                                      } from '../modules/nf-core
 include { FASTP                                       } from '../modules/nf-core/fastp/main'
 
 // Loading the MULTIQC module
-include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
+include { MULTIQC                                     } from '../modules/nf-core/multiqc/main'
 
 // Loading the module that dumps the versions of software being used
-include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
+include { CUSTOM_DUMPSOFTWAREVERSIONS                 } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
 // Map input reads to reference genome
-include { FASTQ_ALIGN_BWAMEM_MEM2    } from '../subworkflows/local/fastq_align_bwamem_mem2/main'
+include { FASTQ_ALIGN_BWAMEM_MEM2                     } from '../subworkflows/local/fastq_align_bwamem_mem2/main'
 
 // Merge and index BAM files (optional)
 include { BAM_MERGE_INDEX_SAMTOOLS                    } from '../subworkflows/local/bam_merge_index_samtools/main'
@@ -306,6 +318,9 @@ include { BAM_APPLYBQSR                               } from '../subworkflows/lo
 // Svaba
 include { BAM_SVCALLING_SVABA                         } from '../subworkflows/local/bam_svcalling_svaba/main'
 
+//GRIDSS
+include { BAM_SVCALLING_GRIDSS                        } from '../subworkflows/local/bam_svcalling_gridss/main'
+include { BAM_SVCALLING_GRIDSS_SOMATIC                } from '../subworkflows/local/bam_svcalling_gridss/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -769,10 +784,10 @@ workflow HEISENBIO {
                 cram: it[0].data_type == "cram"
             }
             // BAM files first must be converted to CRAM files since from this step on we base everything on CRAM format
-        BAM_TO_CRAM(input_sv_calling_convert.bam, fasta, fasta_fai)
-        versions = versions.mix(BAM_TO_CRAM.out.versions)
+            BAM_TO_CRAM(input_sv_calling_convert.bam, fasta, fasta_fai)
+            versions = versions.mix(BAM_TO_CRAM.out.versions)
 
-        cram_sv_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_sv_calling_convert.cram)
+            cram_sv_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_sv_calling_convert.cram)
 
         }
 
@@ -800,14 +815,38 @@ workflow HEISENBIO {
                 meta.tumor_id   = tumor[1].sample
 
                 [ meta, normal[2], normal[3], tumor[2], tumor[3] ]
-            }
+        }
 
         //cram_sv_calling_pair.view()
         if (params.tools && params.tools.split(',').contains('svaba')) {
-           BAM_SVCALLING_SVABA(cram_sv_calling_pair, fasta, fasta_fai, bwa, dbsnp, dbsnp_tbi, indel_mask, error_rate) 
+            BAM_SVCALLING_SVABA(cram_sv_calling_pair, fasta, fasta_fai, bwa, dbsnp, dbsnp_tbi, indel_mask, germ_sv_db, simple_seq_db, error_rate) 
 
-           versions = versions.mix(BAM_SVCALLING_SVABA.out.versions)
-        }
+            versions = versions.mix(BAM_SVCALLING_SVABA.out.versions)
+
+            vcf_from_sv_calling = Channel.empty()
+            vcf_from_sv_calling = vcf_from_sv_calling.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
+
+        }  
+
+        if (params.tools && params.tools.split(',').contains('gridss')) {
+            BAM_SVCALLING_GRIDSS(cram_sv_calling_pair, fasta, fasta_fai, bwa, blacklist_gridss)
+
+            versions = versions.mix(BAM_SVCALLING_GRIDSS.out.versions)
+
+            vcf_from_gridss_gridss = Channel.empty()
+            vcf_from_gridss_gridss = vcf_from_gridss_gridss.mix(BAM_SVCALLING_GRIDSS.out.vcf)                                                       // This one contain only one vcf
+            //vcf_from_gridss_gridss.view()
+
+
+            BAM_SVCALLING_GRIDSS_SOMATIC(vcf_from_gridss_gridss, pon_gridss)
+            versions = versions.mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.versions)
+
+            vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.all_vcf)
+            vcf_from_sv_calling.view()
+        } 
+
+        //CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
+
     }
 
 }

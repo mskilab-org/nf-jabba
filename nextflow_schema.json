@@ -101,7 +101,7 @@
                     "fa_icon": "fas fa-toolbox",
                     "description": "Tools to use for duplicate marking, variant calling and/or for annotation.",
                     "help_text": "Multiple tools separated with commas.\n\n**Variant Calling:**\n\nGermline variant calling can currently be performed with the following variant callers:\n- SNPs/Indels: DeepVariant, FreeBayes, GATK HaplotypeCaller, mpileup, Sentieon Haplotyper, Strelka\n- Structural Variants: Manta, TIDDIT\n- Copy-number: CNVKit\n\nTumor-only somatic variant calling can currently be performed with the following variant callers:\n- SNPs/Indels: FreeBayes, mpileup, Mutect2, Strelka\n- Structural Variants: Manta, TIDDIT\n- Copy-number: CNVKit, ControlFREEC\n\nSomatic variant calling can currently only be performed with the following variant callers:\n- SNPs/Indels: FreeBayes, Mutect2, Strelka2\n- Structural variants: Manta, TIDDIT\n- Copy-Number: ASCAT, CNVKit, Control-FREEC\n- Microsatellite Instability: MSIsensorpro\n\n> **NB** Mutect2 for somatic variant calling cannot be combined with `--no_intervals`\n\n**Annotation:**\n \n- snpEff, VEP, merge (both consecutively).\n\n> **NB** As Sarek will use bgzip and tabix to compress and index VCF files annotated, it expects VCF files to be sorted when starting from `--step annotate`.",
-                    "pattern": "^((ascat|cnvkit|controlfreec|deepvariant|freebayes|haplotypecaller|sentieon_haplotyper|manta|merge|mpileup|msisensorpro|mutect2|snpeff|strelka|tiddit|vep|svaba)?,?)*(?<!,)$"
+                    "pattern": "^((ascat|cnvkit|controlfreec|deepvariant|freebayes|haplotypecaller|manta|merge|mpileup|msisensorpro|mutect2|snpeff|strelka|tiddit|vep|svaba|gridss)?,?)*(?<!,)$"
                 },
                 "skip_tools": {
                     "type": "string",
@@ -229,7 +229,7 @@
             }
         },
         "sv_calling": {
-            "title": "SV Calling",
+            "title": "Structural Variant Calling",
             "type": "object",
             "description": "Configure SV calling tools",
             "default": "",
@@ -249,8 +249,35 @@
                     "description": "Provide Indel Mask for SVABA based on hg19/hg38. Should be .bed file",
                     "hidden": true,
                     "help_text": "Provide the indel mask path that you want to use for SVABA"
+                },
+                "germ_sv_db": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Provide Germline SV file for reference for SVABA based on hg19/hg38. Should be .bed file",
+                    "hidden": true,
+                    "help_text": "Provide the Germline SV file path that you want to use for SVABA"
+                },
+                "simple_seq_db": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Provide file containing sites of simple DNA for SVABA based on hg19/hg38. Should be .bed file",
+                    "hidden": true,
+                    "help_text": "Provide the simple DNA file path that you want to use for SVABA"
+                },
+                "blacklist_gridss": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Provide file Blacklist for GRIDSS based on hg19/hg38. Should be .bed file",
+                    "hidden": true,
+                    "help_text": "Provide the Blacklist file path that you want to use for GRIDSS"
+                },
+                "pon_gridss": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Provide the PON directory for GRIDSS Somatic filter",
+                    "hidden": true,
+                    "help_text": "Provide the PON directory for GRIDSS. Must contain both .bed and .bedpe file."
                 }
-
             } 
         },
         "variant_calling": {

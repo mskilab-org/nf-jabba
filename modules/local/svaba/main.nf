@@ -1,3 +1,4 @@
+
 process SVABA {
     tag "$meta.id"
     label 'process_medium'
@@ -16,9 +17,11 @@ process SVABA {
     path dbsnp
     path dbsnp_tbi
     path indel_mask
+    path germ_sv_db
+    path simple_seq_db
     val error_rate
 
-     output:
+    output:
     tuple val(meta), path("*.svaba.sv.vcf.gz")                        , emit: sv, optional: true
     tuple val(meta), path("*.svaba.indel.vcf.gz")                     , emit: indel, optional: true
     tuple val(meta), path("*.svaba.germline.indel.vcf.gz")            , emit: germ_indel, optional: true
@@ -47,6 +50,7 @@ process SVABA {
     def dbsnp      = dbsnp ? "--dbsnp-vcf ${dbsnp}" : ""
     def bwa        = bwa_index ? "cp -s ${bwa_index}/* ." : ""
     def indel_mask = indel_mask ? "--blacklist ${indel_mask}" : ""
+    def flags      = germ_sv_db ? "--germline-sv-database ${germ_sv_db} --simple-seq-database ${simple_seq_db}" : ""
     def error_rate = error_rate ? "--error-rate ${error_rate}" : ""
 
     """
@@ -59,6 +63,7 @@ process SVABA {
         $dbsnp \\
         $indel_mask \\
         $error_rate \\
+        $flags \\
         --id-string $meta.id \\
         --reference-genome $fasta \\
         --g-zip \\

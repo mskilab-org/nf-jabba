@@ -15,6 +15,8 @@ workflow BAM_SVCALLING_SVABA {
     dbsnp
     dbsnp_tbi
     indel_mask
+    germ_sv_db
+    simple_seq_db
     error_rate
 
     main:
@@ -36,7 +38,7 @@ workflow BAM_SVCALLING_SVABA {
         [meta, tumor_cram, tumor_crai, normal_cram, normal_crai]
     }
     // Calling Svaba module for run
-    SVABA(cram_svaba, fasta, fasta_fai, bwa_index, dbsnp, dbsnp_tbi, indel_mask, error_rate)
+    SVABA(cram_svaba, fasta, fasta_fai, bwa_index, dbsnp, dbsnp_tbi, indel_mask, germ_sv_db, simple_seq_db, error_rate)
 
     // getting the outputs in a channel from SVABA
     som_sv                 = SVABA.out.som_sv
