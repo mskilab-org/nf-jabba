@@ -53,13 +53,17 @@ def checkPathParamList = [
 if (params.tools && params.tools.contains("snpeff")) checkPathParamList.add(params.snpeff_cache)
 if (params.tools && params.tools.contains("vep"))    checkPathParamList.add(params.vep_cache)
 
+// checking inputs if using SVABA
 if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.indel_mask)
 if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.germ_sv_db)
 if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.simple_seq_db)
 
+// checking inputs if using GRIDSS
 if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.blacklist_gridss)
 if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.pon_gridss)
 
+// Checking inputs if running fragCounter
+if (params.tools && params.tools.contains("fragcounter"))  checkPathParamList.add(params.gcmapdir_frag)
 
 // Validate input parameters
 WorkflowHeisenbio.initialise(params, log)
@@ -215,6 +219,7 @@ germ_sv_db         = params.germ_sv_db         ? Channel.fromPath(params.germ_sv
 simple_seq_db      = params.simple_seq_db      ? Channel.fromPath(params.simple_seq_db).collect()     : Channel.empty()   // This is the file containing sites of simple DNA that can confuse the contig re-alignment for SVABA
 blacklist_gridss   = params.blacklist_gridss   ? Channel.fromPath(params.blacklist_gridss).collect()  : Channel.empty()   // This is the mask for gridss SV calls
 pon_gridss         = params.pon_gridss         ? Channel.fromPath(params.pon_gridss).collect()        : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
+gcmapdir_frag      = params.gcmapdir_frag      ? Channel.fromPath(params.gcmapdir_frag).collect()     : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
 ascat_genome       = params.ascat_genome       ?: Channel.empty()
 dbsnp_vqsr         = params.dbsnp_vqsr         ? Channel.value(params.dbsnp_vqsr) : Channel.empty()
@@ -224,7 +229,12 @@ snpeff_db          = params.snpeff_db          ?: Channel.empty()
 vep_cache_version  = params.vep_cache_version  ?: Channel.empty()
 vep_genome         = params.vep_genome         ?: Channel.empty()
 vep_species        = params.vep_species        ?: Channel.empty()
-error_rate         = params.error_rate         ?: Channel.empty()
+error_rate         = params.error_rate         ?: Channel.empty()                                                         // For SVABA
+windowsize_frag    = params.windowsize_frag    ?: Channel.empty()                                                         // For fragCounter
+minmapq_frag       = params.minmapq_frag       ?: Channel.empty()                                                         // For fragCounter
+midpoint_frag      = params.midpoint_frag      ?: Channel.empty()                                                         // For fragCounter
+paired_frag        = params.paired_frag        ?: Channel.empty()                                                         // For fragCounter
+exome_frag         = params.exome_frag         ?: Channel.empty()                                                         // For fragCounter
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
 if (params.snpeff_cache && params.tools && params.tools.contains("snpeff")) {
@@ -301,6 +311,8 @@ include { SAMTOOLS_CONVERT as BAM_TO_CRAM_MAPPING     } from '../modules/nf-core
 // Convert CRAM files (optional)
 include { SAMTOOLS_CONVERT as CRAM_TO_BAM             } from '../modules/nf-core/samtools/convert/main'
 include { SAMTOOLS_CONVERT as CRAM_TO_BAM_RECAL       } from '../modules/nf-core/samtools/convert/main'
+include { SAMTOOLS_CONVERT as CRAM_TO_BAM_NORMAL      } from '../modules/nf-core/samtools/convert/main'
+include { SAMTOOLS_CONVERT as CRAM_TO_BAM_TUMOR       } from '../modules/nf-core/samtools/convert/main'
 
 // Mark Duplicates (+QC)
 include { BAM_MARKDUPLICATES                          } from '../subworkflows/local/bam_markduplicates/main'
@@ -321,6 +333,11 @@ include { BAM_SVCALLING_SVABA                         } from '../subworkflows/lo
 //GRIDSS
 include { BAM_SVCALLING_GRIDSS                        } from '../subworkflows/local/bam_svcalling_gridss/main'
 include { BAM_SVCALLING_GRIDSS_SOMATIC                } from '../subworkflows/local/bam_svcalling_gridss/main'
+
+// fragCounter
+include { BAM_FRAGCOUNTER as TUMOR_FRAGCOUNTER         } from '../subworkflows/local/bam_fragCounter/main'
+include { BAM_FRAGCOUNTER as NORMAL_FRAGCOUNTER        } from '../subworkflows/local/bam_fragCounter/main'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -788,6 +805,7 @@ workflow HEISENBIO {
             versions = versions.mix(BAM_TO_CRAM.out.versions)
 
             cram_sv_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_sv_calling_convert.cram)
+                                .map{ meta, cram, crai -> [ meta + [data_type: "cram"], cram, crai ] }           //making sure that the input data_type is correct
 
         }
 
@@ -796,6 +814,7 @@ workflow HEISENBIO {
             normal: it[0].status == 0
             tumor:  it[0].status == 1
         }
+
 
         // All normal samples
         cram_sv_calling_normal_to_cross = cram_sv_calling_status.normal.map{ meta, cram, crai -> [ meta.patient, meta, cram, crai ] }
@@ -829,7 +848,7 @@ workflow HEISENBIO {
         }  
 
         if (params.tools && params.tools.split(',').contains('gridss')) {
-            BAM_SVCALLING_GRIDSS(cram_sv_calling_pair, fasta, fasta_fai, bwa, blacklist_gridss)
+            BAM_SVCALLING_GRIDSS(cram_sv_calling_pair, fasta, fasta_fai, bwa, blacklist_gridss)     // running GRIDSS
 
             versions = versions.mix(BAM_SVCALLING_GRIDSS.out.versions)
 
@@ -838,14 +857,44 @@ workflow HEISENBIO {
             //vcf_from_gridss_gridss.view()
 
 
-            BAM_SVCALLING_GRIDSS_SOMATIC(vcf_from_gridss_gridss, pon_gridss)
+            BAM_SVCALLING_GRIDSS_SOMATIC(vcf_from_gridss_gridss, pon_gridss)               //running the somatic filter for GRIDSS
             versions = versions.mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.versions)
 
             vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.all_vcf)
             vcf_from_sv_calling.view()
-        } 
+        }
 
-        //CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
+        // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
+
+        if (params.tools && params.tools.split(',').contains('fragcounter')) {
+
+            //CRAM_TO_BAM_NORMAL(cram_sv_calling_status.normal, fasta, fasta_fai)
+            //versions = versions.mix(CRAM_TO_BAM_NORMAL.out.versions)
+            //normal_samples = CRAM_TO_BAM_NORMAL.out.alignment_index
+            //normal_samples.view()
+
+            //CRAM_TO_BAM_TUMOR(cram_sv_calling_status.tumor, fasta, fasta_fai)
+            //versions = versions.mix(CRAM_TO_BAM_TUMOR.out.versions)
+            //tumor_samples  = CRAM_TO_BAM_TUMOR.out.alignment_index
+            //tumor_samples.view()
+
+            // Need to run fragCounter on both tumor and normal samples
+            NORMAL_FRAGCOUNTER(cram_sv_calling_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+
+            versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
+            normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
+            //normal_frag_cov.view()
+            NORMAL_FRAGCOUNTER.out.corrected_bw.view() 
+
+            TUMOR_FRAGCOUNTER(cram_sv_calling_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+
+            versions = versions.mix(TUMOR_FRAGCOUNTER.out.versions)
+            tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.fragcounter_cov)
+            //tumor_frag_cov.view()
+        }
+
+        // TODO: Add a workflow to write the output file paths into a csv
+        
 
     }
 

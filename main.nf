@@ -55,6 +55,7 @@ params.germ_sv_db            = WorkflowMain.getGenomeAttribute(params, 'germ_sv_
 params.simple_seq_db         = WorkflowMain.getGenomeAttribute(params, 'simple_seq_db')
 params.blacklist_gridss      = WorkflowMain.getGenomeAttribute(params, 'blacklist_gridss')
 params.pon_gridss            = WorkflowMain.getGenomeAttribute(params, 'pon_gridss')
+params.gcmapdir_frag         = WorkflowMain.getGenomeAttribute(params, 'gcmapdir_frag')
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

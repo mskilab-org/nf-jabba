@@ -101,7 +101,7 @@
                     "fa_icon": "fas fa-toolbox",
                     "description": "Tools to use for duplicate marking, variant calling and/or for annotation.",
                     "help_text": "Multiple tools separated with commas.\n\n**Variant Calling:**\n\nGermline variant calling can currently be performed with the following variant callers:\n- SNPs/Indels: DeepVariant, FreeBayes, GATK HaplotypeCaller, mpileup, Sentieon Haplotyper, Strelka\n- Structural Variants: Manta, TIDDIT\n- Copy-number: CNVKit\n\nTumor-only somatic variant calling can currently be performed with the following variant callers:\n- SNPs/Indels: FreeBayes, mpileup, Mutect2, Strelka\n- Structural Variants: Manta, TIDDIT\n- Copy-number: CNVKit, ControlFREEC\n\nSomatic variant calling can currently only be performed with the following variant callers:\n- SNPs/Indels: FreeBayes, Mutect2, Strelka2\n- Structural variants: Manta, TIDDIT\n- Copy-Number: ASCAT, CNVKit, Control-FREEC\n- Microsatellite Instability: MSIsensorpro\n\n> **NB** Mutect2 for somatic variant calling cannot be combined with `--no_intervals`\n\n**Annotation:**\n \n- snpEff, VEP, merge (both consecutively).\n\n> **NB** As Sarek will use bgzip and tabix to compress and index VCF files annotated, it expects VCF files to be sorted when starting from `--step annotate`.",
-                    "pattern": "^((ascat|cnvkit|controlfreec|deepvariant|freebayes|haplotypecaller|manta|merge|mpileup|msisensorpro|mutect2|snpeff|strelka|tiddit|vep|svaba|gridss)?,?)*(?<!,)$"
+                    "pattern": "^((ascat|cnvkit|controlfreec|deepvariant|freebayes|haplotypecaller|manta|merge|mpileup|msisensorpro|mutect2|snpeff|strelka|tiddit|vep|svaba|gridss|fragcounter)?,?)*(?<!,)$"
                 },
                 "skip_tools": {
                     "type": "string",
@@ -277,6 +277,50 @@
                     "description": "Provide the PON directory for GRIDSS Somatic filter",
                     "hidden": true,
                     "help_text": "Provide the PON directory for GRIDSS. Must contain both .bed and .bedpe file."
+                },
+                "midpoint_frag": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Option for counting method in fragCounter",
+                    "hidden": true,
+                    "help_text": "If TRUE only count midpoint if FALSE then count bin footprint of every fragment interval"
+                },
+                "paired_frag": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Option to mention whether the dataset is paired or single ended for fragCounter",
+                    "hidden": true,
+                    "help_text": "If TRUE, will consider the dataset is paired ened, else single ended"
+                },
+                "exome_frag": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Bin counting method for fragCounter on whether it is exome or genome",
+                    "hidden": true,
+                    "help_text": "If TRUE, will consider the input the data as exome, else if FALSE will consider it genome"
+                },
+                "windowsize_frag": {
+                    "type": "number",
+                    "default": 200,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Default bin size for gragCounter",
+                    "hidden": true,
+                    "help_text": "By default the bin size is 200, adjust as necessary."
+                },
+                "minmapq_frag": {
+                    "type": "number",
+                    "default": 1,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Minimal Mapping Quality for fragCounter",
+                    "hidden": true,
+                    "help_text": "By default the minimum mapping quality is 200, adjust as necessary."
+                },
+                "gcmapdir_frag": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "GC and Mappabilty directory for fragCounter",
+                    "hidden": true,
+                    "help_text": "Provide the directory containing .rds file for gc and mappability bias based on genome version"
                 }
             } 
         },
@@ -827,6 +871,13 @@
                     "format": "directory-path",
                     "description": "Directory / URL base for iGenomes references.",
                     "default": "s3://ngi-igenomes/igenomes/",
+                    "fa_icon": "fas fa-cloud-download-alt"
+                },
+                "mski_base": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Directory / URL base for iGenomes references.",
+                    "default": "s3://mskilab-pipeline/",
                     "fa_icon": "fas fa-cloud-download-alt"
                 },
                 "igenomes_ignore": {
