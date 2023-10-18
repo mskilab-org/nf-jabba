@@ -2,14 +2,12 @@ process JABBA {
     tag "$meta.id"
     label 'process_high'
 
-    // TODO add jabba container
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/YOUR-TOOL-HERE':
-        'biocontainers/YOUR-TOOL-HERE' }"
+        'docker://mskilab/jabba:latest':
+        'mskilab/jabba:latest' }"
 
     input:
-    path cov_rds
-    path junctionFilePath
+    tuple val(meta), path(cov_rds), path(junctionFilePath)
     val field
     path junctionUnfiltered
     val tfield
@@ -38,13 +36,13 @@ process JABBA {
     val nonintegral
 
     output:
-    path "*.jabba.simple.rds", emit: jabba_rds
-    path "*.jabba.simple.gg.rds", emit: jabba_gg
-    path "*.jabba.simple.vcf", emit: jabba_vcf
-    path "*.jabba.raw.rds", emit: jabba_raw_rds
-    path "*.opt.report.rds", emit: opti
-    path "*.jabba.seg", emit: jabba_seg
-    path "*.karyograph.rds", emit: karyograph
+    tuple val(meta), path("*.jabba.simple.rds")      , emit: jabba_rds, optional: true
+    tuple val(meta), path("*.jabba.simple.gg.rds")   , emit: jabba_gg, optional: true
+    tuple val(meta), path("*.jabba.simple.vcf")      , emit: jabba_vcf, optional: true
+    tuple val(meta), path("*.jabba.raw.rds")         , emit: jabba_raw_rds, optional: true
+    tuple val(meta), path("*.opt.report.rds")        , emit: opti, optional: true
+    tuple val(meta), path("*.jabba.seg")             , emit: jabba_seg, optional: true
+    tuple val(meta), path("*.karyograph.rds")        , emit: karyograph, optional: true
 
     when:
     task.ext.when == null || task.ext.when
@@ -58,7 +56,6 @@ process JABBA {
     //               Each software used MUST provide the software name and version number in the YAML version file (versions.yml)
     """
     set -o allexport
-    . ~/.bash_profile
 
     # Check if the environment has the module program installed
     if command -v module &> /dev/null
