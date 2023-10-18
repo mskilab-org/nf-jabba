@@ -7,33 +7,34 @@ process JABBA {
         'mskilab/jabba:latest' }"
 
     input:
-    tuple val(meta), path(cov_rds), path(junctionFilePath)
-    val field
-    path junctionUnfiltered
-    val tfield
-    path cbs_nseg_rds
-    path cbs_seg_rds
-    val slack
-    path het_pileups_wgs
-    val purity
-    val ploidy
-    val tilim
-    val epgap
-    val pp_method
-    val maxna
-    val flags
-    path blacklist_coverage
-    path blacklist_junctions
-    val iter
-    val pair
-    val indel
-    val cnsignif
-    val lp
-    val ism
-    val treemem
-    val fix_thres
-    val gurobi
-    val nonintegral
+    tuple val(meta), path(cov_rds)
+    tuple val(meta), path(junctionFilePath)
+    val(field)
+    path(junctionUnfiltered)
+    val(tfield)
+    path(cbs_nseg_rds)
+    path(cbs_seg_rds)
+    val(slack)
+    path(het_pileups_wgs)
+    val(purity)
+    val(ploidy)
+    val(tilim)
+    val(epgap)
+    val(pp_method)
+    val(maxna)
+    val(flags)
+    path(blacklist_coverage)
+    path(blacklist_junctions)
+    val(iter)
+    val(pair)
+    val(indel)
+    val(cnsignif)
+    val(lp)
+    val(ism)
+    val(treemem)
+    val(fix_thres)
+    val(gurobi)
+    val(nonintegral)
 
     output:
     tuple val(meta), path("*.jabba.simple.rds")      , emit: jabba_rds, optional: true
@@ -43,6 +44,7 @@ process JABBA {
     tuple val(meta), path("*.opt.report.rds")        , emit: opti, optional: true
     tuple val(meta), path("*.jabba.seg")             , emit: jabba_seg, optional: true
     tuple val(meta), path("*.karyograph.rds")        , emit: karyograph, optional: true
+    path "versions.yml"                              , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -50,6 +52,9 @@ process JABBA {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+
+    def VERSION    = '1.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
+
     // TODO nf-core: Where possible, a command MUST be provided to obtain the version number of the software e.g. 1.10
     //               If the software is unable to output a version number on the command-line then it can be manually specified
     //               e.g. https://github.com/nf-core/modules/blob/master/modules/nf-core/homer/annotatepeaks/main.nf
@@ -103,6 +108,9 @@ process JABBA {
     """
 
     stub:
+    prefix = task.ext.prefix ?: "${meta.id}"
+    def VERSION = '1.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
+    
     """
     touch jabba.simple.rds
     touch jabba.simple.gg.rds
@@ -111,5 +119,10 @@ process JABBA {
     touch opt.report.rds
     touch jabba.seg
     touch karyograph.rds
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        JaBbA: ${VERSION}
+    END_VERSIONS
     """
 }
