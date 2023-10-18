@@ -3,26 +3,28 @@ process DRYCLEAN {
     label 'process_medium'
     publishDir "results", mode: 'copy'
 
-    //container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-    //    'https://depot.galaxyproject.org/singularity/YOUR-TOOL-HERE':
-    //    'biocontainers/YOUR-TOOL-HERE' }"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'docker://mskilab/dryclean:latest':
+        'mskilab/dryclean:latest' }"
 
     input:
-    path tumor_fragcounter_cov from InputCov
-    path dryclean_pon from PON
-    val pair from name
-    val wholeGenome from WholeGenome
-    val chromosome from Chromosome
-    val cores from cores
-    val germline_filter from germlineFilter
-    val blacklist from blacklist
-    val germline_file from germlineFile
-    val collapse from Collapse
-    val field from cov_field
-    tuple val(meta), path(bam)
+    tuple val(meta), path(pon) path(input)
+    val centered
+    val cbs
+    val cnsignif
+    val cores
+    val wholeGenome
+    val blacklist
+    path blacklist_path
+    val germline_filter
+    path germline_file
+    val human
+    val field
+    val build
 
     output:
-    path "*drycleaned.cov.rds", into: tumor_dryclean_cov
+    tuple val(meta), path("*.drycleaned.cov.rds")     , emit: decomposed_cov, optional: true
+    tuple val(meta), path("*.dryclean.object.rds")    , emit: dryclean_object, optional: true
     //path "versions.yml"           , emit: versions
 
     when:
@@ -33,7 +35,6 @@ process DRYCLEAN {
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     set -o allexport
-    . ~/.bash_profile
     # Check if the environment has the module program installed
     if command -v module &> /dev/null
     then
