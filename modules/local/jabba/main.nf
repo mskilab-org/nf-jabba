@@ -60,6 +60,8 @@ process JABBA {
     //               e.g. https://github.com/nf-core/modules/blob/master/modules/nf-core/homer/annotatepeaks/main.nf
     //               Each software used MUST provide the software name and version number in the YAML version file (versions.yml)
     """
+    #!/bin/bash
+
     set -o allexport
 
     # Check if the environment has the module program installed
@@ -86,17 +88,17 @@ process JABBA {
     R_PROFILE_USER="/dev/null"
 
     ## find R installation
-    echo "USING LIBRARIES: $(Rscript -e 'print(.libPaths())')"
+    echo "USING LIBRARIES: \$(Rscript -e 'print(.libPaths())')"
 
-    export jabPath=$(Rscript -e 'cat(suppressWarnings(find.package("JaBbA")))')
+    export jabPath=\$(Rscript -e 'cat(suppressWarnings(find.package("JaBbA")))')
     export jba=$jabPath/extdata/jba
     echo $jba
     set +x
 
-    export cmd="Rscript $jba $@"
+    export cmd="Rscript $jba \$@"
 
-    { echo "Running:" && echo "$(echo $cmd)" && echo && eval $cmd; }
-    cmdsig=$?
+    { echo "Running:" && echo "\$(echo $cmd)" && echo && eval $cmd; }
+    cmdsig=\$?
     if [ "$cmdsig" = 0 ]; then
         echo "Finish!"
     else
@@ -110,7 +112,7 @@ process JABBA {
     stub:
     prefix = task.ext.prefix ?: "${meta.id}"
     def VERSION = '1.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
-    
+
     """
     touch jabba.simple.rds
     touch jabba.simple.gg.rds

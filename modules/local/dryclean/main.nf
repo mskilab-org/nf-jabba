@@ -34,6 +34,7 @@ process DRYCLEAN {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
+    #!/bin/bash
     set -o allexport
     # Check if the environment has the module program installed
     if command -v module &> /dev/null
@@ -59,12 +60,12 @@ process DRYCLEAN {
     set +x
 
     ## find R installation and dryclean exec
-    echo "USING LIBRARIES: $(Rscript -e 'print(.libPaths())')"
-    export drycleanPath=$(Rscript -e 'cat(suppressWarnings(find.package("dryclean")))')
+    echo "USING LIBRARIES: \$(Rscript -e 'print(.libPaths())')"
+    export drycleanPath=\$(Rscript -e 'cat(suppressWarnings(find.package("dryclean")))')
     export drycln=$drycleanPath/extdata/drcln
     echo $drycln
     set +x
-    CMD="Rscript $drycln $@"
+    CMD="Rscript $drycln \$@"
 
     if [ ! -s ./drycleaned.cov.rds ]; then
 	if ! { echo "Running:" && echo "${CMD}" && eval ${CMD}; }; then
