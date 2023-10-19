@@ -167,7 +167,7 @@ input_sample = ch_from_samplesheet
                     error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
 
-	# else if (vcf && cov) {}
+	//TODO: else if (vcf && cov) {}
             // annotation
             } else if (vcf) {
                 meta = meta + [id: meta.sample, data_type: 'vcf', variantcaller: variantcaller ?: '']
@@ -816,7 +816,8 @@ workflow HEISENBIO {
             // - crams from markduplicates = ch_cram_for_bam_baserecalibrator if skip BQSR but not started from step recalibration
             cram_variant_calling = Channel.empty().mix(ch_cram_for_bam_baserecalibrator)
         }
-        cram_sv_calling = cram_variant_calling
+        cram_sv_calling        = cram_variant_calling
+        //cram_fragcounter_calling  = cram_variant_calling
     }
 
 
@@ -894,71 +895,88 @@ workflow HEISENBIO {
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
         
-        cram_coverage_calling = cram_sv_calling
+        cram_fragcounter_calling = cram_sv_calling
     }
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'coverage']) {
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter']) {
 
-        if (params.step == 'coverage') {
-            input_coverage_convert = input_sample.branch{
+        if (params.step == 'fragcounter') {
+            input_fragcounter_convert = input_sample.branch{
                 bam:  it[0].data_type == "bam"
                 cram: it[0].data_type == "cram"
             }
             // BAM files first must be converted to CRAM files since from this step on we base everything on CRAM format
-            BAM_TO_CRAM(input_coverage_convert.bam, fasta, fasta_fai)
+            BAM_TO_CRAM(input_fragcounter_convert.bam, fasta, fasta_fai)
             versions = versions.mix(BAM_TO_CRAM.out.versions)
 
-            cram_coverage_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_coverage_convert.cram)
+            cram_fragcounter_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_fragcounter_convert.cram)
                                 .map{ meta, cram, crai -> [ meta + [data_type: "cram"], cram, crai ] }           //making sure that the input data_type is correct
 
         }
 
-        if (params.tools && params.tools.split(',').contains('fragcounter')) {
-
-            //CRAM_TO_BAM_NORMAL(cram_sv_calling_status.normal, fasta, fasta_fai)
-            //versions = versions.mix(CRAM_TO_BAM_NORMAL.out.versions)
-            //normal_samples = CRAM_TO_BAM_NORMAL.out.alignment_index
-            //normal_samples.view()
-
-            //CRAM_TO_BAM_TUMOR(cram_sv_calling_status.tumor, fasta, fasta_fai)
-            //versions = versions.mix(CRAM_TO_BAM_TUMOR.out.versions)
-            //tumor_samples  = CRAM_TO_BAM_TUMOR.out.alignment_index
-            //tumor_samples.view()
-
-            // Need to run fragCounter on both tumor and normal samples
-            NORMAL_FRAGCOUNTER(cram_sv_calling_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
-
-            versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
-            normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
-            //normal_frag_cov.view()
-            NORMAL_FRAGCOUNTER.out.corrected_bw.view()
-
-            TUMOR_FRAGCOUNTER(cram_sv_calling_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
-
-            versions = versions.mix(TUMOR_FRAGCOUNTER.out.versions)
-            tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.fragcounter_cov)
-            //tumor_frag_cov.view()
+        // getting the tumor and normal cram files separated
+        cram_fragcounter_status = cram_fragcounter_calling.branch{
+            normal: it[0].status == 0
+            tumor:  it[0].status == 1
         }
 
+        //CRAM_TO_BAM_NORMAL(cram_sv_calling_status.normal, fasta, fasta_fai)
+        //versions = versions.mix(CRAM_TO_BAM_NORMAL.out.versions)
+        //normal_samples = CRAM_TO_BAM_NORMAL.out.alignment_index
+        //normal_samples.view()
+
+        //CRAM_TO_BAM_TUMOR(cram_sv_calling_status.tumor, fasta, fasta_fai)
+        //versions = versions.mix(CRAM_TO_BAM_TUMOR.out.versions)
+        //tumor_samples  = CRAM_TO_BAM_TUMOR.out.alignment_index
+        //tumor_samples.view()
+
+        // Need to run fragCounter on both tumor and normal samples
+        NORMAL_FRAGCOUNTER(cram_fragcounter_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+
+        versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
+        normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
+        //normal_frag_cov.view()
+        //NORMAL_FRAGCOUNTER.out.corrected_bw.view()
+
+        TUMOR_FRAGCOUNTER(cram_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+
+        versions = versions.mix(TUMOR_FRAGCOUNTER.out.versions)
+        tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.fragcounter_cov)
+            //tumor_frag_cov.view()
+
         // TODO: Add a workflow to write the output file paths into a csv
-
-
     }
 
-	# TODO: change step to fragcounter and remove tools conditional
-    if (params.step == 'coverage') {
-        if (params.tools && params.tools.split(',').contains('dryclean')) {
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'dryclean']) {
 
-            DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
+        if (params.step == 'dryclean') {
+            input_dryclean = input_sample
+                                .map{ meta, cov -> [ meta + [data_type: "cov"], cov ] }
+
+            input_dryclean_status = input_dryclean.branch{
+                normal: it[0].status == 0
+                tumor:  it[0].status == 1
+            }
+
+            tumor_frag_cov  = Channel.empty().mix(input_dryclean_status.tumor)
+            normal_frag_cov = Channel.empty().mix(input_dryclean_status.normal)
+
+        }        
+    //TODO: Add both Dryclean for both tumor & normal
+    DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
             cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
             blacklist_dryclean, blacklist_path_dryclean,
             germline_filter_dryclean, germline_file_dryclean, human_dryclean,
             field_dryclean, build_dryclean)
 
-            versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
-            dryclean_cov = Channel.empty().mix(DRYCLEAN.out.dryclean_cov)
-        }
+    versions = versions.mix(DRYCLEAN.out.versions)
+    dryclean_cov = Channel.empty().mix(DRYCLEAN.out.dryclean_cov)
+
     }
+
+    //TODO: Modify both nextflow.json, main.nf, check variable names upwards, update schema.json (steps, tools, variables), update the input_sample conditionals on the top, check dryclean module and subworkflow.
+
+
 }
 
 
