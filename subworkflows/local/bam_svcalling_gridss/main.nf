@@ -9,7 +9,7 @@ include { GRIDSS_SOMATIC  } from '../../../modules/local/gridss/somaticFilter/ma
 
 workflow BAM_SVCALLING_GRIDSS {
     take:
-    cram                                              // channel: [mandatory] [ meta, normalcram, normalcrai, tumorcram, tumorcrai ] 
+    cram                                              // channel: [mandatory] [ meta, normalcram, normalcrai, tumorcram, tumorcrai ]
     fasta                                             // channel: [mandatory] reference fasta
     fasta_fai                                         // channel: [mandatory] reference fasta index
     bwa_index                                         // channel: [mandatory] bwa index path
@@ -65,7 +65,7 @@ workflow BAM_SVCALLING_GRIDSS_SOMATIC {
     somatic_all
     somatic_high_confidence
     all_vcf
-    
+
     versions
 
 }

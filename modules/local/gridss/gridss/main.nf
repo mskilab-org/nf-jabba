@@ -15,7 +15,7 @@ process GRIDSS_GRIDSS {
     path(fasta_fai)
     path(bwa_index)                                                                           // required: bwa index folder
     path(blacklist_gridss)                                                                    // optional: gridss blacklist bed file based on genome
-    
+
 
     output:
     tuple val(meta), path("*.vcf.gz")                                  , emit: vcf,       optional:true

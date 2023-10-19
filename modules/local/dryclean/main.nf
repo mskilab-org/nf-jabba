@@ -8,11 +8,11 @@ process DRYCLEAN {
         'mskilab/dryclean:latest' }"
 
     input:
-    tuple val(meta), path(pon) path(input)
+    tuple val(meta), path(input)
+    path pon
     val centered
     val cbs
     val cnsignif
-    val cores
     val wholeGenome
     val blacklist
     path blacklist_path
@@ -25,7 +25,7 @@ process DRYCLEAN {
     output:
     tuple val(meta), path("*.drycleaned.cov.rds")     , emit: decomposed_cov, optional: true
     tuple val(meta), path("*.dryclean.object.rds")    , emit: dryclean_object, optional: true
-    //path "versions.yml"           , emit: versions
+    path "versions.yml"           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -33,6 +33,7 @@ process DRYCLEAN {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def VERSION = '0.0.2'
     """
     #!/bin/bash
     set -o allexport
@@ -65,7 +66,23 @@ process DRYCLEAN {
     export drycln=$drycleanPath/extdata/drcln
     echo $drycln
     set +x
-    CMD="Rscript $drycln \$@"
+
+    CMD="Rscript $drycln \\
+        --input             ${input} \\
+        --pon               ${pon} \\
+        --centered          ${centered} \\
+        --cbs               ${cbs} \\
+        --cnsignif          ${cnsignif} \\
+        --cores             ${task.cpus} \\
+        --wholeGenome       ${wholeGenome} \\
+        --blacklist         ${blacklist} \\
+        --blacklist_path    ${blacklist_path} \\
+        --germline.filter   ${germline_filter} \\
+        --germline.file     ${germline_file} \\
+        --human             ${human} \\
+        --field             ${field} \\
+        --build             ${build} \\
+    "
 
     if [ ! -s ./drycleaned.cov.rds ]; then
 	if ! { echo "Running:" && echo "${CMD}" && eval ${CMD}; }; then
@@ -75,6 +92,11 @@ process DRYCLEAN {
 	echo "If you wish to rerun Dryclean - please purge directory first"
     fi
     exit 0
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        dryclean: ${VERSION}
+    END_VERSIONS
     """
 
     stub:
