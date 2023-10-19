@@ -174,15 +174,7 @@ input_sample = ch_from_samplesheet
                 else {
                     error("Samplesheet contains vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
-            } else if (cov) {
-                meta = meta + [id: meta.sample, data_type: 'cov']
-                
-                if (params.step == 'coverage') return [ meta - meta.subMap('lane'), cov ]
-                else {
-                    error("Samplesheet contains cov rds files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
-                }
-                
-            } else {
+            }  else {
                 error("Missing or unknown field in csv file header. Please check your samplesheet")
             }
         }
@@ -887,6 +879,25 @@ workflow HEISENBIO {
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
+        
+        cram_coverage_calling = cram_sv_calling
+    }
+
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'coverage']) {
+
+        if (params.step == 'coverage') {
+            input_coverage_convert = input_sample.branch{
+                bam:  it[0].data_type == "bam"
+                cram: it[0].data_type == "cram"
+            }
+            // BAM files first must be converted to CRAM files since from this step on we base everything on CRAM format
+            BAM_TO_CRAM(input_coverage_convert.bam, fasta, fasta_fai)
+            versions = versions.mix(BAM_TO_CRAM.out.versions)
+
+            cram_coverage_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_coverage_convert.cram)
+                                .map{ meta, cram, crai -> [ meta + [data_type: "cram"], cram, crai ] }           //making sure that the input data_type is correct
+
+        }
 
         if (params.tools && params.tools.split(',').contains('fragcounter')) {
 
