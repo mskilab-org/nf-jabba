@@ -228,6 +228,10 @@ simple_seq_db      = params.simple_seq_db      ? Channel.fromPath(params.simple_
 blacklist_gridss   = params.blacklist_gridss   ? Channel.fromPath(params.blacklist_gridss).collect()  : Channel.empty()   // This is the mask for gridss SV calls
 pon_gridss         = params.pon_gridss         ? Channel.fromPath(params.pon_gridss).collect()        : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
 gcmapdir_frag      = params.gcmapdir_frag      ? Channel.fromPath(params.gcmapdir_frag).collect()     : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
+pon_dryclean       = params.pon_dryclean       ? Channel.fromPath(params.pon_dryclean).collect()      : Channel.empty()   // dryclean
+blacklist_path     = params.blacklist_path     ? Channel.fromPath(params.pon_dryclean).collect()      : Channel.empty()   // dryclean 
+germline_file      = params.germline_file      ? Channel.fromPath(params.germline_file).collect()     : Channel.empty()   // dryclean
+blacklist_cov_jab  = params.blacklist_cov_jab  ? Channel.fromPath(params.blacklist_cov_jab).collect() : Channel.empty()   // JaBbA
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
 ascat_genome       = params.ascat_genome       ?: Channel.empty()
 dbsnp_vqsr         = params.dbsnp_vqsr         ? Channel.value(params.dbsnp_vqsr) : Channel.empty()
@@ -243,6 +247,16 @@ minmapq_frag       = params.minmapq_frag       ?: Channel.empty()               
 midpoint_frag      = params.midpoint_frag      ?: Channel.empty()                                                         // For fragCounter
 paired_frag        = params.paired_frag        ?: Channel.empty()                                                         // For fragCounter
 exome_frag         = params.exome_frag         ?: Channel.empty()                                                         // For fragCounter
+centered           = params.centered           ?: Channel.empty()                                                         // dryclean
+cbs                = params.cbs                ?: Channel.empty()                                                         // dryclean
+cnsignif           = params.cnsignif           ?: Channel.empty()                                                         // dryclean
+wholeGenome        = params.wholeGenome        ?: Channel.empty()                                                         // dryclean
+blacklist          = params.blacklist          ?: Channel.empty()                                                         // dryclean
+germline_filter    = params.germline_filter    ?: Channel.empty()                                                         // dryclean
+human              = params.human              ?: Channel.empty()                                                         // dryclean
+field              = params.field              ?: Channel.empty()                                                         // dryclean
+build              = params.build              ?: Channel.empty()                                                         // dryclean
+
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
 if (params.snpeff_cache && params.tools && params.tools.contains("snpeff")) {
