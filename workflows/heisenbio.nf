@@ -47,7 +47,8 @@ def checkPathParamList = [
     params.mappability,
     params.multiqc_config,
     params.pon,
-    params.pon_tbi
+    params.pon_tbi,
+    params.pon_dryclean
 ]
 // only check if we are using the tools
 if (params.tools && params.tools.contains("snpeff")) checkPathParamList.add(params.snpeff_cache)
@@ -176,12 +177,12 @@ input_sample = ch_from_samplesheet
                 }
             } else if (cov) {
                 meta = meta + [id: meta.sample, data_type: 'cov']
-                
+
                 if (params.step == 'coverage') return [ meta - meta.subMap('lane'), cov ]
                 else {
                     error("Samplesheet contains cov rds files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
-                
+
             } else {
                 error("Missing or unknown field in csv file header. Please check your samplesheet")
             }
@@ -228,6 +229,9 @@ simple_seq_db      = params.simple_seq_db      ? Channel.fromPath(params.simple_
 blacklist_gridss   = params.blacklist_gridss   ? Channel.fromPath(params.blacklist_gridss).collect()  : Channel.empty()   // This is the mask for gridss SV calls
 pon_gridss         = params.pon_gridss         ? Channel.fromPath(params.pon_gridss).collect()        : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
 gcmapdir_frag      = params.gcmapdir_frag      ? Channel.fromPath(params.gcmapdir_frag).collect()     : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
+pon_dryclean      = params.pon_dryclean      ? Channel.fromPath(params.pon_dryclean).collect()     : Channel.empty()   // This is the path to the PON for Dryclean.
+blacklist_path_dryclean      = params.blacklist_path_dryclean      ? Channel.fromPath(params.blacklist_path_dryclean).collect()     : Channel.empty()   // This is the path to the blacklist for Dryclean (optional).
+germline_file_dryclean      = params.germline_file_dryclean      ? Channel.fromPath(params.germline_file_dryclean).collect()     : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
 ascat_genome       = params.ascat_genome       ?: Channel.empty()
 dbsnp_vqsr         = params.dbsnp_vqsr         ? Channel.value(params.dbsnp_vqsr) : Channel.empty()
@@ -243,6 +247,18 @@ minmapq_frag       = params.minmapq_frag       ?: Channel.empty()               
 midpoint_frag      = params.midpoint_frag      ?: Channel.empty()                                                         // For fragCounter
 paired_frag        = params.paired_frag        ?: Channel.empty()                                                         // For fragCounter
 exome_frag         = params.exome_frag         ?: Channel.empty()                                                         // For fragCounter
+
+// Dryclean
+centered_dryclean           = params.centered_dryclean          ?: Channel.empty()
+cbs_dryclean                = params.cbs_dryclean               ?: Channel.empty()
+cnsiginif_dryclean          = params.cnsiginif_dryclean         ?: Channel.empty()
+wholeGenome_dryclean        = params.wholeGenome_dryclean       ?: Channel.empty()
+blacklist_dryclean          = params.blacklist_dryclean         ?: Channel.empty()
+germline_filter_dryclean    = params.germline_filter_dryclean   ?: Channel.empty()
+human_dryclean              = params.human_dryclean             ?: Channel.empty()
+field_dryclean              = params.field_dryclean             ?: Channel.empty()
+build_dryclean              = params.build_dryclean             ?: Channel.empty()
+
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
 if (params.snpeff_cache && params.tools && params.tools.contains("snpeff")) {
@@ -346,6 +362,8 @@ include { BAM_SVCALLING_GRIDSS_SOMATIC                } from '../subworkflows/lo
 include { BAM_FRAGCOUNTER as TUMOR_FRAGCOUNTER         } from '../subworkflows/local/bam_fragCounter/main'
 include { BAM_FRAGCOUNTER as NORMAL_FRAGCOUNTER        } from '../subworkflows/local/bam_fragCounter/main'
 
+include { COV_DRYCLEAN as DRYCLEAN         } from '../subworkflows/local/dryclean/main'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -402,11 +420,11 @@ workflow HEISENBIO {
                                     : PREPARE_GENOME.out.bwa
     bwamem2    = params.bwamem2     ? Channel.fromPath(params.bwamem2).collect()
                                     : PREPARE_GENOME.out.bwamem2
-    
+
     // Gather index for mapping given the chosen aligner
     index_alignement = (params.aligner == "bwa-mem") ? bwa :
         params.aligner == "bwa-mem2" ? bwamem2 : null
-    
+
     // TODO: add a params for msisensorpro_scan
     msisensorpro_scan      = PREPARE_GENOME.out.msisensorpro_scan
 
@@ -457,7 +475,7 @@ workflow HEISENBIO {
         if ( num_intervals < 1 ) [ [], [], num_intervals ]
         else [ intervals[0], intervals[1], num_intervals ]
     }
-    
+
     // Gather used softwares versions
     versions = versions.mix(PREPARE_GENOME.out.versions)
     versions = versions.mix(PREPARE_INTERVALS.out.versions)
@@ -846,14 +864,14 @@ workflow HEISENBIO {
 
         //cram_sv_calling_pair.view()
         if (params.tools && params.tools.split(',').contains('svaba')) {
-            BAM_SVCALLING_SVABA(cram_sv_calling_pair, fasta, fasta_fai, bwa, dbsnp, dbsnp_tbi, indel_mask, germ_sv_db, simple_seq_db, error_rate) 
+            BAM_SVCALLING_SVABA(cram_sv_calling_pair, fasta, fasta_fai, bwa, dbsnp, dbsnp_tbi, indel_mask, germ_sv_db, simple_seq_db, error_rate)
 
             versions = versions.mix(BAM_SVCALLING_SVABA.out.versions)
 
             vcf_from_sv_calling = Channel.empty()
             vcf_from_sv_calling = vcf_from_sv_calling.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
 
-        }  
+        }
 
         if (params.tools && params.tools.split(',').contains('gridss')) {
             BAM_SVCALLING_GRIDSS(cram_sv_calling_pair, fasta, fasta_fai, bwa, blacklist_gridss)     // running GRIDSS
@@ -892,7 +910,7 @@ workflow HEISENBIO {
             versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
             normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
             //normal_frag_cov.view()
-            NORMAL_FRAGCOUNTER.out.corrected_bw.view() 
+            NORMAL_FRAGCOUNTER.out.corrected_bw.view()
 
             TUMOR_FRAGCOUNTER(cram_sv_calling_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
 
@@ -902,10 +920,23 @@ workflow HEISENBIO {
         }
 
         // TODO: Add a workflow to write the output file paths into a csv
-        
+
 
     }
 
+    if (params.step == 'coverage') {
+        if (params.tools && params.tools.split(',').contains('dryclean')) {
+
+            DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
+            cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
+            blacklist_dryclean, blacklist_path_dryclean,
+            germline_filter_dryclean, germline_file_dryclean, human_dryclean,
+            field_dryclean, build_dryclean)
+
+            versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
+            dryclean_cov = Channel.empty().mix(DRYCLEAN.out.dryclean_cov)
+        }
+    }
 }
 
 

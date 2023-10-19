@@ -47,7 +47,8 @@
                         "recalibrate",
                         "sv_calling",
                         "variant_calling",
-                        "annotate"
+                        "annotate",
+                        "coverage"
                     ]
                 },
                 "outdir": {
@@ -290,7 +291,7 @@
                     "fa_icon": "fas fa-forward",
                     "description": "Option to mention whether the dataset is paired or single ended for fragCounter",
                     "hidden": true,
-                    "help_text": "If TRUE, will consider the dataset is paired ened, else single ended"
+                    "help_text": "If TRUE, will consider the dataset is paired ended, else single ended"
                 },
                 "exome_frag": {
                     "type": "string",
@@ -303,7 +304,7 @@
                     "type": "number",
                     "default": 200,
                     "fa_icon": "fas fa-wrench",
-                    "description": "Default bin size for gragCounter",
+                    "description": "Default bin size for fragCounter",
                     "hidden": true,
                     "help_text": "By default the bin size is 200, adjust as necessary."
                 },
@@ -322,7 +323,7 @@
                     "hidden": true,
                     "help_text": "Provide the directory containing .rds file for gc and mappability bias based on genome version"
                 }
-            } 
+            }
         },
         "variant_calling": {
             "title": "Variant Calling",
