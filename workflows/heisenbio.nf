@@ -210,46 +210,45 @@ if ((params.download_cache) && (params.snpeff_cache || params.vep_cache)) {
 */
 
 // Initialize file channels based on params, defined in the params.genomes[params.genome] scope
-ascat_alleles      = params.ascat_alleles      ? Channel.fromPath(params.ascat_alleles).collect()     : Channel.empty()
-ascat_loci         = params.ascat_loci         ? Channel.fromPath(params.ascat_loci).collect()        : Channel.empty()
-ascat_loci_gc      = params.ascat_loci_gc      ? Channel.fromPath(params.ascat_loci_gc).collect()     : Channel.value([])
-ascat_loci_rt      = params.ascat_loci_rt      ? Channel.fromPath(params.ascat_loci_rt).collect()     : Channel.value([])
-cf_chrom_len       = params.cf_chrom_len       ? Channel.fromPath(params.cf_chrom_len).collect()      : []
-chr_dir            = params.chr_dir            ? Channel.fromPath(params.chr_dir).collect()           : Channel.value([])
-dbsnp              = params.dbsnp              ? Channel.fromPath(params.dbsnp).collect()             : Channel.value([])
-fasta              = params.fasta              ? Channel.fromPath(params.fasta).first()               : Channel.empty()
-fasta_fai          = params.fasta_fai          ? Channel.fromPath(params.fasta_fai).collect()         : Channel.empty()
-germline_resource  = params.germline_resource  ? Channel.fromPath(params.germline_resource).collect() : Channel.value([]) // Mutect2 does not require a germline resource, so set to optional input
-known_indels       = params.known_indels       ? Channel.fromPath(params.known_indels).collect()      : Channel.value([])
-known_snps         = params.known_snps         ? Channel.fromPath(params.known_snps).collect()        : Channel.value([])
-mappability        = params.mappability        ? Channel.fromPath(params.mappability).collect()       : Channel.value([])
-pon                = params.pon                ? Channel.fromPath(params.pon).collect()               : Channel.value([]) // PON is optional for Mutect2 (but highly recommended)
-indel_mask         = params.indel_mask         ? Channel.fromPath(params.indel_mask).collect()        : Channel.empty()   // This is the indel mask for SVABA
-germ_sv_db         = params.germ_sv_db         ? Channel.fromPath(params.germ_sv_db).collect()        : Channel.empty()   // This is the germline SV mask for Svaba
-simple_seq_db      = params.simple_seq_db      ? Channel.fromPath(params.simple_seq_db).collect()     : Channel.empty()   // This is the file containing sites of simple DNA that can confuse the contig re-alignment for SVABA
-blacklist_gridss   = params.blacklist_gridss   ? Channel.fromPath(params.blacklist_gridss).collect()  : Channel.empty()   // This is the mask for gridss SV calls
-pon_gridss         = params.pon_gridss         ? Channel.fromPath(params.pon_gridss).collect()        : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
-gcmapdir_frag      = params.gcmapdir_frag      ? Channel.fromPath(params.gcmapdir_frag).collect()     : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
-blacklist_cov_jab  = params.blacklist_cov_jab  ? Channel.fromPath(params.blacklist_cov_jab).collect() : Channel.empty()   // JaBbA
-pon_dryclean      = params.pon_dryclean      ? Channel.fromPath(params.pon_dryclean).collect()     : Channel.empty()   // This is the path to the PON for Dryclean.
-blacklist_path_dryclean      = params.blacklist_path_dryclean      ? Channel.fromPath(params.blacklist_path_dryclean).collect()     : Channel.empty()   // This is the path to the blacklist for Dryclean (optional).
-germline_file_dryclean      = params.germline_file_dryclean      ? Channel.fromPath(params.germline_file_dryclean).collect()     : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
+ascat_alleles             = params.ascat_alleles              ? Channel.fromPath(params.ascat_alleles).collect()            : Channel.empty()
+ascat_loci                = params.ascat_loci                 ? Channel.fromPath(params.ascat_loci).collect()               : Channel.empty()
+ascat_loci_gc             = params.ascat_loci_gc              ? Channel.fromPath(params.ascat_loci_gc).collect()            : Channel.value([])
+ascat_loci_rt             = params.ascat_loci_rt              ? Channel.fromPath(params.ascat_loci_rt).collect()            : Channel.value([])
+cf_chrom_len              = params.cf_chrom_len               ? Channel.fromPath(params.cf_chrom_len).collect()             : []
+chr_dir                   = params.chr_dir                    ? Channel.fromPath(params.chr_dir).collect()                  : Channel.value([])
+dbsnp                     = params.dbsnp                      ? Channel.fromPath(params.dbsnp).collect()                    : Channel.value([])
+fasta                     = params.fasta                      ? Channel.fromPath(params.fasta).first()                      : Channel.empty()
+fasta_fai                 = params.fasta_fai                  ? Channel.fromPath(params.fasta_fai).collect()                : Channel.empty()
+germline_resource         = params.germline_resource          ? Channel.fromPath(params.germline_resource).collect()        : Channel.value([]) // Mutect2 does not require a germline resource, so set to optional input
+known_indels              = params.known_indels               ? Channel.fromPath(params.known_indels).collect()             : Channel.value([])
+known_snps                = params.known_snps                 ? Channel.fromPath(params.known_snps).collect()               : Channel.value([])
+mappability               = params.mappability                ? Channel.fromPath(params.mappability).collect()              : Channel.value([])
+pon                       = params.pon                        ? Channel.fromPath(params.pon).collect()                      : Channel.value([]) // PON is optional for Mutect2 (but highly recommended)
+indel_mask                = params.indel_mask                 ? Channel.fromPath(params.indel_mask).collect()               : Channel.empty()   // This is the indel mask for SVABA
+germ_sv_db                = params.germ_sv_db                 ? Channel.fromPath(params.germ_sv_db).collect()               : Channel.empty()   // This is the germline SV mask for Svaba
+simple_seq_db             = params.simple_seq_db              ? Channel.fromPath(params.simple_seq_db).collect()            : Channel.empty()   // This is the file containing sites of simple DNA that can confuse the contig re-alignment for SVABA
+blacklist_gridss          = params.blacklist_gridss           ? Channel.fromPath(params.blacklist_gridss).collect()         : Channel.empty()   // This is the mask for gridss SV calls
+pon_gridss                = params.pon_gridss                 ? Channel.fromPath(params.pon_gridss).collect()               : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
+gcmapdir_frag             = params.gcmapdir_frag              ? Channel.fromPath(params.gcmapdir_frag).collect()            : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
+pon_dryclean              = params.pon_dryclean               ? Channel.fromPath(params.pon_dryclean).collect()             : Channel.empty()   // This is the path to the PON for Dryclean.
+blacklist_path_dryclean   = params.blacklist_path_dryclean    ? Channel.fromPath(params.blacklist_path_dryclean).collect()  : Channel.empty()   // This is the path to the blacklist for Dryclean (optional).
+germline_file_dryclean    = params.germline_file_dryclean     ? Channel.fromPath(params.germline_file_dryclean).collect()   : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
+blacklist_cov_jab         = params.blacklist_cov_jab          ? Channel.fromPath(params.blacklist_cov_jab).collect()        : Channel.empty()   // JaBbA
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
-ascat_genome       = params.ascat_genome       ?: Channel.empty()
-dbsnp_vqsr         = params.dbsnp_vqsr         ? Channel.value(params.dbsnp_vqsr) : Channel.empty()
-known_indels_vqsr  = params.known_indels_vqsr  ? Channel.value(params.known_indels_vqsr) : Channel.empty()
-known_snps_vqsr    = params.known_snps_vqsr    ? Channel.value(params.known_snps_vqsr) : Channel.empty()
-snpeff_db          = params.snpeff_db          ?: Channel.empty()
-vep_cache_version  = params.vep_cache_version  ?: Channel.empty()
-vep_genome         = params.vep_genome         ?: Channel.empty()
-vep_species        = params.vep_species        ?: Channel.empty()
-error_rate         = params.error_rate         ?: Channel.empty()                                                         // For SVABA
-windowsize_frag    = params.windowsize_frag    ?: Channel.empty()                                                         // For fragCounter
-minmapq_frag       = params.minmapq_frag       ?: Channel.empty()                                                         // For fragCounter
-midpoint_frag      = params.midpoint_frag      ?: Channel.empty()                                                         // For fragCounter
-paired_frag        = params.paired_frag        ?: Channel.empty()                                                         // For fragCounter
-exome_frag         = params.exome_frag         ?: Channel.empty()                                                         // For fragCounter
-
+ascat_genome               = params.ascat_genome                ?: Channel.empty()
+dbsnp_vqsr                 = params.dbsnp_vqsr                  ?  Channel.value(params.dbsnp_vqsr)                         : Channel.empty()
+known_indels_vqsr          = params.known_indels_vqsr           ?  Channel.value(params.known_indels_vqsr)                  : Channel.empty()
+known_snps_vqsr            = params.known_snps_vqsr             ?  Channel.value(params.known_snps_vqsr)                    : Channel.empty()
+snpeff_db                  = params.snpeff_db                   ?: Channel.empty()
+vep_cache_version          = params.vep_cache_version           ?: Channel.empty()
+vep_genome                 = params.vep_genome                  ?: Channel.empty()
+vep_species                = params.vep_species                 ?: Channel.empty()
+error_rate                 = params.error_rate                  ?: Channel.empty()                                                         // For SVABA
+windowsize_frag            = params.windowsize_frag             ?: Channel.empty()                                                         // For fragCounter
+minmapq_frag               = params.minmapq_frag                ?: Channel.empty()                                                         // For fragCounter
+midpoint_frag              = params.midpoint_frag               ?: Channel.empty()                                                         // For fragCounter
+paired_frag                = params.paired_frag                 ?: Channel.empty()                                                         // For fragCounter
+exome_frag                 = params.exome_frag                  ?: Channel.empty()                                                         // For fragCounter
 // Dryclean
 centered_dryclean           = params.centered_dryclean          ?: Channel.empty()
 cbs_dryclean                = params.cbs_dryclean               ?: Channel.empty()
@@ -364,7 +363,9 @@ include { BAM_SVCALLING_GRIDSS_SOMATIC                } from '../subworkflows/lo
 include { BAM_FRAGCOUNTER as TUMOR_FRAGCOUNTER         } from '../subworkflows/local/bam_fragCounter/main'
 include { BAM_FRAGCOUNTER as NORMAL_FRAGCOUNTER        } from '../subworkflows/local/bam_fragCounter/main'
 
-include { COV_DRYCLEAN as DRYCLEAN         } from '../subworkflows/local/dryclean/main'
+// dryclean
+include { COV_DRYCLEAN as TUMOR_DRYCLEAN               } from '../subworkflows/local/cov_dryclean/main'
+include { COV_DRYCLEAN as NORMAL_DRYCLEAN              } from '../subworkflows/local/cov_dryclean/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -962,15 +963,25 @@ workflow HEISENBIO {
             normal_frag_cov = Channel.empty().mix(input_dryclean_status.normal)
 
         }        
-    //TODO: Add both Dryclean for both tumor & normal
-    DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
-            cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
-            blacklist_dryclean, blacklist_path_dryclean,
-            germline_filter_dryclean, germline_file_dryclean, human_dryclean,
-            field_dryclean, build_dryclean)
+        // Dryclean for both tumor & normal
+        TUMOR_DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
+                cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
+                blacklist_dryclean, blacklist_path_dryclean,
+                germline_filter_dryclean, germline_file_dryclean, human_dryclean,
+                field_dryclean, build_dryclean)
 
-    versions = versions.mix(DRYCLEAN.out.versions)
-    dryclean_cov = Channel.empty().mix(DRYCLEAN.out.dryclean_cov)
+        versions = versions.mix(TUMOR_DRYCLEAN.out.versions)
+        tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
+
+
+        NORMAL_DRYCLEAN(normal_frag_cov, pon_dryclean, centered_dryclean,
+                cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
+                blacklist_dryclean, blacklist_path_dryclean,
+                germline_filter_dryclean, germline_file_dryclean, human_dryclean,
+                field_dryclean, build_dryclean)
+
+        versions = versions.mix(NORMAL_DRYCLEAN.out.versions)
+        normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
 
     }
 

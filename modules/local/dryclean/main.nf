@@ -1,7 +1,6 @@
 process DRYCLEAN {
     tag "$meta.id"
     label 'process_medium'
-    publishDir "results", mode: 'copy'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'docker://mskilab/dryclean:latest':
@@ -9,23 +8,23 @@ process DRYCLEAN {
 
     input:
     tuple val(meta), path(input)
-    path pon
-    val centered
-    val cbs
-    val cnsignif
-    val wholeGenome
-    val blacklist
-    path blacklist_path
-    val germline_filter
-    path germline_file
-    val human
-    val field
-    val build
+    path(pon)
+    val(centered)
+    val(cbs)
+    val(cnsignif)
+    val(wholeGenome)
+    val(blacklist)
+    path(blacklist_path)
+    val(germline_filter)
+    path(germline_file)
+    val(human)
+    val(field)
+    val(build)
 
     output:
     tuple val(meta), path("*.drycleaned.cov.rds")     , emit: decomposed_cov, optional: true
     tuple val(meta), path("*.dryclean.object.rds")    , emit: dryclean_object, optional: true
-    path "versions.yml"           , emit: versions
+    path "versions.yml"                               , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
