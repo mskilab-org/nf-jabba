@@ -49,6 +49,7 @@ def checkPathParamList = [
     params.pon,
     params.pon_tbi,
     params.pon_dryclean
+    params.blacklist_coverage
 ]
 // only check if we are using the tools
 if (params.tools && params.tools.contains("snpeff")) checkPathParamList.add(params.snpeff_cache)
@@ -167,7 +168,20 @@ input_sample = ch_from_samplesheet
                     error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
 
-	# else if (vcf && cov) {}
+            // JaBbA
+	        } else if (vcf && cov) {
+                meta = meta + [id: meta.sample, data_type: 'vcf']
+                meta = meta + [id: meta.sample, data_type: 'cov']
+                if (params.step == 'jabba') {
+                    meta = [ meta - meta.subMap('lane'), vcf ]
+                    meta = [ meta - meta.subMap('lane'), cov ]
+                    return meta
+                }
+                else {
+                    error("Samplesheet contains cov rds and vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                }
+            }
+
             // annotation
             } else if (vcf) {
                 meta = meta + [id: meta.sample, data_type: 'vcf', variantcaller: variantcaller ?: '']
@@ -230,7 +244,7 @@ simple_seq_db      = params.simple_seq_db      ? Channel.fromPath(params.simple_
 blacklist_gridss   = params.blacklist_gridss   ? Channel.fromPath(params.blacklist_gridss).collect()  : Channel.empty()   // This is the mask for gridss SV calls
 pon_gridss         = params.pon_gridss         ? Channel.fromPath(params.pon_gridss).collect()        : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
 gcmapdir_frag      = params.gcmapdir_frag      ? Channel.fromPath(params.gcmapdir_frag).collect()     : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
-blacklist_cov_jab  = params.blacklist_cov_jab  ? Channel.fromPath(params.blacklist_cov_jab).collect() : Channel.empty()   // JaBbA
+blacklist_cov_jab  = params.blacklist_coverage_jabba  ? Channel.fromPath(params.blacklist_cov_jab).collect() : Channel.empty()   // JaBbA
 pon_dryclean      = params.pon_dryclean      ? Channel.fromPath(params.pon_dryclean).collect()     : Channel.empty()   // This is the path to the PON for Dryclean.
 blacklist_path_dryclean      = params.blacklist_path_dryclean      ? Channel.fromPath(params.blacklist_path_dryclean).collect()     : Channel.empty()   // This is the path to the blacklist for Dryclean (optional).
 germline_file_dryclean      = params.germline_file_dryclean      ? Channel.fromPath(params.germline_file_dryclean).collect()     : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
@@ -261,6 +275,43 @@ human_dryclean              = params.human_dryclean             ?: Channel.empty
 field_dryclean              = params.field_dryclean             ?: Channel.empty()
 build_dryclean              = params.build_dryclean             ?: Channel.empty()
 
+// JaBbA
+j_supp_jabba					= params.j_supp_jabba			        ?: Channel.empty()
+blacklist_junctions_jabba		= params.blacklist_junctions_jabba      ?: Channel.empty()
+geno_jabba					    = params.geno_jabba			            ?: Channel.empty()
+indel_jabba					    = params.indel_jabba			        ?: Channel.empty()
+tfield_jabba					= params.tfield_jabba			        ?: Channel.empty()
+iter_jabba					    = params.iter_jabba			            ?: Channel.empty()
+rescue_window_jabba				= params.rescue_window_jabba			?: Channel.empty()
+rescue_all_jabba				= params.rescue_all_jabba			    ?: Channel.empty()
+nudgebalanced_jabba				= params.nudgebalanced_jabba			?: Channel.empty()
+edgenudge_jabba					= params.edgenudge_jabba			    ?: Channel.empty()
+strict_jabba					= params.strict_jabba			        ?: Channel.empty()
+allin_jabba					    = params.allin_jabba			        ?: Channel.empty()
+field_jabba					    = params.field_jabba			        ?: Channel.empty()
+cbs_seg_rds_jabba				= params.cbs_seg_rds_jabba			    ?: Channel.empty()
+maxna_jabba					    = params.maxna_jabba			        ?: Channel.empty()
+blacklist_coverage_jabba		= params.blacklist_coverage_jabba		?: Channel.empty()
+cbs_nseg_rds_jabba				= params.cbs_nseg_rds_jabba			    ?: Channel.empty()
+het_pileups_wgs_jabba			= params.het_pileups_wgs_jabba			?: Channel.empty()
+ploidy_jabba					= params.ploidy_jabba                   ?: Channel.empty()
+purity_jabba					= params.purity_jabba                   ?: Channel.empty()
+pp_method_jabba					= params.pp_method_jabba                ?: Channel.empty()
+cnsignif_jabba					= params.cnsignif_jabba                 ?: Channel.empty()
+slack_jabba					    = params.slack_jabba                    ?: Channel.empty()
+linear_jabba					= params.linear_jabba                   ?: Channel.empty()
+tilim_jabba					    = params.tilim_jabba                    ?: Channel.empty()
+epgap_jabba					    = params.epgap_jabba                    ?: Channel.empty()
+outdir_jabba					= params.outdir_jabba                   ?: Channel.empty()
+name_jabba					    = params.name_jabba			            ?: Channel.empty()
+fix_thres_jabba					= params.fix_thres_jabba			    ?: Channel.empty()
+lp_jabba					    = params.lp_jabba			            ?: Channel.empty()
+ism_jabba					    = params.ism_jabba			            ?: Channel.empty()
+filter_loose_jabba				= params.filter_loose_jabba			    ?: Channel.empty()
+gurobi_jabba					= params.gurobi_jabba			        ?: Channel.empty()
+nonintegral_jabba				= params.nonintegral_jabba			    ?: Channel.empty()
+verbose_jabba					= params.verbose_jabba			        ?: Channel.empty()
+help_jabba					    = params.help_jabba			            ?: Channel.empty()
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
 if (params.snpeff_cache && params.tools && params.tools.contains("snpeff")) {
@@ -366,6 +417,7 @@ include { BAM_FRAGCOUNTER as NORMAL_FRAGCOUNTER        } from '../subworkflows/l
 
 include { COV_DRYCLEAN as DRYCLEAN         } from '../subworkflows/local/dryclean/main'
 
+include { COV_VCF_JABBA as JABBA         } from '../subworkflows/local/jabba/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -893,7 +945,7 @@ workflow HEISENBIO {
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
-        
+
         cram_coverage_calling = cram_sv_calling
     }
 
@@ -957,6 +1009,25 @@ workflow HEISENBIO {
 
             versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
             dryclean_cov = Channel.empty().mix(DRYCLEAN.out.dryclean_cov)
+        }
+    }
+
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'coverage', 'jabba']) {
+        JABBA(dryclean_cov, vcf_from_sv_calling , field_jabba, tfield_jabba,
+        cbs_nseg_rds_jabba, cbs_seg_rds_jabba, slack_jabba, het_pileups_wgs_jabba,
+        purity_jabba, ploidy_jabba, tilim_jabba, epgap_jabba, pp_method_jabba,
+        maxna_jabba, blacklist_coverage_jabba, blacklist_junctions_jabba,
+        iter_jabba, indel_jabba, cnsignif_jabba, lp_jabba, ism_jabba,
+        fix_thres_jabba, filter_loose_jabba, gurobi_jabba)
+
+        jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
+        jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
+        jabba_vcf           = Channel.empty().mix(JABBA.out.jabba_vcf)
+        jabba_raw_rds       = Channel.empty().mix(JABBA.out.jabba_raw_rds)
+        opti                = Channel.empty().mix(JABBA.out.opti)
+        jabba_seg           = Channel.empty().mix(JABBA.out.jabba_seg)
+        karyograph          = Channel.empty().mix(JABBA.out.karyograph)
+        versions = versions.mix(JABBA.out.versions)
         }
     }
 }

@@ -8,33 +8,43 @@ process JABBA {
 
     input:
     tuple val(meta), path(cov_rds)
-    tuple val(meta), path(junctionFilePath)
-    val(field)
-    path(junctionUnfiltered)
+    tuple val(meta), path(junction)
+    path(j_supp)
+    path(blacklist_junctions)
+    val(geno)
+    val(indel)
     val(tfield)
-    path(cbs_nseg_rds)
+    val(iter)
+    val(rescue_window)
+    val(rescue_all)
+    val(nudgebalanced)
+    val(edgenudge)
+    val(strict)
+    val(allin)
+    val(field)
     path(cbs_seg_rds)
-    val(slack)
+    val(maxna)
+    path(blacklist_coverage)
+    path(cbs_nseg_rds)
     path(het_pileups_wgs)
-    val(purity)
     val(ploidy)
+    val(purity)
+    val(pp_method)
+    val(cnsignif)
+    val(slack)
+    val(linear)
     val(tilim)
     val(epgap)
-    val(pp_method)
-    val(maxna)
-    val(flags)
-    path(blacklist_coverage)
-    path(blacklist_junctions)
-    val(iter)
-    val(pair)
-    val(indel)
-    val(cnsignif)
+    val(outdir)
+    val(name)
+    val(fix_thres)
     val(lp)
     val(ism)
-    val(treemem)
-    val(fix_thres)
+    val(filter_loose)
     val(gurobi)
     val(nonintegral)
+    val(verbose)
+    val(help)
 
     output:
     tuple val(meta), path("*.jabba.simple.rds")      , emit: jabba_rds, optional: true
@@ -53,12 +63,7 @@ process JABBA {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
 
-    def VERSION    = '1.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
-
-    // TODO nf-core: Where possible, a command MUST be provided to obtain the version number of the software e.g. 1.10
-    //               If the software is unable to output a version number on the command-line then it can be manually specified
-    //               e.g. https://github.com/nf-core/modules/blob/master/modules/nf-core/homer/annotatepeaks/main.nf
-    //               Each software used MUST provide the software name and version number in the YAML version file (versions.yml)
+    def VERSION    = '1.1'
     """
     #!/bin/bash
 
@@ -95,7 +100,46 @@ process JABBA {
     echo $jba
     set +x
 
-    export cmd="Rscript $jba \$@"
+    export cmd="Rscript $jba $cov_rds $junction \\
+    --j.supp                $j_supp \\
+    --blacklist.junctions	$blacklist_junctions \\
+    --geno					$geno \\
+    --indel					$indel \\
+    --tfield				$tfield \\
+    --iterate				$iter \\
+    --rescue.window			$rescue_window \\
+    --rescue.all			$rescue_all \\
+    --nudgebalanced			$nudgebalanced \\
+    --edgenudge				$edgenudge \\
+    --strict				$strict \\
+    --allin					$allin \\
+    --field					$field \\
+    --seg			        $cbs_seg_rds \\
+    --maxna					$maxna \\
+    --blacklist.coverage	$blacklist_coverage \\
+    --nseg			        $cbs_nseg_rds \\
+    --hets		            $het_pileups_wgs \\
+    --ploidy				$ploidy \\
+    --purity				$purity \\
+    --ppmethod				$pp_method \\
+    --cnsignif				$cnsignif \\
+    --slack					$slack \\
+    --linear				$linear \\
+    --tilim					$tilim \\
+    --epgap					$epgap \\
+    --outdir                $outdir \\
+    --name                  $name \\
+    --cores                 $task.cpus \\
+    --mem                   $task.mem \\
+    --fix.thres				$fix_thres \\
+    --lp					$lp \\
+    --ism					$ism \\
+    --filter_loose			$filter_loose \\
+    --gurobi				$gurobi \\
+    --nonintegral			$nonintegral \\
+    --verbose				$verbose \\
+    --help					$help \\
+    "
 
     { echo "Running:" && echo "\$(echo $cmd)" && echo && eval $cmd; }
     cmdsig=\$?
@@ -107,6 +151,11 @@ process JABBA {
     fi
 
     exit 0
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        JaBbA: ${VERSION}
+    END_VERSIONS
     """
 
     stub:
