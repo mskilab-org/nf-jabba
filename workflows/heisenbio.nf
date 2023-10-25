@@ -63,6 +63,9 @@ if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(para
 if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.blacklist_gridss)
 if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.pon_gridss)
 
+if (params.tools && params.tools.contains("hetpileups"))  checkPathParamList.add(params.hapmap_sites)
+
+
 // Checking inputs if running fragCounter
 if (params.tools && params.tools.contains("fragcounter"))  checkPathParamList.add(params.gcmapdir_frag)
 
@@ -230,6 +233,7 @@ simple_seq_db      = params.simple_seq_db      ? Channel.fromPath(params.simple_
 blacklist_gridss   = params.blacklist_gridss   ? Channel.fromPath(params.blacklist_gridss).collect()  : Channel.empty()   // This is the mask for gridss SV calls
 pon_gridss         = params.pon_gridss         ? Channel.fromPath(params.pon_gridss).collect()        : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
 gcmapdir_frag      = params.gcmapdir_frag      ? Channel.fromPath(params.gcmapdir_frag).collect()     : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
+hapmap_sites = params.hapmap_sites          ? Channel.fromPath(params.hapmap_sites).collect() : Channel.empty()
 blacklist_cov_jab  = params.blacklist_cov_jab  ? Channel.fromPath(params.blacklist_cov_jab).collect() : Channel.empty()   // JaBbA
 pon_dryclean      = params.pon_dryclean      ? Channel.fromPath(params.pon_dryclean).collect()     : Channel.empty()   // This is the path to the PON for Dryclean.
 blacklist_path_dryclean      = params.blacklist_path_dryclean      ? Channel.fromPath(params.blacklist_path_dryclean).collect()     : Channel.empty()   // This is the path to the blacklist for Dryclean (optional).
@@ -244,6 +248,11 @@ vep_cache_version  = params.vep_cache_version  ?: Channel.empty()
 vep_genome         = params.vep_genome         ?: Channel.empty()
 vep_species        = params.vep_species        ?: Channel.empty()
 error_rate         = params.error_rate         ?: Channel.empty()                                                         // For SVABA
+
+// Hetpileups
+filter              = params.filter         ?: Channel.empty()
+max_depth           = params.max_depth      ?: Channel.empty()
+
 windowsize_frag    = params.windowsize_frag    ?: Channel.empty()                                                         // For fragCounter
 minmapq_frag       = params.minmapq_frag       ?: Channel.empty()                                                         // For fragCounter
 midpoint_frag      = params.midpoint_frag      ?: Channel.empty()                                                         // For fragCounter
@@ -299,6 +308,7 @@ include { CHANNEL_MARKDUPLICATES_CREATE_CSV           } from '../subworkflows/lo
 include { CHANNEL_BASERECALIBRATOR_CREATE_CSV         } from '../subworkflows/local/channel_baserecalibrator_create_csv/main'
 include { CHANNEL_APPLYBQSR_CREATE_CSV                } from '../subworkflows/local/channel_applybqsr_create_csv/main'
 include { CHANNEL_SVCALLING_CREATE_CSV                } from '../subworkflows/local/channel_svcalling_create_csv/main'
+include { CHANNEL_HETPILEUPS_CREATE_CSV               } from '../subworkflows/local/channel_hetpileups_create_csv/main'
 
 // Download annotation cache if needed
 include { PREPARE_CACHE                               } from '../subworkflows/local/prepare_cache/main'
@@ -359,6 +369,9 @@ include { BAM_SVCALLING_SVABA                         } from '../subworkflows/lo
 //GRIDSS
 include { BAM_SVCALLING_GRIDSS                        } from '../subworkflows/local/bam_svcalling_gridss/main'
 include { BAM_SVCALLING_GRIDSS_SOMATIC                } from '../subworkflows/local/bam_svcalling_gridss/main'
+
+// HETPILEUPS
+include { BAM_HETPILEUPS as HETPILEUPS         } from '../subworkflows/local/hetpileups/main'
 
 // fragCounter
 include { BAM_FRAGCOUNTER as TUMOR_FRAGCOUNTER         } from '../subworkflows/local/bam_fragCounter/main'
@@ -893,8 +906,67 @@ workflow HEISENBIO {
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
-        
+
         cram_coverage_calling = cram_sv_calling
+    }
+
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'hetpileups']) {
+        if (params.step == 'hetpileups') {
+            input_hetpileups_convert = input_sample.branch{
+                bam:  it[0].data_type == "bam"
+                cram: it[0].data_type == "cram"
+            }
+            // BAM files first must be converted to CRAM files since from this step on we base everything on CRAM format
+            BAM_TO_CRAM(input_hetpileups_convert.bam, fasta, fasta_fai)
+            versions = versions.mix(BAM_TO_CRAM.out.versions)
+
+            cram_hetpileups_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_coverage_convert.cram)
+                                .map{ meta, cram, crai -> [ meta + [data_type: "cram"], cram, crai ] }           //making sure that the input data_type is correct
+
+        }
+
+        // getting the tumor and normal cram files separated
+        cram_hetpileups_status = cram_hetpileups.branch{
+            normal: it[0].status == 0
+            tumor:  it[0].status == 1
+        }
+
+
+        // All normal samples
+        cram_hetpileups_normal_to_cross = cram_hetpileups_status.normal.map{ meta, cram, crai -> [ meta.patient, meta, cram, crai ] }
+
+        // All tumor samples
+        cram_hetpileups_tumor_to_cross = cram_hetpileups_status.tumor.map{ meta, cram, crai -> [ meta.patient, meta, cram, crai ] }
+
+        // Crossing the normal and tumor samples to create tumor and normal pairs
+        cram_hetpileups_pair = cram_hetpileups_normal_to_cross.cross(cram_hetpileups_tumor_to_cross)
+            .map { normal, tumor ->
+                def meta = [:]
+
+                meta.id         = "${tumor[1].sample}_vs_${normal[1].sample}".toString()
+                meta.normal_id  = normal[1].sample
+                meta.patient    = normal[0]
+                meta.sex        = normal[1].sex
+                meta.tumor_id   = tumor[1].sample
+
+                [ meta, normal[2], tumor[2] ]
+        }
+
+        if (params.tools && params.tools.split(',').contains('hetpileups')) {
+            BAM_HETPILEUPS(cram_hetpileups_pair, filter, max_depth, hapmap_sites)
+
+            versions = versions.mix(BAM_HETPILEUPS.out.versions)
+
+            sites_from_het_pileups_wgs = Channel.empty()
+            sites_from_het_pileups_wgs = sites_from_het_pileups_wgs.mix(BAM_HETPILEUPS.out.het_pileups_wgs)
+
+            // CSV should be written for the file actually out out, either CRAM or BAM
+            csv_hetpileups = Channel.empty().mix(BAM_HETPILEUPS.out.het_pileups_wgs)
+
+            // Create CSV to restart from this step
+            CHANNEL_HETPILEUPS_CREATE_CSV(csv_hetpileups)
+        }
+
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'coverage']) {
