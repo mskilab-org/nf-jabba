@@ -3,8 +3,8 @@ process DRYCLEAN {
     label 'process_medium'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://mskilab/dryclean:latest':
-        'mskilab/dryclean:latest' }"
+        'docker://mskilab/dryclean:0.0.2':
+        'mskilab/dryclean:0.0.2' }"
 
     input:
     tuple val(meta), path(input)
@@ -14,9 +14,9 @@ process DRYCLEAN {
     val(cnsignif)
     val(wholeGenome)
     val(blacklist)
-    path(blacklist_path)
+    val(blacklist_path)
     val(germline_filter)
-    path(germline_file)
+    val(germline_file)
     val(human)
     val(field)
     val(build)
@@ -50,23 +50,23 @@ process DRYCLEAN {
 
     set -x
     R_LIB_PATH="~/lab/lib/R-4.0.2"
-    if [ -d "$R_LIB_PATH" ]; then
-        export R_LIBS=$R_LIB_PATH
+    if [ -d "\$R_LIB_PATH" ]; then
+        export R_LIBS=\$R_LIB_PATH
     fi
 
     echo "Using R version:"
     cmd="R --version"
-    eval $cmd
+    eval \$cmd
     set +x
 
     ## find R installation and dryclean exec
     echo "USING LIBRARIES: \$(Rscript -e 'print(.libPaths())')"
     export drycleanPath=\$(Rscript -e 'cat(suppressWarnings(find.package("dryclean")))')
-    export drycln=$drycleanPath/extdata/drcln
-    echo $drycln
+    export drycln=\$drycleanPath/extdata/drcln
+    echo \$drycln
     set +x
 
-    CMD="Rscript $drycln \\
+    CMD="Rscript \$drycln \\
         --input             ${input} \\
         --pon               ${pon} \\
         --centered          ${centered} \\
@@ -83,19 +83,19 @@ process DRYCLEAN {
         --build             ${build} \\
     "
 
-    if [ ! -s ./drycleaned.cov.rds ]; then
-	if ! { echo "Running:" && echo "${CMD}" && eval ${CMD}; }; then
-	    echo "Dryclean broke!"; exit 1;
-	fi
-    else
-	echo "If you wish to rerun Dryclean - please purge directory first"
-    fi
-    exit 0
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         dryclean: ${VERSION}
     END_VERSIONS
+
+    if [ ! -s ./drycleaned.cov.rds ]; then
+	    if ! { echo "Running:" && echo "\${CMD}" && eval \${CMD}; }; then
+	        echo "Dryclean broke!"; exit 1;
+	    fi
+    else
+	    echo "If you wish to rerun Dryclean - please purge directory first"
+    fi
+    exit 0
     """
 
     stub:

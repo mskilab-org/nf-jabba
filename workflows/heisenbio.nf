@@ -48,6 +48,7 @@ def checkPathParamList = [
     params.multiqc_config,
     params.pon,
     params.pon_tbi,
+    params.gcmapdir_frag,
     params.pon_dryclean
 ]
 // only check if we are using the tools
@@ -64,7 +65,7 @@ if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(par
 if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.pon_gridss)
 
 // Checking inputs if running fragCounter
-if (params.tools && params.tools.contains("fragcounter"))  checkPathParamList.add(params.gcmapdir_frag)
+//if (params.tools && params.tools.contains("fragcounter"))  checkPathParamList.add(params.gcmapdir_frag)
 
 // Validate input parameters
 WorkflowHeisenbio.initialise(params, log)
@@ -86,9 +87,9 @@ if (params.input) {
 }
 
 input_sample = ch_from_samplesheet
-        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, vcf, variantcaller, cov ->
+        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, vcf, variantcaller ->
             // generate patient_sample key to group lanes together
-            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, vcf, variantcaller, cov] ]
+            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, vcf, variantcaller] ]
         }
         .tap{ ch_with_patient_sample } // save the channel
         .groupTuple() //group by patient_sample to get all lanes
@@ -99,7 +100,7 @@ input_sample = ch_from_samplesheet
         .combine(ch_with_patient_sample, by: 0) // for each entry add numLanes
         .map { patient_sample, num_lanes, ch_items ->
 
-            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, vcf, variantcaller, cov) = ch_items
+            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, vcf, variantcaller) = ch_items
             if (meta.lane && fastq_2) {
                 meta           = meta + [id: "${meta.sample}-${meta.lane}".toString()]
                 def CN         = params.seq_center ? "CN:${params.seq_center}\\t" : ''
@@ -169,6 +170,13 @@ input_sample = ch_from_samplesheet
 
 	//TODO: else if (vcf && cov) {}
             // annotation
+            } else if (cov) {
+                meta = meta + [id: meta.sample, data_type: 'cov']
+
+                if (params.step == 'dryclean') return [ meta - meta.subMap('lane'), cov ]
+                else {
+                    error("Samplesheet contains cov .rds files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                }
             } else if (vcf) {
                 meta = meta + [id: meta.sample, data_type: 'vcf', variantcaller: variantcaller ?: '']
 
@@ -176,14 +184,6 @@ input_sample = ch_from_samplesheet
                 else {
                     error("Samplesheet contains vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
-            } else if (cov) {
-                meta = meta + [id: meta.sample, data_type: 'cov']
-
-                if (params.step == 'coverage') return [ meta - meta.subMap('lane'), cov ]
-                else {
-                    error("Samplesheet contains cov rds files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
-                }
-
             } else {
                 error("Missing or unknown field in csv file header. Please check your samplesheet")
             }
@@ -252,7 +252,7 @@ exome_frag                 = params.exome_frag                  ?: Channel.empty
 // Dryclean
 centered_dryclean           = params.centered_dryclean          ?: Channel.empty()
 cbs_dryclean                = params.cbs_dryclean               ?: Channel.empty()
-cnsiginif_dryclean          = params.cnsiginif_dryclean         ?: Channel.empty()
+cnsignif_dryclean           = params.cnsignif_dryclean          ?: Channel.empty()
 wholeGenome_dryclean        = params.wholeGenome_dryclean       ?: Channel.empty()
 blacklist_dryclean          = params.blacklist_dryclean         ?: Channel.empty()
 germline_filter_dryclean    = params.germline_filter_dryclean   ?: Channel.empty()
@@ -948,9 +948,9 @@ workflow HEISENBIO {
         // TODO: Add a workflow to write the output file paths into a csv
     }
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'dryclean']) {
+     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'dryclean']) {
 
-        if (params.step == 'dryclean') {
+         if (params.step == 'dryclean') {
             input_dryclean = input_sample
                                 .map{ meta, cov -> [ meta + [data_type: "cov"], cov ] }
 
@@ -962,7 +962,7 @@ workflow HEISENBIO {
             tumor_frag_cov  = Channel.empty().mix(input_dryclean_status.tumor)
             normal_frag_cov = Channel.empty().mix(input_dryclean_status.normal)
 
-        }        
+        }     
         // Dryclean for both tumor & normal
         TUMOR_DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
                 cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
@@ -983,7 +983,7 @@ workflow HEISENBIO {
         versions = versions.mix(NORMAL_DRYCLEAN.out.versions)
         normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
 
-    }
+    } 
 
     //TODO: Modify both nextflow.json, main.nf, check variable names upwards, update schema.json (steps, tools, variables), update the input_sample conditionals on the top, check dryclean module and subworkflow.
 
