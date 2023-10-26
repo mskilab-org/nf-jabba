@@ -8,14 +8,14 @@ process ASCAT_SEG {
         'mskilab/ascat_seg:latest' }"
 
     input:
-    tuple val(meta), path(hets)
-    tuple val(meta), path(cbs_cov)
-    val(field)
-    val(hets_thresh)
-    val(penalty)
-    val(gc)
-    val(rebin)
-    val(from_maf)
+    tuple val(meta), path(hets)                                      // channel: [mandatory] [ meta, hets ]
+    tuple val(meta), path(cbs_cov)                                   // channel: [mandatory] [ meta, cbs_cov ]
+    val(field)                                                       // channel: [mandatory] "foreground" for dryclean/ "ratio" 
+    val(hets_thresh)                                                 // channel: cutoff for hetpileups; default=0.2
+    val(penalty)                                                     // channel: penalty for ASCAT; default=70
+    val(gc)                                                          // channel: perform GC correction? Default=TRUE
+    val(rebin)                                                       // channel: width for rebinning, default=5e4
+    val(from_maf)                                                    // channel: whether to start from MAF, default=FALSE
 
     output:
     tuple val(meta), path("*ascat_pp.rds")        , emit: purityploidy, optional:true

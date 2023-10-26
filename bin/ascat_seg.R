@@ -22,7 +22,7 @@
                         help = "rebin coverage width?", default=5e4),
             make_option("--snp_file", type = "character",
                         help = "path to file with SNVs",
-                        default = "~/DB/ASCAT/hg19_Illumina_OmniQuad_2.5M_SNP.txt"),
+                        default = ""),
             make_option("--coverage", type = "character", help = "path to coverage file",
                         default="./"),
             make_option("--seg", type = "character", help = "path to seg file",
