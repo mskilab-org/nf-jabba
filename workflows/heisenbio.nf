@@ -197,10 +197,33 @@ if (!params.dbsnp && !params.known_indels) {
     }
 }
 
+// Fails or warns when missing files or params for ascat
+if (params.tools && params.tools.split(',').contains('ascat')) {
+    if (!params.ascat_alleles) {
+        error("No allele files were provided for running ASCAT. Please provide a zip folder with allele files.")
+    }
+    if (!params.ascat_loci) {
+        error("No loci files were provided for running ASCAT. Please provide a zip folder with loci files.")
+    }
+    if (!params.ascat_loci_gc && !params.ascat_loci_rt) {
+        log.warn("No LogRCorrection performed in ASCAT. For LogRCorrection to run, please provide either loci gc files or both loci gc files and loci rt files.")
+    }
+    if (params.wes) {
+        log.warn("Default reference files not suited for running ASCAT on WES data. It's recommended to use the reference files provided here: https://github.com/Wedge-lab/battenberg#required-reference-files")
+    }
+}
 
+// Fails when missing sex information for CNV tools
+if (params.tools && (params.tools.split(',').contains('ascat'))) {
+    input_sample.map{
+        if (it[0].sex == 'NA' ) {
+            error("Please specify sex information for each sample in your samplesheet when using '--tools' with 'ascat'")
+        }
+    }
+}
 
 if ((params.download_cache) && (params.snpeff_cache || params.vep_cache)) {
-    error("Please specify either `--download_cache` or `--snpeff_cache`, `--vep_cache`.\nhttps://nf-co.re/sarek/dev/usage#how-to-customise-snpeff-and-vep-annotation")
+    error("Please specify either `--download_cache` or `--snpeff_cache`, `--vep_cache`.")
 }
 
 /*
@@ -358,6 +381,9 @@ include { BAM_SVCALLING_SVABA                         } from '../subworkflows/lo
 //GRIDSS
 include { BAM_SVCALLING_GRIDSS                        } from '../subworkflows/local/bam_svcalling_gridss/main'
 include { BAM_SVCALLING_GRIDSS_SOMATIC                } from '../subworkflows/local/bam_svcalling_gridss/main'
+
+//ASCAT
+include { BAM_ASCAT                                   } from '../subworkflows/local/bam_ascat/main'
 
 // fragCounter
 include { BAM_FRAGCOUNTER as TUMOR_FRAGCOUNTER         } from '../subworkflows/local/bam_fragCounter/main'
@@ -894,6 +920,22 @@ workflow HEISENBIO {
             vcf_from_sv_calling.view()
         }
 
+        if (params.tools && params.tools.split(',').contains('ascat')) {
+            BAM_ASCAT(
+                cram_sv_calling_pair,
+                allele_files,
+                loci_files,
+                intervals_bed_combined,
+                fasta,
+                gc_file,
+                rt_file
+            )
+
+            versions = versions.mix(BAM_ASCAT.out.versions)
+            pp       = versions.mix(BAM_ASCAT.out.pp)
+            pp.view()
+        }
+
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
         
         cram_fragcounter_calling = cram_sv_calling
@@ -930,25 +972,26 @@ workflow HEISENBIO {
         //versions = versions.mix(CRAM_TO_BAM_TUMOR.out.versions)
         //tumor_samples  = CRAM_TO_BAM_TUMOR.out.alignment_index
         //tumor_samples.view()
+        if (params.tools && params.tools.split(',').contains('svaba')) {
+            // Need to run fragCounter on both tumor and normal samples
+            NORMAL_FRAGCOUNTER(cram_fragcounter_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
 
-        // Need to run fragCounter on both tumor and normal samples
-        NORMAL_FRAGCOUNTER(cram_fragcounter_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+            versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
+            normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
+            //normal_frag_cov.view()
+            //NORMAL_FRAGCOUNTER.out.corrected_bw.view()
 
-        versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
-        normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
-        //normal_frag_cov.view()
-        //NORMAL_FRAGCOUNTER.out.corrected_bw.view()
+            TUMOR_FRAGCOUNTER(cram_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
 
-        TUMOR_FRAGCOUNTER(cram_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
-
-        versions = versions.mix(TUMOR_FRAGCOUNTER.out.versions)
-        tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.fragcounter_cov)
+            versions = versions.mix(TUMOR_FRAGCOUNTER.out.versions)
+            tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.fragcounter_cov)
             //tumor_frag_cov.view()
+        }
 
-        // TODO: Add a workflow to write the output file paths into a csv
+            // TODO: Add a workflow to write the output file paths into a csv
     }
 
-     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'dryclean']) {
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'dryclean']) {
 
          if (params.step == 'dryclean') {
             input_dryclean = input_sample
@@ -962,26 +1005,28 @@ workflow HEISENBIO {
             tumor_frag_cov  = Channel.empty().mix(input_dryclean_status.tumor)
             normal_frag_cov = Channel.empty().mix(input_dryclean_status.normal)
 
-        }     
-        // Dryclean for both tumor & normal
-        TUMOR_DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
-                cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
-                blacklist_dryclean, blacklist_path_dryclean,
-                germline_filter_dryclean, germline_file_dryclean, human_dryclean,
-                field_dryclean, build_dryclean)
+        }
+        if (params.tools && params.tools.split(',').contains('svaba')) {     
+            // Dryclean for both tumor & normal
+            TUMOR_DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
+                    cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
+                    blacklist_dryclean, blacklist_path_dryclean,
+                    germline_filter_dryclean, germline_file_dryclean, human_dryclean,
+                    field_dryclean, build_dryclean)
 
-        versions = versions.mix(TUMOR_DRYCLEAN.out.versions)
-        tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
+            versions = versions.mix(TUMOR_DRYCLEAN.out.versions)
+            tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
 
 
-        NORMAL_DRYCLEAN(normal_frag_cov, pon_dryclean, centered_dryclean,
-                cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
-                blacklist_dryclean, blacklist_path_dryclean,
-                germline_filter_dryclean, germline_file_dryclean, human_dryclean,
-                field_dryclean, build_dryclean)
+            NORMAL_DRYCLEAN(normal_frag_cov, pon_dryclean, centered_dryclean,
+                    cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
+                    blacklist_dryclean, blacklist_path_dryclean,
+                    germline_filter_dryclean, germline_file_dryclean, human_dryclean,
+                    field_dryclean, build_dryclean)
 
-        versions = versions.mix(NORMAL_DRYCLEAN.out.versions)
-        normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
+            versions = versions.mix(NORMAL_DRYCLEAN.out.versions)
+            normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
+        }
 
     } 
 
