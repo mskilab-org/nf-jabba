@@ -261,6 +261,10 @@ human_dryclean              = params.human_dryclean             ?: Channel.empty
 field_dryclean              = params.field_dryclean             ?: Channel.empty()
 build_dryclean              = params.build_dryclean             ?: Channel.empty()
 
+// CBS
+cnsignif                    = params.cnsignif_cbs               ?: Channel.empty()
+field                       = params.field_cbs                  ?: Channel.empty()
+name                        = params.name_cbs                   ?: Channel.empty()
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
 if (params.snpeff_cache && params.tools && params.tools.contains("snpeff")) {
@@ -365,6 +369,8 @@ include { BAM_FRAGCOUNTER as TUMOR_FRAGCOUNTER         } from '../subworkflows/l
 include { BAM_FRAGCOUNTER as NORMAL_FRAGCOUNTER        } from '../subworkflows/local/bam_fragCounter/main'
 
 include { COV_DRYCLEAN as DRYCLEAN         } from '../subworkflows/local/dryclean/main'
+
+include { COV_CBS as CBS                            } from '../subworkflows/local/cbs/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -893,7 +899,7 @@ workflow HEISENBIO {
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
-        
+
         cram_coverage_calling = cram_sv_calling
     }
 
@@ -957,6 +963,16 @@ workflow HEISENBIO {
 
             versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
             dryclean_cov = Channel.empty().mix(DRYCLEAN.out.dryclean_cov)
+        }
+
+        if (params.tools && params.tools.split(',').contains('cbs')) {
+            CBS(cov_cbs, cnsignif_cbs, field_cbs, name_cbs)
+
+            versions       = versions.mix(CBS.out.versions)
+            cbs_cov_rds    = Channel.empty().mix(CBS.out.cbs_cov_rds)
+            cbs_seg_rds    = Channel.empty().mix(CBS.out.cbs_seg_rds)
+            cbs_nseg_rds   = Channel.empty().mix(CBS.out.cbs_nseg_rds)
+
         }
     }
 }
