@@ -87,9 +87,9 @@ if (params.input) {
 }
 
 input_sample = ch_from_samplesheet
-        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, vcf, variantcaller ->
+        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller ->
             // generate patient_sample key to group lanes together
-            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, vcf, variantcaller] ]
+            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller] ]
         }
         .tap{ ch_with_patient_sample } // save the channel
         .groupTuple() //group by patient_sample to get all lanes
@@ -100,7 +100,7 @@ input_sample = ch_from_samplesheet
         .combine(ch_with_patient_sample, by: 0) // for each entry add numLanes
         .map { patient_sample, num_lanes, ch_items ->
 
-            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, vcf, variantcaller) = ch_items
+            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller) = ch_items
             if (meta.lane && fastq_2) {
                 meta           = meta + [id: "${meta.sample}-${meta.lane}".toString()]
                 def CN         = params.seq_center ? "CN:${params.seq_center}\\t" : ''
@@ -167,9 +167,23 @@ input_sample = ch_from_samplesheet
                 else {
                     error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
+            // hetpileups
+            } else if (cov && hets) {
+                meta = meta + [id: meta.sample, data_type: 'cov']
 
-	//TODO: else if (vcf && cov) {}
-            // annotation
+                if (params.step == 'ascat') return [ meta - meta.subMap('lane'), cov, hets ]
+                else {
+                    error("Samplesheet contains cov .rds and hets .txt files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                }
+                // jabba
+            } else if (cov && vcf) {
+                meta = meta + [id: meta.sample, data_type: 'cov']
+
+                if (params.step == 'jabba') return [ meta - meta.subMap('lane'), cov, vcf ]
+                else {
+                    error("Samplesheet contains cov .rds and vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                }
+                // dryclean
             } else if (cov) {
                 meta = meta + [id: meta.sample, data_type: 'cov']
 
@@ -177,6 +191,7 @@ input_sample = ch_from_samplesheet
                 else {
                     error("Samplesheet contains cov .rds files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
+                // annotation
             } else if (vcf) {
                 meta = meta + [id: meta.sample, data_type: 'vcf', variantcaller: variantcaller ?: '']
 
@@ -257,6 +272,7 @@ pon_dryclean              = params.pon_dryclean               ? Channel.fromPath
 blacklist_path_dryclean   = params.blacklist_path_dryclean    ? Channel.fromPath(params.blacklist_path_dryclean).collect()  : Channel.empty()   // This is the path to the blacklist for Dryclean (optional).
 germline_file_dryclean    = params.germline_file_dryclean     ? Channel.fromPath(params.germline_file_dryclean).collect()   : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
 blacklist_cov_jab         = params.blacklist_cov_jab          ? Channel.fromPath(params.blacklist_cov_jab).collect()        : Channel.empty()   // JaBbA
+
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
 ascat_genome               = params.ascat_genome                ?: Channel.empty()
 dbsnp_vqsr                 = params.dbsnp_vqsr                  ?  Channel.value(params.dbsnp_vqsr)                         : Channel.empty()
@@ -282,6 +298,13 @@ germline_filter_dryclean    = params.germline_filter_dryclean   ?: Channel.empty
 human_dryclean              = params.human_dryclean             ?: Channel.empty()
 field_dryclean              = params.field_dryclean             ?: Channel.empty()
 build_dryclean              = params.build_dryclean             ?: Channel.empty()
+// ASCAT_seg
+field_ascat                 = params.field_ascat                ?: Channel.empty()
+hets_thresh_ascat           = params.hets_thresh_ascat          ?: Channel.empty()
+penalty_ascat               = params.penalty_ascat              ?: Channel.empty()
+gc_correct_ascat            = params.gc_correct_ascat           ?: Channel.empty()
+rebin_width_ascat           = params.rebin_width_ascat          ?: Channel.empty()
+from_maf_ascat              = params.from_maf_ascat             ?: Channel.empty()
 
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
@@ -382,9 +405,6 @@ include { BAM_SVCALLING_SVABA                         } from '../subworkflows/lo
 include { BAM_SVCALLING_GRIDSS                        } from '../subworkflows/local/bam_svcalling_gridss/main'
 include { BAM_SVCALLING_GRIDSS_SOMATIC                } from '../subworkflows/local/bam_svcalling_gridss/main'
 
-//ASCAT
-include { BAM_ASCAT                                   } from '../subworkflows/local/bam_ascat/main'
-
 // fragCounter
 include { BAM_FRAGCOUNTER as TUMOR_FRAGCOUNTER         } from '../subworkflows/local/bam_fragCounter/main'
 include { BAM_FRAGCOUNTER as NORMAL_FRAGCOUNTER        } from '../subworkflows/local/bam_fragCounter/main'
@@ -392,6 +412,9 @@ include { BAM_FRAGCOUNTER as NORMAL_FRAGCOUNTER        } from '../subworkflows/l
 // dryclean
 include { COV_DRYCLEAN as TUMOR_DRYCLEAN               } from '../subworkflows/local/cov_dryclean/main'
 include { COV_DRYCLEAN as NORMAL_DRYCLEAN              } from '../subworkflows/local/cov_dryclean/main'
+
+//ASCAT
+include { COV_ASCAT                                   } from '../subworkflows/local/cov_ascat/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -920,22 +943,6 @@ workflow HEISENBIO {
             vcf_from_sv_calling.view()
         }
 
-        if (params.tools && params.tools.split(',').contains('ascat')) {
-            BAM_ASCAT(
-                cram_sv_calling_pair,
-                allele_files,
-                loci_files,
-                intervals_bed_combined,
-                fasta,
-                gc_file,
-                rt_file
-            )
-
-            versions = versions.mix(BAM_ASCAT.out.versions)
-            pp       = versions.mix(BAM_ASCAT.out.pp)
-            pp.view()
-        }
-
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
         
         cram_fragcounter_calling = cram_sv_calling
@@ -988,12 +995,12 @@ workflow HEISENBIO {
             //tumor_frag_cov.view()
         }
 
-            // TODO: Add a workflow to write the output file paths into a csv
+            // TODO: Add a subworkflow to write the output file paths into a csv
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'dryclean']) {
 
-         if (params.step == 'dryclean') {
+        if (params.step == 'dryclean') {
             input_dryclean = input_sample
                                 .map{ meta, cov -> [ meta + [data_type: "cov"], cov ] }
 
@@ -1006,7 +1013,7 @@ workflow HEISENBIO {
             normal_frag_cov = Channel.empty().mix(input_dryclean_status.normal)
 
         }
-        if (params.tools && params.tools.split(',').contains('svaba')) {     
+        if (params.tools && params.tools.split(',').contains('dryclean')) {     
             // Dryclean for both tumor & normal
             TUMOR_DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
                     cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
@@ -1028,9 +1035,40 @@ workflow HEISENBIO {
             normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
         }
 
+        // TODO: Add a subworkflow to write the output file paths into a csv
     } 
 
-    //TODO: Modify both nextflow.json, main.nf, check variable names upwards, update schema.json (steps, tools, variables), update the input_sample conditionals on the top, check dryclean module and subworkflow.
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'dryclean', 'ascat']) {
+        if (params.step == 'ascat') {
+            input_ascat = input_sample
+                                .map{ meta, cov, hets -> [ meta + [data_type: "cov"], cov, hets ] }
+
+            input_cov_ascat = input_ascat
+                                .map{ meta, cov, hets -> [ meta, cov ] }
+
+            input_hets_ascat = input_ascat
+                                .map{ meta, cov, hets -> [ meta, hets ] }
+
+            //input_cov_ascat_status = input_cov_ascat.branch{
+            //    normal: it[0].status == 0
+            //    tumor:  it[0].status == 1
+            //}
+
+            input_hetpileups  = Channel.empty().mix(input_hets_ascat)
+            input_cbs_ascat   = Channel.empty().mix(input_cov_ascat)
+
+        }
+
+        if (params.tools && params.tools.split(',').contains('ascat')) {
+         // TODO: Need to check if the input channel names for hetpileups and CBS match here
+            COV_ASCAT(input_hetpileups, input_cbs_ascat, field_ascat, hets_thresh_ascat,
+                    penalty_ascat, gc_correct_ascat, rebin_width_ascat, from_maf_ascat)
+
+            versions = versions.mix(COV_ASCAT.out.versions)
+            purityploidy = Channel.empty().mix(COV_ASCAT.out.pp)
+        }
+        // TODO: Add a subworkflow to write the output file paths into a csv
+    }
 
 
 }

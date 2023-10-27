@@ -46,6 +46,7 @@
                         "prepare_recalibration",
                         "recalibrate",
                         "sv_calling",
+                        "ascat",
                         "fragcounter",
                         "dryclean",
                         "jabba",
@@ -280,44 +281,6 @@
                     "description": "Provide the PON directory for GRIDSS Somatic filter",
                     "hidden": true,
                     "help_text": "Provide the PON directory for GRIDSS. Must contain both .bed and .bedpe file."
-                },
-                "ascat_min_base_qual": {
-                    "type": "number",
-                    "default": 20,
-                    "fa_icon": "fas fa-greater-than",
-                    "description": "Overwrite Ascat min base quality required for a read to be counted.",
-                    "hidden": true,
-                    "help_text": "For more details see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)"
-                },
-                "ascat_min_counts": {
-                    "type": "number",
-                    "default": 10,
-                    "fa_icon": "fas fa-align-center",
-                    "description": "Overwrite Ascat minimum depth required in the normal for a SNP to be considered.",
-                    "hidden": true,
-                    "help_text": "For more details, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)."
-                },
-                "ascat_min_map_qual": {
-                    "type": "number",
-                    "default": 35,
-                    "fa_icon": "fas fa-balance-scale-left",
-                    "description": "Overwrite Ascat min mapping quality required for a read to be counted.",
-                    "hidden": true,
-                    "help_text": "For more details, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)."
-                },
-                "ascat_ploidy": {
-                    "type": "number",
-                    "fa_icon": "fas fa-bacon",
-                    "help_text": "ASCAT: optional argument to override ASCAT optimization and supply psi parameter (expert parameter, do not adapt unless you know what you are doing). See [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)",
-                    "hidden": true,
-                    "description": "Overwrite ASCAT ploidy."
-                },
-                "ascat_purity": {
-                    "type": "number",
-                    "fa_icon": "fas fa-broom",
-                    "description": "Overwrite ASCAT purity.",
-                    "help_text": "Overwrites ASCAT's `rho_manual` parameter. Expert use only, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf) for details.\nRequires that `--ascat_ploidy` is set.",
-                    "hidden": true
                 }
             } 
         },
@@ -553,6 +516,60 @@
                 }
             }
         },
+        "ascat": {
+            "title": "ASCAT SEG using hetpileups and drycleaned coverages",
+            "type": "object",
+            "description": "Configure genome wide cleaning using Dryclean",
+            "default": "",
+            "fa_icon": "fas fa-toolbox",
+            "properties": {
+                "field_ascat": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "field to use for ascat from coverage, default is ratio",
+                    "hidden": true,
+                    "help_text": "Provide the field from cbs cov"
+                },
+                "hets_thresh_ascat": {
+                    "type": "number",
+                    "default": 0.2,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Significance level for CBS",
+                    "hidden": true,
+                    "help_text": "the significance levels for the test to accept change-points in cbs"
+                },
+                "penalty_ascat": {
+                    "type": "number",
+                    "default": 70,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Significance level for CBS",
+                    "hidden": true,
+                    "help_text": "the significance levels for the test to accept change-points in cbs"
+                },
+                "gc_correct_ascat": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "whether to perform gc correction on coverage",
+                    "hidden": true,
+                    "help_text": "By default it is true and should perform gc corrections"
+                },
+                "rebin_width_ascat": {
+                    "type": "number",
+                    "default": 5e4,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Width of bins to do",
+                    "hidden": true,
+                    "help_text": "The bin size, default is 5e4"
+                },
+                "from_maf_ascat": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "whether to start from MAF stage",
+                    "hidden": true,
+                    "help_text": "By default it is FALSE and should not start from MAF stage"
+                }
+            }
+        },
         "variant_calling": {
             "title": "Variant Calling",
             "type": "object",
@@ -679,6 +696,44 @@
                     "description": "Option for selecting output and emit-mode of Sentieon's Haplotyper.",
                     "help_text": "The option `--sentieon_haplotyper_emit_mode` can be set to the same string values as the Haplotyper's `--emit_mode`. To output both a vcf and a gvcf, specify both a vcf-option (currently, `all`, `confident` and `variant`) and `gvcf`. For example, to obtain a vcf and gvcf one could set `--sentieon_haplotyper_emit_mode` to `variant, gvcf`.",
                     "pattern": "^(all|confident|gvcf|variant|gvcf,all|gvcf,confident|gvcf,variant|all,gvcf|confident,gvcf|variant,gvcf)(?<!,)$"
+                },
+                "ascat_min_base_qual": {
+                    "type": "number",
+                    "default": 20,
+                    "fa_icon": "fas fa-greater-than",
+                    "description": "Overwrite Ascat min base quality required for a read to be counted.",
+                    "hidden": true,
+                    "help_text": "For more details see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)"
+                },
+                "ascat_min_counts": {
+                    "type": "number",
+                    "default": 10,
+                    "fa_icon": "fas fa-align-center",
+                    "description": "Overwrite Ascat minimum depth required in the normal for a SNP to be considered.",
+                    "hidden": true,
+                    "help_text": "For more details, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)."
+                },
+                "ascat_min_map_qual": {
+                    "type": "number",
+                    "default": 35,
+                    "fa_icon": "fas fa-balance-scale-left",
+                    "description": "Overwrite Ascat min mapping quality required for a read to be counted.",
+                    "hidden": true,
+                    "help_text": "For more details, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)."
+                },
+                "ascat_ploidy": {
+                    "type": "number",
+                    "fa_icon": "fas fa-bacon",
+                    "help_text": "ASCAT: optional argument to override ASCAT optimization and supply psi parameter (expert parameter, do not adapt unless you know what you are doing). See [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)",
+                    "hidden": true,
+                    "description": "Overwrite ASCAT ploidy."
+                },
+                "ascat_purity": {
+                    "type": "number",
+                    "fa_icon": "fas fa-broom",
+                    "description": "Overwrite ASCAT purity.",
+                    "help_text": "Overwrites ASCAT's `rho_manual` parameter. Expert use only, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf) for details.\nRequires that `--ascat_ploidy` is set.",
+                    "hidden": true
                 }
             }
         },

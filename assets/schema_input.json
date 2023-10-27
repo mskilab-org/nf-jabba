@@ -177,6 +177,21 @@
                 "format": "file-path",
                 "exists": true
             },
+            "hets": {
+                "errorMessage": "Pileups file and must have extension '.txt'",
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "pattern": "^\\S+\\.txt$"
+                    },
+                    {
+                        "type": "string",
+                        "maxLength": 0
+                    }
+                ],
+                "format": "file-path",
+                "exists": true
+            },
             "vcf": {
                 "errorMessage": "VCF file for reads 1 cannot contain spaces and must have extension '.vcf' or '.vcf.gz'",
                 "anyOf": [
