@@ -20,6 +20,8 @@ process ASCAT_SEG {
     output:
     tuple val(meta), path("*ascat_pp.rds")        , emit: purityploidy, optional:true
     tuple val(meta), path("*ascat_seg.rds")       , emit: segments, optional:true
+    val(purityChannel)                            , emit: purity, optional:true
+    val(ploidyChannel)                            , emit: ploidy, optional:true
     path "versions.yml"                           , emit: versions
 
     when:
@@ -58,7 +60,7 @@ process ASCAT_SEG {
 
     ## find R installation and dryclean exec
     echo "USING LIBRARIES: \$(Rscript -e 'print(.libPaths())')"
-
+    
     RSCRIPT_PATH=\$(if [[ ${workflow.containerEngine} == "singularity" && !task.ext.singularity_pull_docker_container ]]; then echo "./ascat_seg.R"; else echo "\${baseDir}/bin/ascat_seg.R"; fi)
     
     Rscript \$RSCRIPT_PATH       \\
@@ -77,6 +79,12 @@ process ASCAT_SEG {
         ASCAT: ${VERSION}
     END_VERSIONS
 
+    Rscript -e 'rds_data <- readRDS("ascat_pp.rds"); write.table(rds_data$purity, "purity.txt", col.names=FALSE, row.names=FALSE); write.table(rds_data$ploidy, "ploidy.txt", col.names=FALSE, row.names=FALSE)'
+
+    # Emit purity and ploidy as separate channels
+    cat "purity.txt" > purityChannel
+    cat "ploidy.txt" > ploidyChannel
+
     """
 
     stub:
@@ -84,7 +92,8 @@ process ASCAT_SEG {
     def prefix = task.ext.prefix ?: "${meta.id}"
     def VERSION = '2.5.2'                              // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
     """
-    touch sites.txt
+    touch ascat_pp.rds
+    touch ascat_seg.rds
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
