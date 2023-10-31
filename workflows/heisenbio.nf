@@ -327,6 +327,10 @@ gc_correct_ascat            = params.gc_correct_ascat           ?: Channel.empty
 rebin_width_ascat           = params.rebin_width_ascat          ?: Channel.empty()
 from_maf_ascat              = params.from_maf_ascat             ?: Channel.empty()
 
+// CBS
+cnsignif                    = params.cnsignif_cbs               ?: Channel.empty()
+field                       = params.field_cbs                  ?: Channel.empty()
+name                        = params.name_cbs                   ?: Channel.empty()
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
 if (params.snpeff_cache && params.tools && params.tools.contains("snpeff")) {
@@ -440,6 +444,8 @@ include { COV_DRYCLEAN as NORMAL_DRYCLEAN              } from '../subworkflows/l
 
 //ASCAT
 include { COV_ASCAT                                   } from '../subworkflows/local/cov_ascat/main'
+
+include { COV_CBS as CBS                            } from '../subworkflows/local/cbs/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1094,6 +1100,30 @@ workflow HEISENBIO {
         }
 
         // TODO: Add a subworkflow to write the output file paths into a csv
+
+        if (params.tools && params.tools.split(',').contains('cbs')) {
+
+            cov_cbs = normal_dryclean_cov.cross(tumor_dryclean_cov)
+                .map { normal_cov, tumor_cov ->
+                    def meta = [:]
+
+                        meta.id         = "${tumor_cov[0].sample}_vs_${normal_cov[0].sample}".toString()
+                        meta.normal_cov_id  = normal_cov[0].sample
+                        meta.patient    = normal_cov[0].patient
+                        meta.sex        = normal_cov[0].sex
+                        meta.tumor_cov_id   = tumor_cov[0].sample
+
+                        [ meta, normal_cov[1], tumor_cov[1] ]
+                }
+
+            CBS(cov_cbs, cnsignif_cbs, field_cbs, name_cbs)
+
+            versions       = versions.mix(CBS.out.versions)
+            cbs_cov_rds    = Channel.empty().mix(CBS.out.cbs_cov_rds)
+            cbs_seg_rds    = Channel.empty().mix(CBS.out.cbs_seg_rds)
+            cbs_nseg_rds   = Channel.empty().mix(CBS.out.cbs_nseg_rds)
+
+        }
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'ascat']) {
