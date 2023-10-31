@@ -63,7 +63,7 @@ nextflow run mskilab-org/nf-jabba \
 
 ## Credits
 
-mskilab-org/nf-jabba was originally written by Tanubrata Dey, Shihab Dider.
+mskilab-org/nf-jabba was originally written by Tanubrata Dey and Shihab Dider.
 
 We thank the following people for their extensive assistance in the development of this pipeline:
 
