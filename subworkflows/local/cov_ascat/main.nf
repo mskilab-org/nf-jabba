@@ -10,7 +10,7 @@ workflow COV_ASCAT {
     take:
     hetpileups                                        // channel: [mandatory] [ meta, hets ]
     cbs_cov                                           // channel: [mandatory] [ meta, cbs_cov ]
-    field                                             // channel: [mandatory] "foreground" for dryclean/ "ratio" 
+    field                                             // channel: [mandatory] "foreground" for dryclean/ "ratio"
     hets_threshold                                    // channel: cutoff for hetpileups; default=0.2
     penalty                                           // channel: penalty for ASCAT; default=70
     gc_correct                                        // channel: perform GC correction? Default=TRUE

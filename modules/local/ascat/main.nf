@@ -10,7 +10,7 @@ process ASCAT_SEG {
     input:
     tuple val(meta), path(hets)                                      // channel: [mandatory] [ meta, hets ]
     tuple val(meta), path(cbs_cov)                                   // channel: [mandatory] [ meta, cbs_cov ]
-    val(field)                                                       // channel: [mandatory] "foreground" for dryclean/ "ratio" 
+    val(field)                                                       // channel: [mandatory] "foreground" for dryclean/ "ratio"
     val(hets_thresh)                                                 // channel: cutoff for hetpileups; default=0.2
     val(penalty)                                                     // channel: penalty for ASCAT; default=70
     val(gc)                                                          // channel: perform GC correction? Default=TRUE
@@ -60,9 +60,9 @@ process ASCAT_SEG {
 
     ## find R installation and dryclean exec
     echo "USING LIBRARIES: \$(Rscript -e 'print(.libPaths())')"
-    
+
     RSCRIPT_PATH=\$(if [[ ${workflow.containerEngine} == "singularity" && !task.ext.singularity_pull_docker_container ]]; then echo "./ascat_seg.R"; else echo "\${baseDir}/bin/ascat_seg.R"; fi)
-    
+
     Rscript \$RSCRIPT_PATH       \\
     --id          ${meta.id}     \\
     --variants    ${hets}        \\

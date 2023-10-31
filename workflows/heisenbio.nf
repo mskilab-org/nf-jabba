@@ -50,6 +50,7 @@ def checkPathParamList = [
     params.pon_tbi,
     params.gcmapdir_frag,
     params.pon_dryclean
+    params.blacklist_coverage
 ]
 // only check if we are using the tools
 if (params.tools && params.tools.contains("snpeff")) checkPathParamList.add(params.snpeff_cache)
@@ -172,7 +173,7 @@ input_sample = ch_from_samplesheet
                 }
             // hetpileups
             } else if (cov && hets) {
-                meta = meta + [id: meta.sample, data_type: 'cov']
+                meta = meta + [id: meta.sample, data_type: ['cov', 'hets']]
 
                 if (params.step == 'ascat') return [ meta - meta.subMap('lane'), cov, hets ]
                 else {
@@ -180,9 +181,9 @@ input_sample = ch_from_samplesheet
                 }
                 // jabba
             } else if (cov && vcf) {
-                meta = meta + [id: meta.sample, data_type: 'cov']
+                meta = meta + [id: meta.sample, data_type: ['vcf', 'cov']]
 
-                if (params.step == 'jabba') return [ meta - meta.subMap('lane'), cov, vcf ]
+                if (params.step == 'jabba') return [ meta - meta.subMap('lane'), vcf, cov]
                 else {
                     error("Samplesheet contains cov .rds and vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
@@ -194,15 +195,7 @@ input_sample = ch_from_samplesheet
                 else {
                     error("Samplesheet contains cov .rds files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
-                // annotation
-            } else if (vcf) {
-                meta = meta + [id: meta.sample, data_type: 'vcf', variantcaller: variantcaller ?: '']
-
-                if (params.step == 'annotate') return [ meta - meta.subMap('lane'), vcf ]
-                else {
-                    error("Samplesheet contains vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
-                }
-            } else {
+        } else {
                 error("Missing or unknown field in csv file header. Please check your samplesheet")
             }
         }
@@ -286,6 +279,10 @@ pon_dryclean      = params.pon_dryclean      ? Channel.fromPath(params.pon_drycl
 blacklist_path_dryclean      = params.blacklist_path_dryclean      ? Channel.fromPath(params.blacklist_path_dryclean).collect()     : Channel.empty()   // This is the path to the blacklist for Dryclean (optional).
 germline_file_dryclean      = params.germline_file_dryclean      ? Channel.fromPath(params.germline_file_dryclean).collect()     : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
 
+// JaBbA
+blacklist_junctions_jabba		= params.blacklist_junctions_jabba        ? Channel.fromPath(params.blacklist_junctions_jabba).collect() : Channel.empty()
+blacklist_coverage_jabba		= params.blacklist_coverage_jabba		  ? Channel.fromPath(params.blacklist_coverage_jabba).collect() : Channel.empty()
+
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
 ascat_genome       = params.ascat_genome       ?: Channel.empty()
 dbsnp_vqsr         = params.dbsnp_vqsr         ? Channel.value(params.dbsnp_vqsr) : Channel.empty()
@@ -331,6 +328,37 @@ from_maf_ascat              = params.from_maf_ascat             ?: Channel.empty
 cnsignif                    = params.cnsignif_cbs               ?: Channel.empty()
 field                       = params.field_cbs                  ?: Channel.empty()
 name                        = params.name_cbs                   ?: Channel.empty()
+
+// JaBbA
+geno_jabba					    = params.geno_jabba			            ?: Channel.empty()
+indel_jabba					    = params.indel_jabba			        ?: Channel.empty()
+tfield_jabba					= params.tfield_jabba			        ?: Channel.empty()
+iter_jabba					    = params.iter_jabba			            ?: Channel.empty()
+rescue_window_jabba				= params.rescue_window_jabba			?: Channel.empty()
+rescue_all_jabba				= params.rescue_all_jabba			    ?: Channel.empty()
+nudgebalanced_jabba				= params.nudgebalanced_jabba			?: Channel.empty()
+edgenudge_jabba					= params.edgenudge_jabba			    ?: Channel.empty()
+strict_jabba					= params.strict_jabba			        ?: Channel.empty()
+allin_jabba					    = params.allin_jabba			        ?: Channel.empty()
+field_jabba					    = params.field_jabba			        ?: Channel.empty()
+maxna_jabba					    = params.maxna_jabba			        ?: Channel.empty()
+purity_jabba					= params.purity_jabba                   ?: Channel.empty()
+pp_method_jabba					= params.pp_method_jabba                ?: Channel.empty()
+cnsignif_jabba					= params.cnsignif_jabba                 ?: Channel.empty()
+slack_jabba					    = params.slack_jabba                    ?: Channel.empty()
+linear_jabba					= params.linear_jabba                   ?: Channel.empty()
+tilim_jabba					    = params.tilim_jabba                    ?: Channel.empty()
+epgap_jabba					    = params.epgap_jabba                    ?: Channel.empty()
+outdir_jabba					= params.outdir_jabba                   ?: Channel.empty()
+name_jabba					    = params.name_jabba			            ?: Channel.empty()
+fix_thres_jabba					= params.fix_thres_jabba			    ?: Channel.empty()
+lp_jabba					    = params.lp_jabba			            ?: Channel.empty()
+ism_jabba					    = params.ism_jabba			            ?: Channel.empty()
+filter_loose_jabba				= params.filter_loose_jabba			    ?: Channel.empty()
+gurobi_jabba					= params.gurobi_jabba			        ?: Channel.empty()
+nonintegral_jabba				= params.nonintegral_jabba			    ?: Channel.empty()
+verbose_jabba					= params.verbose_jabba			        ?: Channel.empty()
+help_jabba					    = params.help_jabba			            ?: Channel.empty()
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
 if (params.snpeff_cache && params.tools && params.tools.contains("snpeff")) {
@@ -447,6 +475,7 @@ include { COV_ASCAT                                   } from '../subworkflows/lo
 
 include { COV_CBS as CBS                            } from '../subworkflows/local/cbs/main'
 
+include { COV_VCF_JABBA as JABBA         } from '../subworkflows/local/jabba/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -954,7 +983,8 @@ workflow HEISENBIO {
 
             vcf_from_sv_calling = Channel.empty()
             vcf_from_sv_calling = vcf_from_sv_calling.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
-
+            unfiltered_som_sv = Channel.empty()
+            unfiltered_som_sv = unfiltered_som_sv.mix(BAM_SV_CALLING.out.unfiltered_som_sv)
         }
 
         if (params.tools && params.tools.split(',').contains('gridss')) {
@@ -1143,17 +1173,38 @@ workflow HEISENBIO {
         }
 
         if (params.tools && params.tools.split(',').contains('ascat')) {
-         // TODO: Need to check if the input channel names for hetpileups and CBS match here
             COV_ASCAT(input_hetpileups, input_dryclean_ascat, field_ascat, hets_thresh_ascat,
                     penalty_ascat, gc_correct_ascat, rebin_width_ascat, from_maf_ascat)
 
             versions = versions.mix(COV_ASCAT.out.versions)
             purityploidy = Channel.empty().mix(COV_ASCAT.out.pp)
+            purity = Channel.empty().mix(COV_ASCAT.out.purity)
+            ploidy = Channel.empty().mix(COV_ASCAT.out.ploidy)
         }
         // TODO: Add a subworkflow to write the output file paths into a csv
     }
 
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'jabba']) {
+        ploidy_jabba = ploidy ? ploidy : ploidy_jabba
+        ploidy_jabba = [ jabba_meta, ploidy_jabba ]
 
+        JABBA(dryclean_cov, vcf_from_sv_calling, unfiltered_som_sv, ploidy_jabba,
+        sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds, field_jabba,
+        tfield_jabba, slack_jabba, purity_jabba, tilim_jabba, epgap_jabba,
+        pp_method_jabba, maxna_jabba, blacklist_coverage_jabba,
+        blacklist_junctions_jabba, iter_jabba, indel_jabba, cnsignif_jabba,
+        lp_jabba, ism_jabba, fix_thres_jabba, filter_loose_jabba, gurobi_jabba)
+
+        jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
+        jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
+        jabba_vcf           = Channel.empty().mix(JABBA.out.jabba_vcf)
+        jabba_raw_rds       = Channel.empty().mix(JABBA.out.jabba_raw_rds)
+        opti                = Channel.empty().mix(JABBA.out.opti)
+        jabba_seg           = Channel.empty().mix(JABBA.out.jabba_seg)
+        karyograph          = Channel.empty().mix(JABBA.out.karyograph)
+        versions = versions.mix(JABBA.out.versions)
+        }
+    }
 }
 
 

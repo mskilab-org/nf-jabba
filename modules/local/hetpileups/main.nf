@@ -15,7 +15,7 @@ process HETPILEUPS {
 
     output:
     path "versions.yml"                                     , emit: versions
-    path "sites.txt"                                        , emit: het_pileups_wgs
+    tuple val(meta), path("*sites.txt")                     , emit: het_pileups_wgs
 
     when:
     task.ext.when == null || task.ext.when
