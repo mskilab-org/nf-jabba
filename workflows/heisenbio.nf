@@ -64,6 +64,9 @@ if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(para
 if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.blacklist_gridss)
 if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.pon_gridss)
 
+if (params.tools && params.tools.contains("hetpileups"))  checkPathParamList.add(params.hapmap_sites)
+
+
 // Checking inputs if running fragCounter
 //if (params.tools && params.tools.contains("fragcounter"))  checkPathParamList.add(params.gcmapdir_frag)
 
@@ -248,46 +251,63 @@ if ((params.download_cache) && (params.snpeff_cache || params.vep_cache)) {
 */
 
 // Initialize file channels based on params, defined in the params.genomes[params.genome] scope
-ascat_alleles             = params.ascat_alleles              ? Channel.fromPath(params.ascat_alleles).collect()            : Channel.empty()
-ascat_loci                = params.ascat_loci                 ? Channel.fromPath(params.ascat_loci).collect()               : Channel.empty()
-ascat_loci_gc             = params.ascat_loci_gc              ? Channel.fromPath(params.ascat_loci_gc).collect()            : Channel.value([])
-ascat_loci_rt             = params.ascat_loci_rt              ? Channel.fromPath(params.ascat_loci_rt).collect()            : Channel.value([])
-cf_chrom_len              = params.cf_chrom_len               ? Channel.fromPath(params.cf_chrom_len).collect()             : []
-chr_dir                   = params.chr_dir                    ? Channel.fromPath(params.chr_dir).collect()                  : Channel.value([])
-dbsnp                     = params.dbsnp                      ? Channel.fromPath(params.dbsnp).collect()                    : Channel.value([])
-fasta                     = params.fasta                      ? Channel.fromPath(params.fasta).first()                      : Channel.empty()
-fasta_fai                 = params.fasta_fai                  ? Channel.fromPath(params.fasta_fai).collect()                : Channel.empty()
-germline_resource         = params.germline_resource          ? Channel.fromPath(params.germline_resource).collect()        : Channel.value([]) // Mutect2 does not require a germline resource, so set to optional input
-known_indels              = params.known_indels               ? Channel.fromPath(params.known_indels).collect()             : Channel.value([])
-known_snps                = params.known_snps                 ? Channel.fromPath(params.known_snps).collect()               : Channel.value([])
-mappability               = params.mappability                ? Channel.fromPath(params.mappability).collect()              : Channel.value([])
-pon                       = params.pon                        ? Channel.fromPath(params.pon).collect()                      : Channel.value([]) // PON is optional for Mutect2 (but highly recommended)
-indel_mask                = params.indel_mask                 ? Channel.fromPath(params.indel_mask).collect()               : Channel.empty()   // This is the indel mask for SVABA
-germ_sv_db                = params.germ_sv_db                 ? Channel.fromPath(params.germ_sv_db).collect()               : Channel.empty()   // This is the germline SV mask for Svaba
-simple_seq_db             = params.simple_seq_db              ? Channel.fromPath(params.simple_seq_db).collect()            : Channel.empty()   // This is the file containing sites of simple DNA that can confuse the contig re-alignment for SVABA
-blacklist_gridss          = params.blacklist_gridss           ? Channel.fromPath(params.blacklist_gridss).collect()         : Channel.empty()   // This is the mask for gridss SV calls
-pon_gridss                = params.pon_gridss                 ? Channel.fromPath(params.pon_gridss).collect()               : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
-gcmapdir_frag             = params.gcmapdir_frag              ? Channel.fromPath(params.gcmapdir_frag).collect()            : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
-pon_dryclean              = params.pon_dryclean               ? Channel.fromPath(params.pon_dryclean).collect()             : Channel.empty()   // This is the path to the PON for Dryclean.
-blacklist_path_dryclean   = params.blacklist_path_dryclean    ? Channel.fromPath(params.blacklist_path_dryclean).collect()  : Channel.empty()   // This is the path to the blacklist for Dryclean (optional).
-germline_file_dryclean    = params.germline_file_dryclean     ? Channel.fromPath(params.germline_file_dryclean).collect()   : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
-blacklist_cov_jab         = params.blacklist_cov_jab          ? Channel.fromPath(params.blacklist_cov_jab).collect()        : Channel.empty()   // JaBbA
+ascat_alleles      = params.ascat_alleles      ? Channel.fromPath(params.ascat_alleles).collect()     : Channel.empty()
+ascat_loci         = params.ascat_loci         ? Channel.fromPath(params.ascat_loci).collect()        : Channel.empty()
+ascat_loci_gc      = params.ascat_loci_gc      ? Channel.fromPath(params.ascat_loci_gc).collect()     : Channel.value([])
+ascat_loci_rt      = params.ascat_loci_rt      ? Channel.fromPath(params.ascat_loci_rt).collect()     : Channel.value([])
+cf_chrom_len       = params.cf_chrom_len       ? Channel.fromPath(params.cf_chrom_len).collect()      : []
+chr_dir            = params.chr_dir            ? Channel.fromPath(params.chr_dir).collect()           : Channel.value([])
+dbsnp              = params.dbsnp              ? Channel.fromPath(params.dbsnp).collect()             : Channel.value([])
+fasta              = params.fasta              ? Channel.fromPath(params.fasta).first()               : Channel.empty()
+fasta_fai          = params.fasta_fai          ? Channel.fromPath(params.fasta_fai).collect()         : Channel.empty()
+germline_resource  = params.germline_resource  ? Channel.fromPath(params.germline_resource).collect() : Channel.value([]) // Mutect2 does not require a germline resource, so set to optional input
+known_indels       = params.known_indels       ? Channel.fromPath(params.known_indels).collect()      : Channel.value([])
+known_snps         = params.known_snps         ? Channel.fromPath(params.known_snps).collect()        : Channel.value([])
+mappability        = params.mappability        ? Channel.fromPath(params.mappability).collect()       : Channel.value([])
+pon                = params.pon                ? Channel.fromPath(params.pon).collect()               : Channel.value([]) // PON is optional for Mutect2 (but highly recommended)
+
+// SVABA
+indel_mask         = params.indel_mask         ? Channel.fromPath(params.indel_mask).collect()        : Channel.empty()   // This is the indel mask for SVABA
+germ_sv_db         = params.germ_sv_db         ? Channel.fromPath(params.germ_sv_db).collect()        : Channel.empty()   // This is the germline SV mask for Svaba
+simple_seq_db      = params.simple_seq_db      ? Channel.fromPath(params.simple_seq_db).collect()     : Channel.empty()   // This is the file containing sites of simple DNA that can confuse the contig re-alignment for SVABA
+
+// GRIDSS
+blacklist_gridss   = params.blacklist_gridss   ? Channel.fromPath(params.blacklist_gridss).collect()  : Channel.empty()   // This is the mask for gridss SV calls
+pon_gridss         = params.pon_gridss         ? Channel.fromPath(params.pon_gridss).collect()        : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
+
+// FragCounter
+gcmapdir_frag      = params.gcmapdir_frag      ? Channel.fromPath(params.gcmapdir_frag).collect()     : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
+
+// HetPileups
+hapmap_sites = params.hapmap_sites          ? Channel.fromPath(params.hapmap_sites).collect() : Channel.empty()
+
+// Dryclean
+pon_dryclean      = params.pon_dryclean      ? Channel.fromPath(params.pon_dryclean).collect()     : Channel.empty()   // This is the path to the PON for Dryclean.
+blacklist_path_dryclean      = params.blacklist_path_dryclean      ? Channel.fromPath(params.blacklist_path_dryclean).collect()     : Channel.empty()   // This is the path to the blacklist for Dryclean (optional).
+germline_file_dryclean      = params.germline_file_dryclean      ? Channel.fromPath(params.germline_file_dryclean).collect()     : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
 
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
-ascat_genome               = params.ascat_genome                ?: Channel.empty()
-dbsnp_vqsr                 = params.dbsnp_vqsr                  ?  Channel.value(params.dbsnp_vqsr)                         : Channel.empty()
-known_indels_vqsr          = params.known_indels_vqsr           ?  Channel.value(params.known_indels_vqsr)                  : Channel.empty()
-known_snps_vqsr            = params.known_snps_vqsr             ?  Channel.value(params.known_snps_vqsr)                    : Channel.empty()
-snpeff_db                  = params.snpeff_db                   ?: Channel.empty()
-vep_cache_version          = params.vep_cache_version           ?: Channel.empty()
-vep_genome                 = params.vep_genome                  ?: Channel.empty()
-vep_species                = params.vep_species                 ?: Channel.empty()
-error_rate                 = params.error_rate                  ?: Channel.empty()                                                         // For SVABA
-windowsize_frag            = params.windowsize_frag             ?: Channel.empty()                                                         // For fragCounter
-minmapq_frag               = params.minmapq_frag                ?: Channel.empty()                                                         // For fragCounter
-midpoint_frag              = params.midpoint_frag               ?: Channel.empty()                                                         // For fragCounter
-paired_frag                = params.paired_frag                 ?: Channel.empty()                                                         // For fragCounter
-exome_frag                 = params.exome_frag                  ?: Channel.empty()                                                         // For fragCounter
+ascat_genome       = params.ascat_genome       ?: Channel.empty()
+dbsnp_vqsr         = params.dbsnp_vqsr         ? Channel.value(params.dbsnp_vqsr) : Channel.empty()
+known_indels_vqsr  = params.known_indels_vqsr  ? Channel.value(params.known_indels_vqsr) : Channel.empty()
+known_snps_vqsr    = params.known_snps_vqsr    ? Channel.value(params.known_snps_vqsr) : Channel.empty()
+snpeff_db          = params.snpeff_db          ?: Channel.empty()
+vep_cache_version  = params.vep_cache_version  ?: Channel.empty()
+vep_genome         = params.vep_genome         ?: Channel.empty()
+vep_species        = params.vep_species        ?: Channel.empty()
+error_rate         = params.error_rate         ?: Channel.empty()                                                         // For SVABA
+
+// Hetpileups
+filter              = params.filter         ?: Channel.empty()
+max_depth           = params.max_depth      ?: Channel.empty()
+
+// FragCounter
+windowsize_frag    = params.windowsize_frag    ?: Channel.empty()                                                         // For fragCounter
+minmapq_frag       = params.minmapq_frag       ?: Channel.empty()                                                         // For fragCounter
+midpoint_frag      = params.midpoint_frag      ?: Channel.empty()                                                         // For fragCounter
+paired_frag        = params.paired_frag        ?: Channel.empty()                                                         // For fragCounter
+exome_frag         = params.exome_frag         ?: Channel.empty()                                                         // For fragCounter
+
 // Dryclean
 centered_dryclean           = params.centered_dryclean          ?: Channel.empty()
 cbs_dryclean                = params.cbs_dryclean               ?: Channel.empty()
@@ -298,6 +318,7 @@ germline_filter_dryclean    = params.germline_filter_dryclean   ?: Channel.empty
 human_dryclean              = params.human_dryclean             ?: Channel.empty()
 field_dryclean              = params.field_dryclean             ?: Channel.empty()
 build_dryclean              = params.build_dryclean             ?: Channel.empty()
+
 // ASCAT_seg
 field_ascat                 = params.field_ascat                ?: Channel.empty()
 hets_thresh_ascat           = params.hets_thresh_ascat          ?: Channel.empty()
@@ -344,6 +365,7 @@ include { CHANNEL_MARKDUPLICATES_CREATE_CSV           } from '../subworkflows/lo
 include { CHANNEL_BASERECALIBRATOR_CREATE_CSV         } from '../subworkflows/local/channel_baserecalibrator_create_csv/main'
 include { CHANNEL_APPLYBQSR_CREATE_CSV                } from '../subworkflows/local/channel_applybqsr_create_csv/main'
 include { CHANNEL_SVCALLING_CREATE_CSV                } from '../subworkflows/local/channel_svcalling_create_csv/main'
+include { CHANNEL_HETPILEUPS_CREATE_CSV               } from '../subworkflows/local/channel_hetpileups_create_csv/main'
 
 // Download annotation cache if needed
 include { PREPARE_CACHE                               } from '../subworkflows/local/prepare_cache/main'
@@ -404,6 +426,9 @@ include { BAM_SVCALLING_SVABA                         } from '../subworkflows/lo
 //GRIDSS
 include { BAM_SVCALLING_GRIDSS                        } from '../subworkflows/local/bam_svcalling_gridss/main'
 include { BAM_SVCALLING_GRIDSS_SOMATIC                } from '../subworkflows/local/bam_svcalling_gridss/main'
+
+// HETPILEUPS
+include { BAM_HETPILEUPS as HETPILEUPS         } from '../subworkflows/local/hetpileups/main'
 
 // fragCounter
 include { BAM_FRAGCOUNTER as TUMOR_FRAGCOUNTER         } from '../subworkflows/local/bam_fragCounter/main'
@@ -944,8 +969,7 @@ workflow HEISENBIO {
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
-        
-        cram_fragcounter_calling = cram_sv_calling
+        cram_coverage_calling = cram_sv_calling
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter']) {
@@ -970,35 +994,70 @@ workflow HEISENBIO {
             tumor:  it[0].status == 1
         }
 
-        //CRAM_TO_BAM_NORMAL(cram_sv_calling_status.normal, fasta, fasta_fai)
-        //versions = versions.mix(CRAM_TO_BAM_NORMAL.out.versions)
-        //normal_samples = CRAM_TO_BAM_NORMAL.out.alignment_index
-        //normal_samples.view()
-
-        //CRAM_TO_BAM_TUMOR(cram_sv_calling_status.tumor, fasta, fasta_fai)
-        //versions = versions.mix(CRAM_TO_BAM_TUMOR.out.versions)
-        //tumor_samples  = CRAM_TO_BAM_TUMOR.out.alignment_index
-        //tumor_samples.view()
-        if (params.tools && params.tools.split(',').contains('svaba')) {
-            // Need to run fragCounter on both tumor and normal samples
+        if (params.tools && params.tools.split(',').contains('fragcounter')) {
             NORMAL_FRAGCOUNTER(cram_fragcounter_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
-
-            versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
             normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
-            //normal_frag_cov.view()
-            //NORMAL_FRAGCOUNTER.out.corrected_bw.view()
 
             TUMOR_FRAGCOUNTER(cram_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
-
-            versions = versions.mix(TUMOR_FRAGCOUNTER.out.versions)
             tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.fragcounter_cov)
-            //tumor_frag_cov.view()
+
+            // Only need one versions because its just one program (fragcounter)
+            versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
         }
 
             // TODO: Add a subworkflow to write the output file paths into a csv
     }
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'dryclean']) {
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups']) {
+
+        bam_hetpileups_calling = input_sample
+
+        // getting the tumor and normal cram files separated
+        bam_hetpileups_status = bam_hetpileups_calling.branch{
+            normal: it[0].status == 0
+            tumor:  it[0].status == 1
+        }
+
+
+        // All normal samples
+        bam_hetpileups_normal_to_cross = bam_hetpileups_status.normal.map{ meta, bam, bai -> [ meta.patient, meta, bam, bai ] }
+
+        // All tumor samples
+        bam_hetpileups_tumor_to_cross = bam_hetpileups_status.tumor.map{ meta, bam, bai -> [ meta.patient, meta, bam, bai ] }
+
+        // Crossing the normal and tumor samples to create tumor and normal pairs
+        bam_hetpileups_pair = bam_hetpileups_normal_to_cross.cross(bam_hetpileups_tumor_to_cross)
+            .map { normal, tumor ->
+                def meta = [:]
+
+                meta.id         = "${tumor[1].sample}_vs_${normal[1].sample}".toString()
+                meta.normal_id  = normal[1].sample
+                meta.patient    = normal[0]
+                meta.sex        = normal[1].sex
+                meta.tumor_id   = tumor[1].sample
+
+                [ meta, normal[2], tumor[2] ]
+        }
+
+        if (params.tools && params.tools.split(',').contains('hetpileups')) {
+            BAM_HETPILEUPS(bam_hetpileups_pair, filter, max_depth, hapmap_sites)
+
+            versions = versions.mix(BAM_HETPILEUPS.out.versions)
+
+            sites_from_het_pileups_wgs = Channel.empty()
+            sites_from_het_pileups_wgs = sites_from_het_pileups_wgs.mix(BAM_HETPILEUPS.out.het_pileups_wgs)
+
+            // Commenting out because not necessary for running from this step
+            // CSV should be written for the file actually out out, either bam or BAM
+            //csv_hetpileups = Channel.empty().mix(BAM_HETPILEUPS.out.het_pileups_wgs)
+
+            // Create CSV to restart from this step
+            //CHANNEL_HETPILEUPS_CREATE_CSV(csv_hetpileups)
+        }
+
+    }
+
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean']) {
 
         if (params.step == 'dryclean') {
             input_dryclean = input_sample
@@ -1013,15 +1072,13 @@ workflow HEISENBIO {
             normal_frag_cov = Channel.empty().mix(input_dryclean_status.normal)
 
         }
-        if (params.tools && params.tools.split(',').contains('dryclean')) {     
+        if (params.tools && params.tools.split(',').contains('dryclean')) {
             // Dryclean for both tumor & normal
             TUMOR_DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
                     cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
                     blacklist_dryclean, blacklist_path_dryclean,
                     germline_filter_dryclean, germline_file_dryclean, human_dryclean,
                     field_dryclean, build_dryclean)
-
-            versions = versions.mix(TUMOR_DRYCLEAN.out.versions)
             tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
 
 
@@ -1030,15 +1087,16 @@ workflow HEISENBIO {
                     blacklist_dryclean, blacklist_path_dryclean,
                     germline_filter_dryclean, germline_file_dryclean, human_dryclean,
                     field_dryclean, build_dryclean)
-
-            versions = versions.mix(NORMAL_DRYCLEAN.out.versions)
             normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
+
+            // Only need one versions because it's one program (dryclean)
+            versions = versions.mix(TUMOR_DRYCLEAN.out.versions)
         }
 
         // TODO: Add a subworkflow to write the output file paths into a csv
-    } 
+    }
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'dryclean', 'ascat']) {
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'ascat']) {
         if (params.step == 'ascat') {
             input_ascat = input_sample
                                 .map{ meta, cov, hets -> [ meta + [data_type: "cov"], cov, hets ] }
@@ -1049,19 +1107,14 @@ workflow HEISENBIO {
             input_hets_ascat = input_ascat
                                 .map{ meta, cov, hets -> [ meta, hets ] }
 
-            //input_cov_ascat_status = input_cov_ascat.branch{
-            //    normal: it[0].status == 0
-            //    tumor:  it[0].status == 1
-            //}
-
             input_hetpileups  = Channel.empty().mix(input_hets_ascat)
-            input_cbs_ascat   = Channel.empty().mix(input_cov_ascat)
+            input_dryclean_ascat   = Channel.empty().mix(input_cov_ascat)
 
         }
 
         if (params.tools && params.tools.split(',').contains('ascat')) {
          // TODO: Need to check if the input channel names for hetpileups and CBS match here
-            COV_ASCAT(input_hetpileups, input_cbs_ascat, field_ascat, hets_thresh_ascat,
+            COV_ASCAT(input_hetpileups, input_dryclean_ascat, field_ascat, hets_thresh_ascat,
                     penalty_ascat, gc_correct_ascat, rebin_width_ascat, from_maf_ascat)
 
             versions = versions.mix(COV_ASCAT.out.versions)

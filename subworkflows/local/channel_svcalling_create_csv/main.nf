@@ -20,8 +20,8 @@ workflow CHANNEL_SVCALLING_CREATE_CSV {
                 ["svaba.csv", "patient,sample,sv_caller,vcf\n${patient},${sample},${sv_caller},${vcf}\n"]
 
             }
-        } 
-        
+        }
+
         if (tools && (tools.split(',').contains('gridss'))) {
 
             // Creating csv files to restart from this step
