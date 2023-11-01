@@ -58,7 +58,7 @@ params.pon_gridss            = WorkflowMain.getGenomeAttribute(params, 'pon_grid
 params.gcmapdir_frag         = WorkflowMain.getGenomeAttribute(params, 'gcmapdir_frag')
 params.hapmap_sites          = WorkflowMain.getGenomeAttribute(params, 'hapmap_sites')
 params.pon_dryclean          = WorkflowMain.getGenomeAttribute(params, 'pon_dryclean')
-params.blacklist_cov_jab     = WorkflowMain.getGenomeAttribute(params, 'blacklist_cov_jab')
+params.blacklist_coverage_jabba     = WorkflowMain.getGenomeAttribute(params, 'blacklist_coverage_jabba')
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

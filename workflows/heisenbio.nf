@@ -272,7 +272,7 @@ pon_gridss         = params.pon_gridss         ? Channel.fromPath(params.pon_gri
 gcmapdir_frag      = params.gcmapdir_frag      ? Channel.fromPath(params.gcmapdir_frag).collect()     : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
 
 // HetPileups
-hapmap_sites = params.hapmap_sites          ? Channel.fromPath(params.hapmap_sites).collect() : Channel.empty()
+hapmap_sites       = params.hapmap_sites       ? Channel.fromPath(params.hapmap_sites).collect()      : Channel.empty()
 
 // Dryclean
 pon_dryclean      = params.pon_dryclean      ? Channel.fromPath(params.pon_dryclean).collect()     : Channel.empty()   // This is the path to the PON for Dryclean.
@@ -325,9 +325,9 @@ rebin_width_ascat           = params.rebin_width_ascat          ?: Channel.empty
 from_maf_ascat              = params.from_maf_ascat             ?: Channel.empty()
 
 // CBS
-cnsignif                    = params.cnsignif_cbs               ?: Channel.empty()
-field                       = params.field_cbs                  ?: Channel.empty()
-name                        = params.name_cbs                   ?: Channel.empty()
+cnsignif_cbs                    = params.cnsignif_cbs               ?: Channel.empty()
+field_cbs                       = params.field_cbs                  ?: Channel.empty()
+name_cbs                        = params.name_cbs                   ?: Channel.empty()
 
 // JaBbA
 geno_jabba					    = params.geno_jabba			            ?: Channel.empty()
@@ -349,8 +349,6 @@ slack_jabba					    = params.slack_jabba                    ?: Channel.empty()
 linear_jabba					= params.linear_jabba                   ?: Channel.empty()
 tilim_jabba					    = params.tilim_jabba                    ?: Channel.empty()
 epgap_jabba					    = params.epgap_jabba                    ?: Channel.empty()
-outdir_jabba					= params.outdir_jabba                   ?: Channel.empty()
-name_jabba					    = params.name_jabba			            ?: Channel.empty()
 fix_thres_jabba					= params.fix_thres_jabba			    ?: Channel.empty()
 lp_jabba					    = params.lp_jabba			            ?: Channel.empty()
 ism_jabba					    = params.ism_jabba			            ?: Channel.empty()
@@ -1046,14 +1044,13 @@ workflow HEISENBIO {
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups']) {
 
-        bam_hetpileups_calling = input_sample
+        bam_hetpileups_calling = input_sample                // Will this work if someone starts from fastq files?
 
         // getting the tumor and normal cram files separated
         bam_hetpileups_status = bam_hetpileups_calling.branch{
             normal: it[0].status == 0
             tumor:  it[0].status == 1
         }
-
 
         // All normal samples
         bam_hetpileups_normal_to_cross = bam_hetpileups_status.normal.map{ meta, bam, bai -> [ meta.patient, meta, bam, bai ] }
@@ -1132,16 +1129,25 @@ workflow HEISENBIO {
         // TODO: Add a subworkflow to write the output file paths into a csv
 
         if (params.tools && params.tools.split(',').contains('cbs')) {
+            
+            // All normal samples
+            normal_dryclean_cov_to_cross = normal_dryclean_cov.map { tuple ->
+                                                                def (meta, cov) = tuple
+                                                                [meta.patient, meta, cov] }
+            // All tumor samples
+            tumor_dryclean_cov_to_cross = tumor_dryclean_cov.map { tuple ->
+                                                                def (meta, cov) = tuple
+                                                                [meta.patient, meta, cov] }
 
-            cov_cbs = normal_dryclean_cov.cross(tumor_dryclean_cov)
+            cov_cbs = normal_dryclean_cov_to_cross.cross(tumor_dryclean_cov_to_cross)
                 .map { normal_cov, tumor_cov ->
                     def meta = [:]
 
-                        meta.id         = "${tumor_cov[0].sample}_vs_${normal_cov[0].sample}".toString()
-                        meta.normal_cov_id  = normal_cov[0].sample
-                        meta.patient    = normal_cov[0].patient
-                        meta.sex        = normal_cov[0].sex
-                        meta.tumor_cov_id   = tumor_cov[0].sample
+                        meta.id             = "${tumor_cov[0].sample}_vs_${normal_cov[0].sample}".toString()
+                        meta.normal_cov_id  = normal_cov[1].sample
+                        meta.patient        = normal_cov[0]
+                        meta.sex            = normal_cov[1].sex
+                        meta.tumor_cov_id   = tumor_cov[1].sample
 
                         [ meta, normal_cov[1], tumor_cov[1] ]
                 }
@@ -1203,7 +1209,7 @@ workflow HEISENBIO {
         jabba_seg           = Channel.empty().mix(JABBA.out.jabba_seg)
         karyograph          = Channel.empty().mix(JABBA.out.karyograph)
         versions = versions.mix(JABBA.out.versions)
-        }
+        
     }
 }
 

@@ -49,6 +49,7 @@
                         "ascat",
                         "fragcounter",
                         "dryclean",
+                        "hetpileups",
                         "jabba",
                         "variant_calling",
                         "annotate"
@@ -105,7 +106,7 @@
                     "fa_icon": "fas fa-toolbox",
                     "description": "Tools to use for duplicate marking, variant calling and/or for annotation.",
                     "help_text": "Multiple tools separated with commas.\n\n**Variant Calling:**\n\nGermline variant calling can currently be performed with the following variant callers:\n- SNPs/Indels: DeepVariant, FreeBayes, GATK HaplotypeCaller, mpileup, Sentieon Haplotyper, Strelka\n- Structural Variants: Manta, TIDDIT\n- Copy-number: CNVKit\n\nTumor-only somatic variant calling can currently be performed with the following variant callers:\n- SNPs/Indels: FreeBayes, mpileup, Mutect2, Strelka\n- Structural Variants: Manta, TIDDIT\n- Copy-number: CNVKit, ControlFREEC\n\nSomatic variant calling can currently only be performed with the following variant callers:\n- SNPs/Indels: FreeBayes, Mutect2, Strelka2\n- Structural variants: Manta, TIDDIT\n- Copy-Number: ASCAT, CNVKit, Control-FREEC\n- Microsatellite Instability: MSIsensorpro\n\n> **NB** Mutect2 for somatic variant calling cannot be combined with `--no_intervals`\n\n**Annotation:**\n \n- snpEff, VEP, merge (both consecutively).\n\n> **NB** As Sarek will use bgzip and tabix to compress and index VCF files annotated, it expects VCF files to be sorted when starting from `--step annotate`.",
-                    "pattern": "^((ascat|cnvkit|controlfreec|deepvariant|freebayes|haplotypecaller|manta|merge|mpileup|msisensorpro|mutect2|snpeff|strelka|tiddit|vep|svaba|gridss|fragcounter|dryclean|jabba)?,?)*(?<!,)$"
+                    "pattern": "^((ascat|cnvkit|controlfreec|deepvariant|freebayes|haplotypecaller|manta|merge|mpileup|msisensorpro|mutect2|snpeff|strelka|tiddit|vep|svaba|gridss|fragcounter|dryclean|hetpileups|cbs|jabba)?,?)*(?<!,)$"
                 },
                 "skip_tools": {
                     "type": "string",
@@ -334,91 +335,6 @@
                     "description": "GC and Mappabilty directory for fragCounter",
                     "hidden": true,
                     "help_text": "Provide the directory containing .rds file for gc and mappability bias based on genome version"
-                },
-                "pon_dryclean": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Dryclean PON",
-                    "hidden": true,
-                    "help_text": "Provide the PON .rds file based on genome version"
-                },
-                "centered": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Option to specify whether the samples are centered",
-                    "hidden": true,
-                    "help_text": "are the samples centered"
-                },
-                "cbs": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Option to specify whether to perform CBS",
-                    "hidden": true,
-                    "help_text": "if TRUE, perform cbs on the drycleaned coverage"
-                },
-                "cnsignif": {
-                    "type": "number",
-                    "default": 0.00001,
-                    "fa_icon": "fas fa-wrench",
-                    "description": "Significance level for CBS",
-                    "hidden": true,
-                    "help_text": "the significance levels for the test to accept change-points in cbs"
-                },
-                "wholeGenome": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Option to specify whether perform dryclean on whole genome",
-                    "hidden": true,
-                    "help_text": "if TRUE, it will process all chromosomes and parallelize it"
-                },
-                "blacklist": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Option to specify whether there are blacklisted makers",
-                    "hidden": true,
-                    "help_text": "if TRUE, will assume there is blacklisted makers"
-                },
-                "blacklist_path": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Dryclean blacklist path",
-                    "hidden": true,
-                    "help_text": "Provide the path to dryclean blacklist, default is null"
-                },
-                "germline_filter": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "If PON based germline filter is to be used for removing some common germline events",
-                    "hidden": true,
-                    "help_text": "If set to TRUE, give path to germline annotated file"
-                },
-                "germline_file": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Path to file annotated with germline calls, if germline.filter == TRUE",
-                    "hidden": true,
-                    "help_text": "Path to file annotated with germline calls, if germline.filter == TRUE"
-                },
-                "human": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Specify if the samples under consideration are human",
-                    "hidden": true,
-                    "help_text": "Specify if the samples under consideration are human"
-                },
-                "field": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Field name in GRanges metadata to use for drycleaning",
-                    "hidden": true,
-                    "help_text": "Specify Field name in GRanges metadata to use for drycleaning"
-                },
-                "build": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "hg19/hg38 build for human samples",
-                    "hidden": true,
-                    "help_text": "Specify if the human sample is hg19/hg38"
                 }
             }
         },

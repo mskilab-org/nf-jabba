@@ -7,7 +7,7 @@ include { HETPILEUPS } from '../../../modules/local/hetpileups/main.nf'
 workflow BAM_HETPILEUPS {
     // defining inputs
     take:
-    input                                             // required: Format should be [meta, tumor bam, normal bam] : can also provide cram
+    input                                             // required: Format should be [meta, tumor bam, normal bam] : BAM only!!!
 	filter
 	max_depth
 	hapmap_sites
@@ -17,7 +17,12 @@ workflow BAM_HETPILEUPS {
     versions            = Channel.empty()
     het_pileups_wgs     = Channel.empty()
 
-    HETPILEUPS(input, filter, max_depth, hapmap_sites)
+    //Remapping the input based on Hetpileups module
+    bam_hets = input.map { meta, normal_bam, tumor_bam ->
+        [meta, tumor_bam, normal_bam]
+    }
+
+    HETPILEUPS(bam_hets, filter, max_depth, hapmap_sites)
 
     // initializing outputs from fragcounter
     versions          = HETPILEUPS.out.versions
