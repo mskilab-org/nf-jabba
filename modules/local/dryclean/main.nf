@@ -22,8 +22,8 @@ process DRYCLEAN {
     val(build)
 
     output:
-    tuple val(meta), path("*.drycleaned.cov.rds")     , emit: decomposed_cov, optional: true
-    tuple val(meta), path("*.dryclean.object.rds")    , emit: dryclean_object, optional: true
+    tuple val(meta), path("*cov.rds")                 , emit: decomposed_cov, optional: true
+    //tuple val(meta), path("*.dryclean.object.rds")    , emit: dryclean_object, optional: true
     path "versions.yml"                               , emit: versions
 
     when:

@@ -18,8 +18,8 @@ workflow BAM_HETPILEUPS {
     het_pileups_wgs     = Channel.empty()
 
     //Remapping the input based on Hetpileups module
-    bam_hets = input.map { meta, normal_bam, tumor_bam ->
-        [meta, tumor_bam, normal_bam]
+    bam_hets = input.map { meta, normal_bam, normal_bai, tumor_bam, tumor_bai ->
+        [meta, tumor_bam, tumor_bai, normal_bam, normal_bai]
     }
 
     HETPILEUPS(bam_hets, filter, max_depth, hapmap_sites)

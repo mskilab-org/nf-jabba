@@ -56,6 +56,7 @@ params.simple_seq_db         = WorkflowMain.getGenomeAttribute(params, 'simple_s
 params.blacklist_gridss      = WorkflowMain.getGenomeAttribute(params, 'blacklist_gridss')
 params.pon_gridss            = WorkflowMain.getGenomeAttribute(params, 'pon_gridss')
 params.gcmapdir_frag         = WorkflowMain.getGenomeAttribute(params, 'gcmapdir_frag')
+params.build_dryclean        = WorkflowMain.getGenomeAttribute(params, 'build_dryclean')
 params.hapmap_sites          = WorkflowMain.getGenomeAttribute(params, 'hapmap_sites')
 params.pon_dryclean          = WorkflowMain.getGenomeAttribute(params, 'pon_dryclean')
 params.blacklist_coverage_jabba     = WorkflowMain.getGenomeAttribute(params, 'blacklist_coverage_jabba')

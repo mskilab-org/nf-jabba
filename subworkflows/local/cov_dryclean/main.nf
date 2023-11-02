@@ -24,7 +24,7 @@ workflow COV_DRYCLEAN {
     main:
     versions          = Channel.empty()
     dryclean_cov      = Channel.empty()
-    dryclean_obj      = Channel.empty()
+    //dryclean_obj      = Channel.empty()
 
     DRYCLEAN(input_dryclean, pon_dryclean, centered_dryclean, cbs_dryclean,
     cnsignif_dryclean, wholeGenome_dryclean, blacklist_dryclean,
@@ -32,7 +32,7 @@ workflow COV_DRYCLEAN {
     human_dryclean, field_dryclean, build_dryclean)
 
     dryclean_cov      = DRYCLEAN.out.decomposed_cov
-    dryclean_obj      = DRYCLEAN.out.dryclean_object
+    //dryclean_obj      = DRYCLEAN.out.dryclean_object
 
     versions          = DRYCLEAN.out.versions
 

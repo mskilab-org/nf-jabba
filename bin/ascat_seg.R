@@ -1,7 +1,5 @@
 {
     library(optparse)
-    library(devtools)
-    library(khtools)
     
     ## DO NOT FAIL SILENTLY
     options(error = function() {traceback(2); quit("no", 1)})
@@ -46,6 +44,8 @@
         saveRDS(opt, paste(opt$outdir, 'cmd.args.rds', sep = '/'))
     }
 
+    library(devtools)
+    library(khtools)
     library(ASCAT)
     library(data.table)
     library(gUtils)

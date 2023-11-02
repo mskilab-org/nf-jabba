@@ -49,8 +49,8 @@ def checkPathParamList = [
     params.pon,
     params.pon_tbi,
     params.gcmapdir_frag,
-    params.pon_dryclean
-    params.blacklist_coverage
+    params.pon_dryclean,
+    params.blacklist_coverage_jabba
 ]
 // only check if we are using the tools
 if (params.tools && params.tools.contains("snpeff")) checkPathParamList.add(params.snpeff_cache)
@@ -208,22 +208,6 @@ if (!params.dbsnp && !params.known_indels) {
     }
 }
 
-// Fails or warns when missing files or params for ascat
-if (params.tools && params.tools.split(',').contains('ascat')) {
-    if (!params.ascat_alleles) {
-        error("No allele files were provided for running ASCAT. Please provide a zip folder with allele files.")
-    }
-    if (!params.ascat_loci) {
-        error("No loci files were provided for running ASCAT. Please provide a zip folder with loci files.")
-    }
-    if (!params.ascat_loci_gc && !params.ascat_loci_rt) {
-        log.warn("No LogRCorrection performed in ASCAT. For LogRCorrection to run, please provide either loci gc files or both loci gc files and loci rt files.")
-    }
-    if (params.wes) {
-        log.warn("Default reference files not suited for running ASCAT on WES data. It's recommended to use the reference files provided here: https://github.com/Wedge-lab/battenberg#required-reference-files")
-    }
-}
-
 // Fails when missing sex information for CNV tools
 if (params.tools && (params.tools.split(',').contains('ascat'))) {
     input_sample.map{
@@ -295,8 +279,8 @@ vep_species        = params.vep_species        ?: Channel.empty()
 error_rate         = params.error_rate         ?: Channel.empty()                                                         // For SVABA
 
 // Hetpileups
-filter              = params.filter         ?: Channel.empty()
-max_depth           = params.max_depth      ?: Channel.empty()
+filter_hets         = params.filter_hets       ?: Channel.empty()
+max_depth           = params.max_depth         ?: Channel.empty()
 
 // FragCounter
 windowsize_frag    = params.windowsize_frag    ?: Channel.empty()                                                         // For fragCounter
@@ -458,7 +442,7 @@ include { BAM_SVCALLING_GRIDSS                        } from '../subworkflows/lo
 include { BAM_SVCALLING_GRIDSS_SOMATIC                } from '../subworkflows/local/bam_svcalling_gridss/main'
 
 // HETPILEUPS
-include { BAM_HETPILEUPS as HETPILEUPS         } from '../subworkflows/local/hetpileups/main'
+include { BAM_HETPILEUPS                              } from '../subworkflows/local/bam_hetpileups/main'
 
 // fragCounter
 include { BAM_FRAGCOUNTER as TUMOR_FRAGCOUNTER         } from '../subworkflows/local/bam_fragCounter/main'
@@ -471,9 +455,9 @@ include { COV_DRYCLEAN as NORMAL_DRYCLEAN              } from '../subworkflows/l
 //ASCAT
 include { COV_ASCAT                                   } from '../subworkflows/local/cov_ascat/main'
 
-include { COV_CBS as CBS                            } from '../subworkflows/local/cbs/main'
+include { COV_CBS as CBS                            } from '../subworkflows/local/cov_cbs/main'
 
-include { COV_VCF_JABBA as JABBA         } from '../subworkflows/local/jabba/main'
+include { COV_JUNC_JABBA as JABBA         } from '../subworkflows/local/jabba/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -982,7 +966,7 @@ workflow HEISENBIO {
             vcf_from_sv_calling = Channel.empty()
             vcf_from_sv_calling = vcf_from_sv_calling.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
             unfiltered_som_sv = Channel.empty()
-            unfiltered_som_sv = unfiltered_som_sv.mix(BAM_SV_CALLING.out.unfiltered_som_sv)
+            unfiltered_som_sv = unfiltered_som_sv.mix(BAM_SVCALLING_SVABA.out.unfiltered_som_sv)
         }
 
         if (params.tools && params.tools.split(',').contains('gridss')) {
@@ -1003,7 +987,7 @@ workflow HEISENBIO {
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
-        cram_coverage_calling = cram_sv_calling
+        cram_fragcounter_calling = cram_sv_calling
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter']) {
@@ -1069,16 +1053,15 @@ workflow HEISENBIO {
                 meta.sex        = normal[1].sex
                 meta.tumor_id   = tumor[1].sample
 
-                [ meta, normal[2], tumor[2] ]
+                [ meta, normal[2], normal[3], tumor[2], tumor[3] ]
         }
 
         if (params.tools && params.tools.split(',').contains('hetpileups')) {
-            BAM_HETPILEUPS(bam_hetpileups_pair, filter, max_depth, hapmap_sites)
+            BAM_HETPILEUPS(bam_hetpileups_pair, filter_hets, max_depth, hapmap_sites)
 
             versions = versions.mix(BAM_HETPILEUPS.out.versions)
 
-            sites_from_het_pileups_wgs = Channel.empty()
-            sites_from_het_pileups_wgs = sites_from_het_pileups_wgs.mix(BAM_HETPILEUPS.out.het_pileups_wgs)
+            sites_from_het_pileups_wgs = Channel.empty().mix(BAM_HETPILEUPS.out.het_pileups_wgs)
 
             // Commenting out because not necessary for running from this step
             // CSV should be written for the file actually out out, either bam or BAM
@@ -1163,6 +1146,7 @@ workflow HEISENBIO {
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'ascat']) {
+
         if (params.step == 'ascat') {
             input_ascat = input_sample
                                 .map{ meta, cov, hets -> [ meta + [data_type: "cov"], cov, hets ] }
@@ -1173,42 +1157,52 @@ workflow HEISENBIO {
             input_hets_ascat = input_ascat
                                 .map{ meta, cov, hets -> [ meta, hets ] }
 
-            input_hetpileups  = Channel.empty().mix(input_hets_ascat)
-            input_dryclean_ascat   = Channel.empty().mix(input_cov_ascat)
+            sites_from_het_pileups_wgs  = Channel.empty().mix(input_hets_ascat)
+            tumor_dryclean_cov   = Channel.empty().mix(input_cov_ascat)
 
         }
 
         if (params.tools && params.tools.split(',').contains('ascat')) {
-            COV_ASCAT(input_hetpileups, input_dryclean_ascat, field_ascat, hets_thresh_ascat,
+            //sites_from_het_pileups_wgs.view()
+            tumor_dryclean_cov.view()
+
+            COV_ASCAT(sites_from_het_pileups_wgs, tumor_dryclean_cov, field_ascat, hets_thresh_ascat,
                     penalty_ascat, gc_correct_ascat, rebin_width_ascat, from_maf_ascat)
 
             versions = versions.mix(COV_ASCAT.out.versions)
             purityploidy = Channel.empty().mix(COV_ASCAT.out.pp)
-            purity = Channel.empty().mix(COV_ASCAT.out.purity)
-            ploidy = Channel.empty().mix(COV_ASCAT.out.ploidy)
+            //purity = Channel.empty().mix(COV_ASCAT.out.purity)
+            //ploidy = Channel.empty().mix(COV_ASCAT.out.ploidy)
+            //ploidy_jabba = ploidy ? ploidy : ploidy_jabba
         }
         // TODO: Add a subworkflow to write the output file paths into a csv
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'jabba']) {
-        ploidy_jabba = ploidy ? ploidy : ploidy_jabba
-        ploidy_jabba = [ jabba_meta, ploidy_jabba ]
 
-        JABBA(dryclean_cov, vcf_from_sv_calling, unfiltered_som_sv, ploidy_jabba,
-        sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds, field_jabba,
-        tfield_jabba, slack_jabba, purity_jabba, tilim_jabba, epgap_jabba,
-        pp_method_jabba, maxna_jabba, blacklist_coverage_jabba,
-        blacklist_junctions_jabba, iter_jabba, indel_jabba, cnsignif_jabba,
-        lp_jabba, ism_jabba, fix_thres_jabba, filter_loose_jabba, gurobi_jabba)
+        if (params.tools && params.tools.split(',').contains('jabba')) {
+            if (params.tools && params.tools.split(',').contains('ascat')) {
+            ploidy_jabba = ploidy
+            } else {
+            ploidy_jabba = [meta, ploidy_jabba]
+            }
 
-        jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
-        jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
-        jabba_vcf           = Channel.empty().mix(JABBA.out.jabba_vcf)
-        jabba_raw_rds       = Channel.empty().mix(JABBA.out.jabba_raw_rds)
-        opti                = Channel.empty().mix(JABBA.out.opti)
-        jabba_seg           = Channel.empty().mix(JABBA.out.jabba_seg)
-        karyograph          = Channel.empty().mix(JABBA.out.karyograph)
-        versions = versions.mix(JABBA.out.versions)
+            JABBA(dryclean_cov, vcf_from_sv_calling, unfiltered_som_sv, ploidy_jabba,
+            sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds, field_jabba,
+            tfield_jabba, slack_jabba, purity_jabba, tilim_jabba, epgap_jabba,
+            pp_method_jabba, maxna_jabba, blacklist_coverage_jabba,
+            blacklist_junctions_jabba, iter_jabba, indel_jabba, cnsignif_jabba,
+            lp_jabba, ism_jabba, fix_thres_jabba, filter_loose_jabba, gurobi_jabba)
+
+            jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
+            jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
+            jabba_vcf           = Channel.empty().mix(JABBA.out.jabba_vcf)
+            jabba_raw_rds       = Channel.empty().mix(JABBA.out.jabba_raw_rds)
+            opti                = Channel.empty().mix(JABBA.out.opti)
+            jabba_seg           = Channel.empty().mix(JABBA.out.jabba_seg)
+            karyograph          = Channel.empty().mix(JABBA.out.karyograph)
+            versions = versions.mix(JABBA.out.versions)
+        }
         
     }
 }

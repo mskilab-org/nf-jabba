@@ -3,6 +3,8 @@
 //
 //
 
+include { CBS } from '../../../modules/local/cbs/main.nf'
+
 // Define the main workflow process
 workflow COV_CBS {
     // Define the input parameters for the main workflow
@@ -13,10 +15,10 @@ workflow COV_CBS {
     name_cbs
 
     main:
-    versions                = Channel.empty()
     cbs_cov_rds             = Channel.empty()
     cbs_seg_rds             = Channel.empty()
     cbs_nseg_rds            = Channel.empty()
+    versions                = Channel.empty()
 
     CBS(cov_cbs, cnsignif_cbs, field_cbs, name_cbs)
 

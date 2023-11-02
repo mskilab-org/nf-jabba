@@ -20,8 +20,8 @@ process ASCAT_SEG {
     output:
     tuple val(meta), path("*ascat_pp.rds")        , emit: purityploidy, optional:true
     tuple val(meta), path("*ascat_seg.rds")       , emit: segments, optional:true
-    val(purityChannel)                            , emit: purity, optional:true
-    val(ploidyChannel)                            , emit: ploidy, optional:true
+    //val(purityChannel)                            , emit: purity
+    //tuple val(meta), val(ploidyChannel)           , emit: ploidy
     path "versions.yml"                           , emit: versions
 
     when:
@@ -33,35 +33,9 @@ process ASCAT_SEG {
     def VERSION = '2.5.2'                              // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """
-    #!/bin/bash
-    set -o allexport
-    # Check if the environment has the module program installed
-    if command -v module &> /dev/null
-    then
-        # Check if the required modules are available
-        if module avail R/4.0.2 &> /dev/null
-        then
-            ## load correct R and gcc versions
-            module unload R
-            module load R/4.0.2
-        fi
-    fi
 
-    set -x
-    R_LIB_PATH="~/lab/lib/R-4.0.2"
-    if [ -d "\$R_LIB_PATH" ]; then
-        export R_LIBS=\$R_LIB_PATH
-    fi
-
-    echo "Using R version:"
-    cmd="R --version"
-    eval \$cmd
-    set +x
-
-    ## find R installation and dryclean exec
-    echo "USING LIBRARIES: \$(Rscript -e 'print(.libPaths())')"
-
-    RSCRIPT_PATH=\$(if [[ ${workflow.containerEngine} == "singularity" && !task.ext.singularity_pull_docker_container ]]; then echo "./ascat_seg.R"; else echo "\${baseDir}/bin/ascat_seg.R"; fi)
+    ## RSCRIPT_PATH=\$(if [[ ${workflow.containerEngine} == "singularity" && !task.ext.singularity_pull_docker_container ]]; then echo "/usr/bin/ascat_seg.R"; else echo "\${baseDir}/bin/ascat_seg.R"; fi)
+    export RSCRIPT_PATH=\$(echo "${baseDir}/bin/ascat_seg.R")
 
     Rscript \$RSCRIPT_PATH       \\
     --id          ${meta.id}     \\
@@ -79,11 +53,7 @@ process ASCAT_SEG {
         ASCAT: ${VERSION}
     END_VERSIONS
 
-    Rscript -e 'rds_data <- readRDS("ascat_pp.rds"); write.table(rds_data$purity, "purity.txt", col.names=FALSE, row.names=FALSE); write.table(rds_data$ploidy, "ploidy.txt", col.names=FALSE, row.names=FALSE)'
-
-    # Emit purity and ploidy as separate channels
-    cat "purity.txt" > purityChannel
-    cat "ploidy.txt" > ploidyChannel
+    ## Rscript -e 'rds_data <- readRDS("ascat_pp.rds"); write.table(rds_data$purity, "purity.txt", col.names=FALSE, row.names=FALSE); write.table(rds_data$ploidy, "ploidy.txt", col.names=FALSE, row.names=FALSE)'
 
     """
 

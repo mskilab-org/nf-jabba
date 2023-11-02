@@ -1234,7 +1234,7 @@
         }
     ],
     "properties": {
-        "filter": {
+        "filter_hets": {
             "type": "string",
             "default": "TRUE"
         },

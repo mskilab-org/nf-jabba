@@ -22,8 +22,8 @@ workflow COV_ASCAT {
     versions     = Channel.empty()
     pp           = Channel.empty()
     seg          = Channel.empty()
-    purity       = Channel.empty()
-    ploidy       = Channel.empty()
+    //purity       = Channel.empty()
+    //ploidy       = Channel.empty()
 
     ASCAT_SEG(hetpileups, cbs_cov, field, hets_threshold, penalty, gc_correct, rebin_width, from_maf)
 
@@ -31,13 +31,13 @@ workflow COV_ASCAT {
     versions     = versions.mix(ASCAT_SEG.out.versions)
     pp           = pp.mix(ASCAT_SEG.out.purityploidy)
     seg          = seg.mix(ASCAT_SEG.out.segments)
-    purity       = purity.mix(ASCAT_SEG.out.purity)
-    ploidy       = purity.mix(ASCAT_SEG.out.ploidy)
+    //purity       = purity.mix(ASCAT_SEG.out.purity)
+    //ploidy       = purity.mix(ASCAT_SEG.out.ploidy)
 
     emit:
     pp                                                 // only need to emit the purityploidy for JaBbA
-    purity
-    ploidy
+    //purity
+    //ploidy
 
     versions
 }
