@@ -6,6 +6,7 @@ process DRYCLEAN {
         'docker://mskilab/dryclean:0.0.2':
         'mskilab/dryclean:0.0.2' }"
 
+
     input:
     tuple val(meta), path(input)
     path(pon)

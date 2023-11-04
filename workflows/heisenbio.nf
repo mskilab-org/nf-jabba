@@ -1028,7 +1028,15 @@ workflow HEISENBIO {
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups']) {
 
-        bam_hetpileups_calling = input_sample                // Will this work if someone starts from fastq files?
+
+        if (!(params.step == "alignment" || params.step == "markduplicates" || 
+            params.step == "prepare_recalibration" || params.step == "recalibrate" || 
+            params.step == "ascat" || params.step == "dryclean" || params.step == "jabba") || params.step == 'hetpileups') {
+
+                bam_hetpileups_calling = input_sample                // Will this work if someone starts from fastq files?
+            }
+        
+        
 
         // getting the tumor and normal cram files separated
         bam_hetpileups_status = bam_hetpileups_calling.branch{
@@ -1037,16 +1045,15 @@ workflow HEISENBIO {
         }
 
         // All normal samples
-        bam_hetpileups_normal_to_cross = bam_hetpileups_status.normal.map{ meta, bam, bai -> [ meta.patient, meta, bam, bai ] }
+        bam_hetpileups_normal_to_cross = bam_hetpileups_status.normal.map{ meta, bam, bai -> [ meta.patient, meta + [id: meta.sample], bam, bai ] }
 
         // All tumor samples
-        bam_hetpileups_tumor_to_cross = bam_hetpileups_status.tumor.map{ meta, bam, bai -> [ meta.patient, meta, bam, bai ] }
+        bam_hetpileups_tumor_to_cross = bam_hetpileups_status.tumor.map{ meta, bam, bai -> [ meta.patient, meta + [id: meta.sample], bam, bai ] }
 
         // Crossing the normal and tumor samples to create tumor and normal pairs
         bam_hetpileups_pair = bam_hetpileups_normal_to_cross.cross(bam_hetpileups_tumor_to_cross)
             .map { normal, tumor ->
                 def meta = [:]
-
                 meta.id         = "${tumor[1].sample}_vs_${normal[1].sample}".toString()
                 meta.normal_id  = normal[1].sample
                 meta.patient    = normal[0]
@@ -1116,23 +1123,22 @@ workflow HEISENBIO {
             // All normal samples
             normal_dryclean_cov_to_cross = normal_dryclean_cov.map { tuple ->
                                                                 def (meta, cov) = tuple
-                                                                [meta.patient, meta, cov] }
+                                                                [meta.patient, meta + [id: meta.sample], cov] }
             // All tumor samples
             tumor_dryclean_cov_to_cross = tumor_dryclean_cov.map { tuple ->
                                                                 def (meta, cov) = tuple
-                                                                [meta.patient, meta, cov] }
+                                                                [meta.patient, meta + [id: meta.sample], cov] }
 
             cov_cbs = normal_dryclean_cov_to_cross.cross(tumor_dryclean_cov_to_cross)
-                .map { normal_cov, tumor_cov ->
+                .map { normal, tumor ->
                     def meta = [:]
+                        meta.id             = "${tumor[1].sample}_vs_${normal[1].sample}".toString()
+                        meta.normal_id      = normal[1].sample
+                        meta.patient        = normal[0]
+                        meta.sex            = normal[1].sex
+                        meta.tumor_id       = tumor[1].sample
 
-                        meta.id             = "${tumor_cov[0].sample}_vs_${normal_cov[0].sample}".toString()
-                        meta.normal_cov_id  = normal_cov[1].sample
-                        meta.patient        = normal_cov[0]
-                        meta.sex            = normal_cov[1].sex
-                        meta.tumor_cov_id   = tumor_cov[1].sample
-
-                        [ meta, normal_cov[1], tumor_cov[1] ]
+                        [ meta, normal[2], tumor[2] ]
                 }
 
             CBS(cov_cbs, cnsignif_cbs, field_cbs, name_cbs)
@@ -1164,7 +1170,7 @@ workflow HEISENBIO {
 
         if (params.tools && params.tools.split(',').contains('ascat')) {
             //sites_from_het_pileups_wgs.view()
-            tumor_dryclean_cov.view()
+            //tumor_dryclean_cov.view()
 
             COV_ASCAT(sites_from_het_pileups_wgs, tumor_dryclean_cov, field_ascat, hets_thresh_ascat,
                     penalty_ascat, gc_correct_ascat, rebin_width_ascat, from_maf_ascat)

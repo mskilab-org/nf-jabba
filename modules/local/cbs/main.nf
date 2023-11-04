@@ -9,13 +9,13 @@ process CBS {
         'mskilab/cbs:latest' }"
 
     input:
-    tuple val(meta), path(tumor_dryclean_cov), path(normal_dryclean_cov)
+    tuple val(meta), path(tumor_dryclean_cov, stageAs: "tumor_drycleaned_cov.rds"), path(normal_dryclean_cov, stageAs: "normal_drycleaned_cov.rds")
     val(cnsignif)
     val(field)
     val(name)
 
     output:
-    tuple val(meta), path("*.cov.rds")        , emit: cbs_cov_rds
+    tuple val(meta), path("*cov.rds")         , emit: cbs_cov_rds
     tuple val(meta), path("*seg.rds")         , emit: cbs_seg_rds
     tuple val(meta), path("*nseg.rds")        , emit: cbs_nseg_rds
     path "versions.yml"                       , emit: versions
@@ -35,7 +35,7 @@ process CBS {
         -t ${tumor_dryclean_cov} \
         -n ${normal_dryclean_cov} \
         --cnsignif ${cnsignif} \
-        -m ${name} \
+        -m ${meta.id} \
         -f ${field}
 
     cat <<-END_VERSIONS > versions.yml

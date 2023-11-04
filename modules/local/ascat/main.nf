@@ -53,7 +53,7 @@ process ASCAT_SEG {
         ASCAT: ${VERSION}
     END_VERSIONS
 
-    ## Rscript -e 'rds_data <- readRDS("ascat_pp.rds"); write.table(rds_data$purity, "purity.txt", col.names=FALSE, row.names=FALSE); write.table(rds_data$ploidy, "ploidy.txt", col.names=FALSE, row.names=FALSE)'
+    
 
     """
 
