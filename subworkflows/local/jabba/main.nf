@@ -35,7 +35,6 @@ workflow COV_JUNC_JABBA {
     linear_jabba
     tilim_jabba
     epgap_jabba
-    outdir_jabba
     name_jabba
     fix_thres_jabba
     lp_jabba
@@ -56,16 +55,15 @@ workflow COV_JUNC_JABBA {
     jabba_seg           = Channel.empty()
     karyograph          = Channel.empty()
 
-    JABBA(cov_rds_jabba, junction_jabba, j_supp_jabba,
+    JABBA(cov_rds_jabba, junction_jabba, ploidy_jabba, het_pileups_wgs_jabba,
+    cbs_seg_rds_jabba, cbs_nseg_rds_jabba, j_supp_jabba,
     blacklist_junctions_jabba, geno_jabba, indel_jabba, tfield_jabba,
     iter_jabba, rescue_window_jabba, rescue_all_jabba, nudgebalanced_jabba,
-    edgenudge_jabba, strict_jabba, allin_jabba, field_jabba, cbs_seg_rds_jabba,
-    maxna_jabba, blacklist_coverage_jabba, cbs_nseg_rds_jabba,
-    het_pileups_wgs_jabba, ploidy_jabba, purity_jabba, pp_method_jabba,
-    cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba, epgap_jabba,
-    outdir_jabba, name_jabba, fix_thres_jabba, lp_jabba, ism_jabba,
-    filter_loose_jabba, gurobi_jabba, nonintegral_jabba, verbose_jabba,
-    help_jabba)
+    edgenudge_jabba, strict_jabba, allin_jabba, field_jabba, maxna_jabba,
+    blacklist_coverage_jabba, purity_jabba, pp_method_jabba, cnsignif_jabba,
+    slack_jabba, linear_jabba, tilim_jabba, epgap_jabba, name_jabba,
+    fix_thres_jabba, lp_jabba, ism_jabba, filter_loose_jabba, gurobi_jabba,
+    nonintegral_jabba, verbose_jabba, help_jabba)
 
     jabba_rds           = JABBA.out.jabba_rds
     jabba_gg            = JABBA.out.jabba_gg

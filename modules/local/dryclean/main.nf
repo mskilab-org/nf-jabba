@@ -96,7 +96,7 @@ process DRYCLEAN {
     else
 	    echo "If you wish to rerun Dryclean - please purge directory first"
     fi
-    
+
     """
 
     stub:

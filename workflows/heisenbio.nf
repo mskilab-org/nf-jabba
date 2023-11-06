@@ -963,8 +963,9 @@ workflow HEISENBIO {
 
             versions = versions.mix(BAM_SVCALLING_SVABA.out.versions)
 
-            vcf_from_sv_calling = Channel.empty()
-            vcf_from_sv_calling = vcf_from_sv_calling.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
+            all_sv_vcfs = Channel.empty()
+            all_sv_vcfs = all_sv_vcfs.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
+            vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_SVABA.out.som_sv)
             unfiltered_som_sv = Channel.empty()
             unfiltered_som_sv = unfiltered_som_sv.mix(BAM_SVCALLING_SVABA.out.unfiltered_som_sv)
         }
@@ -1029,14 +1030,14 @@ workflow HEISENBIO {
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups']) {
 
 
-        if (!(params.step == "alignment" || params.step == "markduplicates" || 
-            params.step == "prepare_recalibration" || params.step == "recalibrate" || 
+        if (!(params.step == "alignment" || params.step == "markduplicates" ||
+            params.step == "prepare_recalibration" || params.step == "recalibrate" ||
             params.step == "ascat" || params.step == "dryclean" || params.step == "jabba") || params.step == 'hetpileups') {
 
                 bam_hetpileups_calling = input_sample                // Will this work if someone starts from fastq files?
             }
-        
-        
+
+
 
         // getting the tumor and normal cram files separated
         bam_hetpileups_status = bam_hetpileups_calling.branch{
@@ -1119,7 +1120,7 @@ workflow HEISENBIO {
         // TODO: Add a subworkflow to write the output file paths into a csv
 
         if (params.tools && params.tools.split(',').contains('cbs')) {
-            
+
             // All normal samples
             normal_dryclean_cov_to_cross = normal_dryclean_cov.map { tuple ->
                                                                 def (meta, cov) = tuple
@@ -1177,9 +1178,8 @@ workflow HEISENBIO {
 
             versions = versions.mix(COV_ASCAT.out.versions)
             purityploidy = Channel.empty().mix(COV_ASCAT.out.pp)
-            //purity = Channel.empty().mix(COV_ASCAT.out.purity)
-            //ploidy = Channel.empty().mix(COV_ASCAT.out.ploidy)
-            //ploidy_jabba = ploidy ? ploidy : ploidy_jabba
+            purity = Channel.empty().mix(COV_ASCAT.out.purity)
+            ploidy = Channel.empty().mix(COV_ASCAT.out.ploidy)
         }
         // TODO: Add a subworkflow to write the output file paths into a csv
     }
@@ -1188,17 +1188,25 @@ workflow HEISENBIO {
 
         if (params.tools && params.tools.split(',').contains('jabba')) {
             if (params.tools && params.tools.split(',').contains('ascat')) {
-            ploidy_jabba = ploidy
+                ploidy_jabba = ploidy
             } else {
-            ploidy_jabba = [meta, ploidy_jabba]
+                ploidy_jabba = input_sample.map{ meta -> [ meta, ploidy_jabba ] }
             }
 
-            JABBA(dryclean_cov, vcf_from_sv_calling, unfiltered_som_sv, ploidy_jabba,
-            sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds, field_jabba,
-            tfield_jabba, slack_jabba, purity_jabba, tilim_jabba, epgap_jabba,
-            pp_method_jabba, maxna_jabba, blacklist_coverage_jabba,
-            blacklist_junctions_jabba, iter_jabba, indel_jabba, cnsignif_jabba,
-            lp_jabba, ism_jabba, fix_thres_jabba, filter_loose_jabba, gurobi_jabba)
+            //name_jabba = input_sample .map{ meta -> [ meta ] }
+            name_jabba = 'tumor'
+
+            JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
+            sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
+            unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
+            indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
+            rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
+            strict_jabba, allin_jabba, field_jabba, maxna_jabba,
+            blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
+            cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
+            epgap_jabba, name_jabba, fix_thres_jabba, lp_jabba,
+            ism_jabba, filter_loose_jabba, gurobi_jabba, nonintegral_jabba,
+            verbose_jabba, help_jabba)
 
             jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
             jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
@@ -1209,7 +1217,7 @@ workflow HEISENBIO {
             karyograph          = Channel.empty().mix(JABBA.out.karyograph)
             versions = versions.mix(JABBA.out.versions)
         }
-        
+
     }
 }
 

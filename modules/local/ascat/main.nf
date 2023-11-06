@@ -20,8 +20,6 @@ process ASCAT_SEG {
     output:
     tuple val(meta), path("*ascat_pp.rds")        , emit: purityploidy, optional:true
     tuple val(meta), path("*ascat_seg.rds")       , emit: segments, optional:true
-    //val(purityChannel)                            , emit: purity
-    //tuple val(meta), val(ploidyChannel)           , emit: ploidy
     path "versions.yml"                           , emit: versions
 
     when:
@@ -33,7 +31,6 @@ process ASCAT_SEG {
     def VERSION = '2.5.2'                              // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """
-
     ## RSCRIPT_PATH=\$(if [[ ${workflow.containerEngine} == "singularity" && !task.ext.singularity_pull_docker_container ]]; then echo "/usr/bin/ascat_seg.R"; else echo "\${baseDir}/bin/ascat_seg.R"; fi)
     export RSCRIPT_PATH=\$(echo "${baseDir}/bin/ascat_seg.R")
 
@@ -46,15 +43,12 @@ process ASCAT_SEG {
     --penalty     ${penalty}     \\
     --gc          ${gc}          \\
     --rebin_width ${rebin}       \\
-    --from_maf    ${from_maf}
+    --from_maf    ${from_maf};
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         ASCAT: ${VERSION}
     END_VERSIONS
-
-    
-
     """
 
     stub:
@@ -71,5 +65,19 @@ process ASCAT_SEG {
     END_VERSIONS
 
     """
+}
 
+process EXTRACT_PURITYPLOIDY {
+    input:
+    tuple val(meta), path(ascat_rds)
+
+    output:
+    env purity_val, emit: purity_val
+    tuple val(meta), env(ploidy_val), emit: ploidy_val
+
+    script:
+    """
+	export purity_val=\$(Rscript -e "ascat <- readRDS('${ascat_rds}'); cat(ascat[['purity']])")
+	export ploidy_val=\$(Rscript -e "ascat <- readRDS('${ascat_rds}'); cat(ascat[['ploidy']])")
+    """
 }

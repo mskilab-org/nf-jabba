@@ -3,16 +3,16 @@ process JABBA {
     label 'process_high'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://mskilab/jabba:latest':
-        'mskilab/jabba:latest' }"
+        'docker://mskilab/jabba_cplex:latest':
+        'mskilab/jabba_cplex:latest' }"
 
     input:
     tuple val(meta), path(cov_rds)
     tuple val(meta), path(junction)
     tuple val(meta), val(ploidy)
     tuple val(meta), path(het_pileups_wgs)
-    tuple val(meta), path(cbs_seg_rds)
-    tuple val(meta), path(cbs_nseg_rds)
+    tuple val(meta), path(cbs_seg_rds, stageAs: "cbs_seg.rds")
+    tuple val(meta), path(cbs_nseg_rds, stageAs: "cbs_nseg.rds")
     tuple val(meta), path(j_supp)
     path(blacklist_junctions)
     val(geno)
@@ -35,7 +35,6 @@ process JABBA {
     val(linear)
     val(tilim)
     val(epgap)
-    val(outdir)
     val(name)
     val(fix_thres)
     val(lp)
@@ -85,22 +84,23 @@ process JABBA {
 
     set -x
     R_LIB_PATH="/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2"
-    if [ -d "$R_LIB_PATH" ]; then
-        export R_LIBS=${R_CUSTOM_LIBS}:$R_LIB_PATH
+    if [ -d "\$R_LIB_PATH" ]; then
+        export R_LIBS=\$R_LIB_PATH
     fi
+
     export R_DATATABLE_NUM_THREADS=1
-    unset R_HOME
-    R_PROFILE_USER="/dev/null"
+    #unset R_HOME
+    #R_PROFILE_USER="/dev/null"
 
     ## find R installation
     echo "USING LIBRARIES: \$(Rscript -e 'print(.libPaths())')"
 
     export jabPath=\$(Rscript -e 'cat(suppressWarnings(find.package("JaBbA")))')
-    export jba=$jabPath/extdata/jba
-    echo $jba
+    export jba=\${jabPath}/extdata/jba
+    echo \$jba
     set +x
 
-    export cmd="Rscript $jba $cov_rds $junction \\
+    export cmd="Rscript \$jba $cov_rds $junction \\
     --j.supp                $j_supp \\
     --blacklist.junctions	$blacklist_junctions \\
     --geno					$geno \\
@@ -127,10 +127,9 @@ process JABBA {
     --linear				$linear \\
     --tilim					$tilim \\
     --epgap					$epgap \\
-    --outdir                $outdir \\
     --name                  $name \\
     --cores                 $task.cpus \\
-    --mem                   $task.mem \\
+    --mem                   $task.memory \\
     --fix.thres				$fix_thres \\
     --lp					$lp \\
     --ism					$ism \\
@@ -141,13 +140,13 @@ process JABBA {
     --help					$help \\
     "
 
-    { echo "Running:" && echo "\$(echo $cmd)" && echo && eval $cmd; }
+    { echo "Running:" && echo "\$(echo \$cmd)" && echo && eval \$cmd; }
     cmdsig=\$?
-    if [ "$cmdsig" = 0 ]; then
+    if [ "\$cmdsig" = 0 ]; then
         echo "Finish!"
     else
         echo "Broke!"
-        exit $cmdsig
+        exit \$cmdsig
     fi
 
     exit 0
