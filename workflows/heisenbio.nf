@@ -264,7 +264,7 @@ blacklist_path_dryclean      = params.blacklist_path_dryclean      ? Channel.fro
 germline_file_dryclean      = params.germline_file_dryclean      ? Channel.fromPath(params.germline_file_dryclean).collect()     : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
 
 // JaBbA
-blacklist_junctions_jabba		= params.blacklist_junctions_jabba        ? Channel.fromPath(params.blacklist_junctions_jabba).collect() : Channel.empty()
+//blacklist_junctions_jabba		= params.blacklist_junctions_jabba        ? Channel.fromPath(params.blacklist_junctions_jabba).collect() : Channel.empty()
 blacklist_coverage_jabba		= params.blacklist_coverage_jabba		  ? Channel.fromPath(params.blacklist_coverage_jabba).collect() : Channel.empty()
 
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
@@ -314,6 +314,7 @@ field_cbs                       = params.field_cbs                  ?: Channel.e
 name_cbs                        = params.name_cbs                   ?: Channel.empty()
 
 // JaBbA
+blacklist_junctions_jabba       = params.blacklist_junctions_jabba      ?: Channel.empty()
 geno_jabba					    = params.geno_jabba			            ?: Channel.empty()
 indel_jabba					    = params.indel_jabba			        ?: Channel.empty()
 tfield_jabba					= params.tfield_jabba			        ?: Channel.empty()
@@ -327,6 +328,7 @@ allin_jabba					    = params.allin_jabba			        ?: Channel.empty()
 field_jabba					    = params.field_jabba			        ?: Channel.empty()
 maxna_jabba					    = params.maxna_jabba			        ?: Channel.empty()
 purity_jabba					= params.purity_jabba                   ?: Channel.empty()
+//ploidy_jabba					= params.ploidy_jabba                   ?: Channel.empty()
 pp_method_jabba					= params.pp_method_jabba                ?: Channel.empty()
 cnsignif_jabba					= params.cnsignif_jabba                 ?: Channel.empty()
 slack_jabba					    = params.slack_jabba                    ?: Channel.empty()
@@ -965,7 +967,9 @@ workflow HEISENBIO {
 
             all_sv_vcfs = Channel.empty()
             all_sv_vcfs = all_sv_vcfs.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
+            
             vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_SVABA.out.som_sv)
+
             unfiltered_som_sv = Channel.empty()
             unfiltered_som_sv = unfiltered_som_sv.mix(BAM_SVCALLING_SVABA.out.unfiltered_som_sv)
         }
@@ -984,7 +988,7 @@ workflow HEISENBIO {
             versions = versions.mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.versions)
 
             vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.all_vcf)
-            vcf_from_sv_calling.view()
+            //vcf_from_sv_calling.view()
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!

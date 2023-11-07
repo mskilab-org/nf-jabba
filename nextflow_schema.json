@@ -535,7 +535,6 @@
             "properties": {
                 "blacklist_junctions_jabba": {
                     "type": "string",
-                    "default": "/dev/null",
                     "description": "rearrangement junctions to be excluded from consideration",
                     "fa_icon": "fas fa-file"
                 },
@@ -661,7 +660,6 @@
                 },
                 "epgap_jabba": {
                     "type": "number",
-                    "default": 1e-8,
                     "description": "threshold for calling convergence",
                     "fa_icon": "fas fa-wrench"
                 },
