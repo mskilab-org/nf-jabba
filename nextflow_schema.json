@@ -96,7 +96,7 @@
                     "fa_icon": "fas fa-clock",
                     "description": "Estimate interval size.",
                     "help_text": "Intervals are parts of the chopped up genome used to speed up preprocessing and variant calling. See `--intervals` for more info. \n\nChanging this parameter, changes the number of intervals that are grouped and processed together. Bed files from target sequencing can contain thousands or small intervals. Spinning up a new process for each can be quite resource intensive. Instead it can be desired to process small intervals together on larger nodes. \nIn order to make use of this parameter, no runtime estimate can be present in the bed file (column 5). ",
-                    "default": 200000.0
+                    "default": 200000
                 },
                 "no_intervals": {
                     "type": "boolean",
@@ -271,10 +271,40 @@
                 }
             }
         },
-        "fragcounter": {
-            "title": "Coverage Data",
+        "hetpileups": {
+            "title": "HetPileUps",
             "type": "object",
-            "description": "Configure coverage tools fragCounter & Dryclean",
+            "description": "",
+            "default": "",
+            "properties": {
+                "filter_hets": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "Whether to perform filtering on low quality hets",
+                    "help_text": "By default, it is TRUE so that it filters low quality calls",
+                    "fa_icon": "fas fa-filter"
+                },
+                "max_depth": {
+                    "type": "integer",
+                    "default": 1000,
+                    "description": "Bin size to do hetpileups",
+                    "help_text": "By default it is set to 1000 to correspond with CBS/dryclean bin size",
+                    "fa_icon": "fas fa-cut"
+                },
+                "hapmap_sites": {
+                    "type": "string",
+                    "default": "None",
+                    "description": "Hapmap reference file based on genome",
+                    "help_text": "Provide the population hapmap reference file based on genome version",
+                    "fa_icon": "fas fa-file"
+                }
+            },
+            "fa_icon": "fas fa-suitcase"
+        },
+        "fragcounter": {
+            "title": "FragCounter",
+            "type": "object",
+            "description": "Configure coverage tools fragCounter",
             "default": "",
             "fa_icon": "fas fa-toolbox",
             "properties": {
@@ -282,50 +312,45 @@
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Option for counting method in fragCounter",
-                    "hidden": true,
                     "help_text": "If TRUE only count midpoint if FALSE then count bin footprint of every fragment interval"
                 },
                 "paired_frag": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Option to mention whether the dataset is paired or single ended for fragCounter",
-                    "hidden": true,
                     "help_text": "If TRUE, will consider the dataset is paired ended, else single ended"
                 },
                 "exome_frag": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Bin counting method for fragCounter on whether it is exome or genome",
-                    "hidden": true,
-                    "help_text": "If TRUE, will consider the input the data as exome, else if FALSE will consider it genome"
+                    "help_text": "If TRUE, will consider the input the data as exome, else if FALSE will consider it genome",
+                    "hidden": true
                 },
                 "windowsize_frag": {
                     "type": "number",
-                    "default": 200.0,
+                    "default": 200,
                     "fa_icon": "fas fa-wrench",
                     "description": "Default bin size for fragCounter",
-                    "hidden": true,
                     "help_text": "By default the bin size is 200, adjust as necessary."
                 },
                 "minmapq_frag": {
                     "type": "number",
-                    "default": 1.0,
+                    "default": 1,
                     "fa_icon": "fas fa-wrench",
                     "description": "Minimal Mapping Quality for fragCounter",
-                    "hidden": true,
                     "help_text": "By default the minimum mapping quality is 200, adjust as necessary."
                 },
                 "gcmapdir_frag": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "GC and Mappabilty directory for fragCounter",
-                    "hidden": true,
                     "help_text": "Provide the directory containing .rds file for gc and mappability bias based on genome version"
                 }
             }
         },
         "dryclean": {
-            "title": "Drycleaned Coverage Data tool",
+            "title": "Dryclean",
             "type": "object",
             "description": "Configure genome wide cleaning using Dryclean",
             "default": "",
@@ -335,29 +360,28 @@
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Dryclean PON",
-                    "hidden": true,
                     "help_text": "Provide the PON .rds file based on genome version"
                 },
                 "centered_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Option to specify whether the samples are centered",
-                    "hidden": true,
-                    "help_text": "are the samples centered"
+                    "help_text": "are the samples centered",
+                    "default": "TRUE"
                 },
                 "cbs_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Option to specify whether to perform CBS",
                     "hidden": true,
-                    "help_text": "if TRUE, perform cbs on the drycleaned coverage"
+                    "help_text": "if TRUE, perform cbs on the drycleaned coverage",
+                    "default": "FALSE"
                 },
                 "cnsignif_dryclean": {
                     "type": "number",
-                    "default": 1e-05,
+                    "default": 0.00001,
                     "fa_icon": "fas fa-wrench",
                     "description": "Significance level for CBS",
-                    "hidden": true,
                     "help_text": "the significance levels for the test to accept change-points in cbs"
                 },
                 "wholeGenome_dryclean": {
@@ -365,56 +389,96 @@
                     "fa_icon": "fas fa-forward",
                     "description": "Option to specify whether perform dryclean on whole genome",
                     "hidden": true,
-                    "help_text": "if TRUE, it will process all chromosomes and parallelize it"
+                    "help_text": "if TRUE, it will process all chromosomes and parallelize it",
+                    "default": "TRUE"
                 },
                 "blacklist_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Option to specify whether there are blacklisted makers",
                     "hidden": true,
-                    "help_text": "if TRUE, will assume there is blacklisted makers"
+                    "help_text": "if TRUE, will assume there is blacklisted makers",
+                    "default": "FALSE"
                 },
                 "blacklist_path_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Dryclean blacklist path",
-                    "hidden": true,
-                    "help_text": "Provide the path to dryclean blacklist, default is null"
+                    "help_text": "Provide the path to dryclean blacklist, default is null",
+                    "default": "NA"
                 },
                 "germline_filter_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "If PON based germline filter is to be used for removing some common germline events",
                     "hidden": true,
-                    "help_text": "If set to TRUE, give path to germline annotated file"
+                    "help_text": "If set to TRUE, give path to germline annotated file",
+                    "default": "FALSE"
                 },
                 "germline_file_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Path to file annotated with germline calls, if germline.filter == TRUE",
-                    "hidden": true,
-                    "help_text": "Path to file annotated with germline calls, if germline.filter == TRUE"
+                    "help_text": "Path to file annotated with germline calls, if germline.filter == TRUE",
+                    "default": "NA"
                 },
                 "human_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Specify if the samples under consideration are human",
                     "hidden": true,
-                    "help_text": "Specify if the samples under consideration are human"
+                    "help_text": "Specify if the samples under consideration are human",
+                    "default": "TRUE"
                 },
                 "field_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Field name in GRanges metadata to use for drycleaning",
-                    "hidden": true,
-                    "help_text": "Specify Field name in GRanges metadata to use for drycleaning"
+                    "help_text": "Specify Field name in GRanges metadata to use for drycleaning",
+                    "default": "reads.corrected"
+                },
+                "build_dryclean": {
+                    "type": "string",
+                    "default": "hg19",
+                    "description": "Mention whether it is hg19 or hg38",
+                    "fa_icon": "fas fa-font"
                 }
             }
         },
-        "ascat": {
-            "title": "ASCAT SEG using hetpileups and drycleaned coverages",
+        "cbs": {
+            "title": "CBS",
             "type": "object",
-            "description": "Configure genome wide cleaning using Dryclean",
+            "description": "Input params to run CBS",
+            "default": "",
+            "properties": {
+                "cnsignif_cbs": {
+                    "type": "number",
+                    "default": 0.01,
+                    "description": "Significance level to consider for CBS",
+                    "help_text": "Default is set to 10% or 0.01",
+                    "fa_icon": "fas fa-filter"
+                },
+                "field_cbs": {
+                    "type": "string",
+                    "default": "foreground",
+                    "description": "Field to apply CBS on",
+                    "help_text": "Defualt field is \"foreground\" if it comes from dryclean. Else, select the column to apply CBS on",
+                    "fa_icon": "fas fa-font"
+                },
+                "name_cbs": {
+                    "type": "string",
+                    "default": "tumor",
+                    "description": "Name of CBS run",
+                    "fa_icon": "fas fa-font",
+                    "hidden": true
+                }
+            },
+            "fa_icon": "fas fa-suitcase"
+        },
+        "ascat_seg": {
+            "title": "ASCAT SEG",
+            "type": "object",
+            "description": "Run ASCAT using Hetpileups and Segments files as inputs",
             "default": "",
             "fa_icon": "fas fa-toolbox",
             "properties": {
@@ -422,48 +486,242 @@
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "field to use for ascat from coverage, default is ratio",
-                    "hidden": true,
-                    "help_text": "Provide the field from cbs cov"
+                    "help_text": "Provide the field from cbs cov",
+                    "default": "foreground"
                 },
                 "hets_thresh_ascat": {
                     "type": "number",
                     "default": 0.2,
                     "fa_icon": "fas fa-wrench",
                     "description": "Significance level for CBS",
-                    "hidden": true,
                     "help_text": "the significance levels for the test to accept change-points in cbs"
                 },
                 "penalty_ascat": {
                     "type": "number",
-                    "default": 70.0,
+                    "default": 70,
                     "fa_icon": "fas fa-wrench",
                     "description": "Significance level for CBS",
-                    "hidden": true,
                     "help_text": "the significance levels for the test to accept change-points in cbs"
                 },
                 "gc_correct_ascat": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "whether to perform gc correction on coverage",
-                    "hidden": true,
-                    "help_text": "By default it is true and should perform gc corrections"
+                    "help_text": "By default it is true and should perform gc corrections",
+                    "default": "TRUE"
                 },
                 "rebin_width_ascat": {
                     "type": "number",
-                    "default": 50000.0,
+                    "default": 50000,
                     "fa_icon": "fas fa-wrench",
                     "description": "Width of bins to do",
-                    "hidden": true,
                     "help_text": "The bin size, default is 5e4"
                 },
                 "from_maf_ascat": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "whether to start from MAF stage",
-                    "hidden": true,
-                    "help_text": "By default it is FALSE and should not start from MAF stage"
+                    "help_text": "By default it is FALSE and should not start from MAF stage",
+                    "default": "FALSE",
+                    "hidden": true
                 }
             }
+        },
+        "jabba": {
+            "title": "JaBbA",
+            "type": "object",
+            "description": "Input params to run JaBbA",
+            "default": "",
+            "properties": {
+                "blacklist_junctions_jabba": {
+                    "type": "string",
+                    "description": "rearrangement junctions to be excluded from consideration",
+                    "fa_icon": "fas fa-file"
+                },
+                "geno_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "whether the junction has genotype information",
+                    "hidden": true
+                },
+                "indel_jabba": {
+                    "type": "string",
+                    "default": "exclude",
+                    "description": "character of the decision to 'exclude' or 'include' small(< min.nbins * coverage bin width) isolated INDEL-like events into the model."
+                },
+                "tfield_jabba": {
+                    "type": "string",
+                    "default": "tier",
+                    "description": "tier confidence meta data field in ra. tiers are 1 = must use, 2 = may use, 3 = use only in iteration>1 if near loose end. Default 'tier'.",
+                    "fa_icon": "fas fa-font"
+                },
+                "iter_jabba": {
+                    "type": "integer",
+                    "default": 2,
+                    "description": "the number of extra re-iterations allowed, to rescue lower confidence junctions that are near loose end. Default 0. This requires junctions to be tiered via a metadata field tfield.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-wrench"
+                },
+                "rescue_window_jabba": {
+                    "type": "integer",
+                    "default": 10000,
+                    "description": "window size in bp within which to look for lower confidence junctions. Default 1000.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-wrench"
+                },
+                "rescue_all_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "nudgebalanced_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "whether to attempt to add a small incentive for chains of quasi-reciprocal junctions.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "strict_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "if used will only include junctions that exactly overlap segs",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "edgenudge_jabba": {
+                    "type": "number",
+                    "default": 0.1,
+                    "description": "numeric hyper-parameter of how much to nudge or reward aberrant junction incorporation. Default 0.1 (should be several orders of magnitude lower than average 1/sd on individual segments), a nonzero value encourages incorporation of perfectly balanced rearrangements which would be equivalently optimal with 0 copies or more copies.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-wrench"
+                },
+                "allin_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "if TRUE will put all tiers in the first round of iteration",
+                    "hidden": true,
+                    "fa_icon": "fas fa-wrench"
+                },
+                "field_jabba": {
+                    "type": "string",
+                    "default": "foreground",
+                    "description": "name of the metadata column of coverage that contains the data. Default 'ratio' (coverage ratio between tumor and normal). If using dryclean, it is 'foreground'.",
+                    "fa_icon": "fas fa-font"
+                },
+                "maxna_jabba": {
+                    "type": "number",
+                    "default": 0.9,
+                    "description": "Any node with more NA than this fraction will be ignored",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "ploidy_jabba": {
+                    "type": "string",
+                    "default": "NA",
+                    "description": "Ploidy guess, can be a length 2 range",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "purity_jabba": {
+                    "type": "string",
+                    "default": "NA",
+                    "description": "Purity guess, can be a length 2 range",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "pp_method_jabba": {
+                    "type": "string",
+                    "default": "ppgrid",
+                    "description": "select from 'ppgrid', 'ppurple', and 'sequenza' to infer purity and ploidy if not both given. Default, 'sequenza'.",
+                    "fa_icon": "fas fa-calculator"
+                },
+                "cnsignif_jabba": {
+                    "type": "number",
+                    "default": 0.00001,
+                    "description": "alpha value for CBS",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "slack_jabba": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "Slack penalty to apply per loose end",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "linear_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "if TRUE will use L1 loose end penalty",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "tilim_jabba": {
+                    "type": "integer",
+                    "default": 7200,
+                    "description": "Time limit for JaBbA MIP",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "epgap_jabba": {
+                    "type": "number",
+                    "description": "threshold for calling convergence",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "fix_thres_jabba": {
+                    "type": "integer",
+                    "default": -1,
+                    "fa_icon": "fas fa-wrench"
+                },
+                "lp_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "Run as LP",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "ism_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "Include infinite sites constraints",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "filter_loose_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "whether to filter loose ends",
+                    "fa_icon": "fas fa-forward"
+                },
+                "gurobi_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "Whether to run with GUROBI instead of CPLEX",
+                    "hidden": true,
+                    "fa_icon": "fas fa-tools"
+                },
+                "nonintegral_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "fa_icon": "fas fa-forward"
+                },
+                "verbose_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "verbose output",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "help_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "Show this help message and exitsage: jba JUNCTIONS COVERAGE [options]",
+                    "hidden": true,
+                    "fa_icon": "fas fa-file"
+                },
+                "blacklist_coverage_jabba": {
+                    "type": "string",
+                    "default": "None",
+                    "description": "File path to remove blacklisted positions from coverage",
+                    "fa_icon": "fas fa-file"
+                }
+            },
+            "fa_icon": "fas fa-suitcase"
         },
         "variant_calling": {
             "title": "Variant Calling",
@@ -519,7 +777,7 @@
                 },
                 "cf_contamination": {
                     "type": "number",
-                    "default": 0.0,
+                    "default": 0,
                     "fa_icon": "fas fa-broom",
                     "description": "Design known contamination value for Control-FREEC",
                     "hidden": true,
@@ -527,7 +785,7 @@
                 },
                 "cf_minqual": {
                     "type": "number",
-                    "default": 0.0,
+                    "default": 0,
                     "fa_icon": "fas fa-greater-than",
                     "hidden": true,
                     "description": "Minimal sequencing quality for a position to be considered in BAF analysis.",
@@ -535,7 +793,7 @@
                 },
                 "cf_mincov": {
                     "type": "number",
-                    "default": 0.0,
+                    "default": 0,
                     "fa_icon": "fas fa-align-center",
                     "hidden": true,
                     "description": "Minimal read coverage for a position to be considered in BAF analysis.",
@@ -580,7 +838,7 @@
                 },
                 "ascat_min_base_qual": {
                     "type": "number",
-                    "default": 20.0,
+                    "default": 20,
                     "fa_icon": "fas fa-greater-than",
                     "description": "Overwrite Ascat min base quality required for a read to be counted.",
                     "hidden": true,
@@ -588,7 +846,7 @@
                 },
                 "ascat_min_counts": {
                     "type": "number",
-                    "default": 10.0,
+                    "default": 10,
                     "fa_icon": "fas fa-align-center",
                     "description": "Overwrite Ascat minimum depth required in the normal for a SNP to be considered.",
                     "hidden": true,
@@ -596,7 +854,7 @@
                 },
                 "ascat_min_map_qual": {
                     "type": "number",
-                    "default": 35.0,
+                    "default": 35,
                     "fa_icon": "fas fa-balance-scale-left",
                     "description": "Overwrite Ascat min mapping quality required for a read to be counted.",
                     "hidden": true,
@@ -1041,7 +1299,7 @@
                 "max_memory": {
                     "type": "string",
                     "description": "Maximum amount of memory that can be requested for any single job.",
-                    "default": "128.GB",
+                    "default": "256.GB",
                     "fa_icon": "fas fa-memory",
                     "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
                     "hidden": true,
@@ -1050,7 +1308,7 @@
                 "max_time": {
                     "type": "string",
                     "description": "Maximum amount of time that can be requested for any single job.",
-                    "default": "240.h",
+                    "default": "360.h",
                     "fa_icon": "far fa-clock",
                     "pattern": "^(\\d+\\.?\\s*(s|m|h|d|day)\\s*)+$",
                     "hidden": true,
@@ -1206,13 +1464,22 @@
             "$ref": "#/definitions/sv_calling"
         },
         {
+            "$ref": "#/definitions/hetpileups"
+        },
+        {
             "$ref": "#/definitions/fragcounter"
         },
         {
             "$ref": "#/definitions/dryclean"
         },
         {
-            "$ref": "#/definitions/ascat"
+            "$ref": "#/definitions/cbs"
+        },
+        {
+            "$ref": "#/definitions/ascat_seg"
+        },
+        {
+            "$ref": "#/definitions/jabba"
         },
         {
             "$ref": "#/definitions/variant_calling"
@@ -1234,153 +1501,9 @@
         }
     ],
     "properties": {
-        "filter_hets": {
-            "type": "string",
-            "default": "TRUE"
-        },
-        "max_depth": {
-            "type": "integer",
-            "default": 1000
-        },
-        "cnsignif_cbs": {
-            "type": "number",
-            "default": 0.01
-        },
-        "field_cbs": {
-            "type": "string",
-            "default": "foreground"
-        },
-        "name_cbs": {
-            "type": "string",
-            "default": "tumor"
-        },
-        "blacklist_junctions_jabba": {
-            "type": "string",
-            "default": "/dev/null"
-        },
-        "geno_jabba": {
-            "type": "string",
-            "default": "FALSE"
-        },
-        "indel_jabba": {
-            "type": "string",
-            "default": "exclude"
-        },
-        "tfield_jabba": {
-            "type": "string",
-            "default": "tier"
-        },
-        "iter_jabba": {
-            "type": "integer",
-            "default": 2
-        },
-        "rescue_window_jabba": {
-            "type": "integer",
-            "default": 10000
-        },
-        "rescue_all_jabba": {
-            "type": "string",
-            "default": "TRUE"
-        },
-        "nudgebalanced_jabba": {
-            "type": "string",
-            "default": "TRUE"
-        },
-        "edgenudge_jabba": {
-            "type": "number",
-            "default": 0.1
-        },
-        "strict_jabba": {
-            "type": "string",
-            "default": "FALSE"
-        },
-        "allin_jabba": {
-            "type": "string",
-            "default": "FALSE"
-        },
-        "field_jabba": {
-            "type": "string",
-            "default": "foreground"
-        },
-        "maxna_jabba": {
-            "type": "number",
-            "default": 0.9
-        },
-        "ploidy_jabba": {
-            "type": "string",
-            "default": "NA"
-        },
-        "purity_jabba": {
-            "type": "string",
-            "default": "NA"
-        },
-        "pp_method_jabba": {
-            "type": "string",
-            "default": "ppgrid"
-        },
-        "cnsignif_jabba": {
-            "type": "number",
-            "default": 1e-05
-        },
-        "slack_jabba": {
-            "type": "integer",
-            "default": 100
-        },
-        "linear_jabba": {
-            "type": "string",
-            "default": "TRUE"
-        },
-        "tilim_jabba": {
-            "type": "integer",
-            "default": 7200
-        },
-        "epgap_jabba": {
-            "type": "number",
-            "default": 1e-08
-        },
-        "fix_thres_jabba": {
-            "type": "integer",
-            "default": -1
-        },
-        "lp_jabba": {
-            "type": "string",
-            "default": "TRUE"
-        },
-        "ism_jabba": {
-            "type": "string",
-            "default": "TRUE"
-        },
-        "filter_loose_jabba": {
-            "type": "string",
-            "default": "FALSE"
-        },
-        "gurobi_jabba": {
-            "type": "string",
-            "default": "FALSE"
-        },
-        "nonintegral_jabba": {
-            "type": "string",
-            "default": "FALSE"
-        },
-        "verbose_jabba": {
-            "type": "string",
-            "default": "TRUE"
-        },
-        "help_jabba": {
-            "type": "string",
-            "default": "FALSE"
-        },
         "validationSchemaIgnoreParams": {
             "type": "string",
             "default": "genomes, cf_ploidy"
-        },
-        "hapmap_sites": {
-            "type": "string",
-            "default": null
-        },
-        "blacklist_coverage_jabba": {
-            "type": "string",
-            "default": null
         }
     }
 }
