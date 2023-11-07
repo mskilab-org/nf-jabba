@@ -1,3 +1,22 @@
+# NF-JaBbA (Nextflow - Junction Balance Analysis Pipeline)
+```
+
+▐▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▌
+▐                                                                                                  ▌
+▐                  ██████                   █████           ███████████  █████       █████████     ▌
+▐                 ███░░███                 ░░███           ░░███░░░░░███░░███       ███░░░░░███    ▌
+▐    ████████    ░███ ░░░                   ░███   ██████   ░███    ░███ ░███████  ░███    ░███    ▌
+▐   ░░███░░███  ███████    ██████████       ░███  ░░░░░███  ░██████████  ░███░░███ ░███████████    ▌
+▐    ░███ ░███ ░░░███░    ░░░░░░░░░░        ░███   ███████  ░███░░░░░███ ░███ ░███ ░███░░░░░███    ▌
+▐    ░███ ░███   ░███                 ███   ░███  ███░░███  ░███    ░███ ░███ ░███ ░███    ░███    ▌
+▐    ████ █████  █████               ░░████████  ░░████████ ███████████  ████████  █████   █████   ▌
+▐   ░░░░ ░░░░░  ░░░░░                 ░░░░░░░░    ░░░░░░░░ ░░░░░░░░░░░  ░░░░░░░░  ░░░░░   ░░░░░    ▌
+▐                                                                                                  ▌
+▐▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▌
+
+
+```
+
 [![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000)](https://doi.org/10.5281/zenodo.XXXXXXX)
 
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
@@ -7,7 +26,11 @@
 
 ## Introduction
 
-**mskilab-org/nf-jabba** is a part of the core mski-lab pipeline workflows that is intended to run JaBbA, an MIP based joint inference of copy number and rearrangement state in cancer whole genome sequence data. This workflow runs all the prerequisite steps/processes necessary to run JaBbA.
+**mskilab-org/nf-JaBbA** is a new state-of-art bioinformatics pipeline from [`mskilab-org`](https://www.mskilab.org/) that is intended to run [`JaBbA`](https://github.com/mskilab-org/JaBbA/tree/master), an MIP based joint inference of copy number and rearrangement state in cancer whole genome sequence data. It runs all the pre-requisite modules necessary to run JaBbA and as followed in `mskilab-org`. This pipeline is built to handle only tumor-normal pairs as input (as of now) and is designed and tested to run on Human samples. 
+
+This pipeline is built after being influenced by `nf-core/Sarek`, a workflow designed to detect variants on whole genome or targeted sequencing data. It is built using [`Nextflow`](https://www.nextflow.io/) and is implemented using `Nextflow DSL2`. All the modules uses [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers which makes the pipeline easily reproducible and maintain its dependencies. Some of the modules/processes are used from [`nf-core/modules`](https://github.com/nf-core/modules) that are available for the Nextflow Community.
+
+This pipeline has been designed to start from scratch using **fastq** files or start using **BAM** files and should be supplied in a **csv** file as input (*please refer the documentation below for the input format of the .csv file*). 
 
 <!-- TODO nf-core:
    Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
