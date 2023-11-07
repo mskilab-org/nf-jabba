@@ -14,7 +14,7 @@ workflow COV_JUNC_JABBA {
     cbs_seg_rds_jabba       // [ meta, seg_cbs ]
     cbs_nseg_rds_jabba      // [ meta, nseg_cbs ]
     j_supp_jabba            // [ meta, unfiltered_som_sv ]
-    blacklist_junctions_jabba
+    //blacklist_junctions_jabba
     geno_jabba
     indel_jabba
     tfield_jabba
@@ -57,7 +57,7 @@ workflow COV_JUNC_JABBA {
 
     JABBA(cov_rds_jabba, junction_jabba, ploidy_jabba, het_pileups_wgs_jabba,
     cbs_seg_rds_jabba, cbs_nseg_rds_jabba, j_supp_jabba,
-    blacklist_junctions_jabba, geno_jabba, indel_jabba, tfield_jabba,
+    geno_jabba, indel_jabba, tfield_jabba,
     iter_jabba, rescue_window_jabba, rescue_all_jabba, nudgebalanced_jabba,
     edgenudge_jabba, strict_jabba, allin_jabba, field_jabba, maxna_jabba,
     blacklist_coverage_jabba, purity_jabba, pp_method_jabba, cnsignif_jabba,

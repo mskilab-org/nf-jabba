@@ -14,7 +14,7 @@ process JABBA {
     tuple val(meta), path(cbs_seg_rds, stageAs: "cbs_seg.rds")
     tuple val(meta), path(cbs_nseg_rds, stageAs: "cbs_nseg.rds")
     tuple val(meta), path(j_supp)
-    path(blacklist_junctions)
+    //path(blacklist_junctions)
     val(geno)
     val(indel)
     val(tfield)
@@ -46,13 +46,13 @@ process JABBA {
     val(help)
 
     output:
-    tuple val(meta), path("*.jabba.simple.rds")      , emit: jabba_rds, optional: true
-    tuple val(meta), path("*.jabba.simple.gg.rds")   , emit: jabba_gg, optional: true
-    tuple val(meta), path("*.jabba.simple.vcf")      , emit: jabba_vcf, optional: true
-    tuple val(meta), path("*.jabba.raw.rds")         , emit: jabba_raw_rds, optional: true
-    tuple val(meta), path("*.opt.report.rds")        , emit: opti, optional: true
-    tuple val(meta), path("*.jabba.seg")             , emit: jabba_seg, optional: true
-    tuple val(meta), path("*.karyograph.rds")        , emit: karyograph, optional: true
+    tuple val(meta), path("*jabba.simple.rds")      , emit: jabba_rds, optional: true
+    tuple val(meta), path("*jabba.simple.gg.rds")   , emit: jabba_gg, optional: true
+    tuple val(meta), path("*jabba.simple.vcf")      , emit: jabba_vcf, optional: true
+    tuple val(meta), path("*jabba.raw.rds")         , emit: jabba_raw_rds, optional: true
+    tuple val(meta), path("*opt.report.rds")        , emit: opti, optional: true
+    tuple val(meta), path("*jabba.seg")             , emit: jabba_seg, optional: true
+    tuple val(meta), path("*karyograph.rds")        , emit: karyograph, optional: true
     path "versions.yml"                              , emit: versions
 
     when:
@@ -83,12 +83,12 @@ process JABBA {
     fi
 
     set -x
-    R_LIB_PATH="/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2"
-    if [ -d "\$R_LIB_PATH" ]; then
-        export R_LIBS=\$R_LIB_PATH
-    fi
+    #R_LIB_PATH="/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2"
+    #if [ -d "\$R_LIB_PATH" ]; then
+    #    export R_LIBS=\$R_LIB_PATH
+    #fi
 
-    export R_DATATABLE_NUM_THREADS=1
+    #export R_DATATABLE_NUM_THREADS=1
     #unset R_HOME
     #R_PROFILE_USER="/dev/null"
 
@@ -100,10 +100,8 @@ process JABBA {
     echo \$jba
     set +x
 
-    export cmd="Rscript \$jba $cov_rds $junction \\
+    export cmd="Rscript \$jba $junction $cov_rds \\
     --j.supp                $j_supp \\
-    --blacklist.junctions	$blacklist_junctions \\
-    --geno					$geno \\
     --indel					$indel \\
     --tfield				$tfield \\
     --iterate				$iter \\
@@ -111,8 +109,6 @@ process JABBA {
     --rescue.all			$rescue_all \\
     --nudgebalanced			$nudgebalanced \\
     --edgenudge				$edgenudge \\
-    --strict				$strict \\
-    --allin					$allin \\
     --field					$field \\
     --seg			        $cbs_seg_rds \\
     --maxna					$maxna \\
@@ -124,21 +120,22 @@ process JABBA {
     --ppmethod				$pp_method \\
     --cnsignif				$cnsignif \\
     --slack					$slack \\
-    --linear				$linear \\
+    --linear				\\
     --tilim					$tilim \\
     --epgap					$epgap \\
     --name                  $name \\
     --cores                 $task.cpus \\
-    --mem                   $task.memory \\
     --fix.thres				$fix_thres \\
     --lp					$lp \\
     --ism					$ism \\
     --filter_loose			$filter_loose \\
     --gurobi				$gurobi \\
-    --nonintegral			$nonintegral \\
-    --verbose				$verbose \\
-    --help					$help \\
     "
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        JaBbA: ${VERSION}
+    END_VERSIONS
 
     { echo "Running:" && echo "\$(echo \$cmd)" && echo && eval \$cmd; }
     cmdsig=\$?
@@ -150,11 +147,6 @@ process JABBA {
     fi
 
     exit 0
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        JaBbA: ${VERSION}
-    END_VERSIONS
     """
 
     stub:

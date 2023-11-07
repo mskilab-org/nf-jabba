@@ -264,7 +264,7 @@ blacklist_path_dryclean      = params.blacklist_path_dryclean      ? Channel.fro
 germline_file_dryclean      = params.germline_file_dryclean      ? Channel.fromPath(params.germline_file_dryclean).collect()     : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
 
 // JaBbA
-blacklist_junctions_jabba		= params.blacklist_junctions_jabba        ? Channel.fromPath(params.blacklist_junctions_jabba).collect() : Channel.empty()
+//blacklist_junctions_jabba		= params.blacklist_junctions_jabba        ? Channel.fromPath(params.blacklist_junctions_jabba).collect() : Channel.empty()
 blacklist_coverage_jabba		= params.blacklist_coverage_jabba		  ? Channel.fromPath(params.blacklist_coverage_jabba).collect() : Channel.empty()
 
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
@@ -1193,12 +1193,12 @@ workflow HEISENBIO {
                 ploidy_jabba = input_sample.map{ meta -> [ meta, ploidy_jabba ] }
             }
 
-            //name_jabba = input_sample .map{ meta -> [ meta ] }
+            //name_jabba = input_sample .map{ meta -> meta.id }
             name_jabba = 'tumor'
 
             JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
             sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
-            unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
+            unfiltered_som_sv, geno_jabba,
             indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
             rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
             strict_jabba, allin_jabba, field_jabba, maxna_jabba,
