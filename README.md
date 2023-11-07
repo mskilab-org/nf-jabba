@@ -1,6 +1,5 @@
 # NF-JaBbA (Nextflow - Junction Balance Analysis Pipeline)
 ```
-
 ▐▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▌
 ▐                                                                                                  ▌
 ▐                  ██████                   █████           ███████████  █████       █████████     ▌
@@ -13,8 +12,6 @@
 ▐   ░░░░ ░░░░░  ░░░░░                 ░░░░░░░░    ░░░░░░░░ ░░░░░░░░░░░  ░░░░░░░░  ░░░░░   ░░░░░    ▌
 ▐                                                                                                  ▌
 ▐▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▌
-
-
 ```
 
 [![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000)](https://doi.org/10.5281/zenodo.XXXXXXX)
@@ -28,22 +25,25 @@
 
 **mskilab-org/nf-JaBbA** is a new state-of-art bioinformatics pipeline from [`mskilab-org`](https://www.mskilab.org/) that is intended to run [`JaBbA`](https://github.com/mskilab-org/JaBbA/tree/master), an MIP based joint inference of copy number and rearrangement state in cancer whole genome sequence data. It runs all the pre-requisite modules necessary to run JaBbA and as followed in `mskilab-org`. This pipeline is built to handle only tumor-normal pairs as input (as of now) and is designed and tested to run on Human samples. 
 
-This pipeline is built after being influenced by `nf-core/Sarek`, a workflow designed to detect variants on whole genome or targeted sequencing data. It is built using [`Nextflow`](https://www.nextflow.io/) and is implemented using `Nextflow DSL2`. All the modules uses [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers which makes the pipeline easily reproducible and maintain its dependencies. Some of the modules/processes are used from [`nf-core/modules`](https://github.com/nf-core/modules) that are available for the Nextflow Community.
+We drew our inspiration and ideas from [`nf-core/Sarek`](https://github.com/nf-core/sarek), a workflow designed to detect variants on whole genome or targeted sequencing data. It is built using [`Nextflow`](https://www.nextflow.io/) and is implemented using `Nextflow DSL2`. All the modules uses [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers which makes the pipeline easily reproducible and maintain its dependencies. Some of the modules/processes are used from [`nf-core/modules`](https://github.com/nf-core/modules) that are available for the Nextflow Community.
 
-This pipeline has been designed to start from scratch using **fastq** files or start using **BAM** files and should be supplied in a **csv** file as input (*please refer the documentation below for the input format of the .csv file*). 
+This pipeline has been designed to start from scratch using **FASTQ** files or start directly from **BAM** files as input and should be supplied in a **CSV** file (*please refer to the documentation below for the input format of the .csv file*). We incorporated a modified version of the `Alignment` step of `nf-JaBbA` pipeline from `nf-core/Sarek`, many thanks to the Sarek community. 
 
-<!-- TODO nf-core:
-   Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
-   major pipeline sections and the types of output it produces. You're giving an overview to someone new
-   to nf-core here, in 15-20 seconds. For an example, see https://github.com/nf-core/rnaseq/blob/master/README.md#introduction
--->
+## Workflow Summary:
+1. Alignment to Reference Genome (currently support `BWA-MEM` & `BWA-MEM2`)
+2. Quality Control (using [`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
+3. Perform trimming (must turn on using `--trim_fastq`) (using `fastp`)
+4. Marking Duplicates (using `GATK MarkDuplicates`)
+5. Perform baserecalibration (using `GATK BaseRecalibrator`)
+6. Apply BQSR (using `GATK ApplyBQSR`)
+7. Perform Structural Variants Calling (using [`SVABA`](https://github.com/walaj/svaba) and/or [`GRIDSS`](https://github.com/PapenfussLab/gridss); must mention using `--tools`)
+8. Perform Pileups (using mskilab's custom `HetPileups`; must mention using `--tools`)
+9. Generate raw coverages and corect for GC & Mappability bias (using [`fragCounter`](https://github.com/mskilab-org/fragCounter); must mention using `--tools`)
+10. Remove biological and technical noise from coverage data. (using [`Dryclean`](https://github.com/mskilab-org/dryclean); must mention using `--tools`)
+11. Perform Segmentation by using tumor/normal ratios of corrected read counts, (using `CBS` circular binary segmentation algorithm; must mention using `--tools`)
+12. Get Purity & Ploidy separately to supply to JaBbA (currently support [`ASCAT`](https://www.crick.ac.uk/research/labs/peter-van-loo/software) to pass ploidy values to JaBbA; must mention using `--tools`)
+13. Execute JaBbA (using inputs from `Dryclean`, `CBS`, `HetPileups` and/or `ASCAT`; must mention using `--tools`)
 
-<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
-     workflows use the "tube map" design for that. See https://nf-co.re/docs/contributing/design_guidelines#examples for examples.   -->
-<!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
-
-1. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-2. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
 
 ## Usage
 
