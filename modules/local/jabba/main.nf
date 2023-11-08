@@ -100,36 +100,37 @@ process JABBA {
     echo \$jba
     set +x
 
-    export cmd="Rscript \$jba $junction $cov_rds \\
-    --j.supp                $j_supp \\
-    --indel					$indel \\
-    --tfield				$tfield \\
-    --iterate				$iter \\
-    --rescue.window			$rescue_window \\
-    --rescue.all			$rescue_all \\
-    --nudgebalanced			$nudgebalanced \\
-    --edgenudge				$edgenudge \\
-    --field					$field \\
-    --seg			        $cbs_seg_rds \\
-    --maxna					$maxna \\
-    --blacklist.coverage	$blacklist_coverage \\
-    --nseg			        $cbs_nseg_rds \\
-    --hets		            $het_pileups_wgs \\
-    --ploidy				$ploidy \\
-    --purity				$purity \\
-    --ppmethod				$pp_method \\
-    --cnsignif				$cnsignif \\
-    --slack					$slack \\
+    export cmd="Rscript \$jba ${junction} ${cov_rds} \\
+    --j.supp                ${j_supp} \\
+    --indel					${indel} \\
+    --tfield				${tfield} \\
+    --iterate				${iter} \\
+    --rescue.window			${rescue_window} \\
+    --rescue.all			${rescue_all} \\
+    --nudgebalanced			${nudgebalanced} \\
+    --edgenudge				${edgenudge} \\
+    --field					${field} \\
+    --seg			        ${cbs_seg_rds} \\
+    --maxna					${maxna} \\
+    --blacklist.coverage	${blacklist_coverage} \\
+    --nseg			        ${cbs_nseg_rds} \\
+    --hets		            ${het_pileups_wgs} \\
+    --ploidy				${ploidy} \\
+    --purity				${purity} \\
+    --ppmethod				${pp_method} \\
+    --cnsignif				${cnsignif} \\
+    --slack					${slack} \\
     --linear				\\
-    --tilim					$tilim \\
-    --epgap					$epgap \\
-    --name                  $name \\
-    --cores                 $task.cpus \\
-    --fix.thres				$fix_thres \\
-    --lp					$lp \\
-    --ism					$ism \\
-    --filter_loose			$filter_loose \\
-    --gurobi				$gurobi \\
+    --tilim					${tilim} \\
+    --epgap					${epgap} \\
+    --name                  ${meta.id} \\
+    --cores                 12 \\
+    --mem                   16 \\
+    --fix.thres				${fix_thres} \\
+    --lp					${lp} \\
+    --ism					${ism} \\
+    --filter_loose			${filter_loose} \\
+    --gurobi				${gurobi} \\
     "
 
     cat <<-END_VERSIONS > versions.yml
@@ -146,7 +147,7 @@ process JABBA {
         exit \$cmdsig
     fi
 
-    exit 0
+    ## exit 0
     """
 
     stub:

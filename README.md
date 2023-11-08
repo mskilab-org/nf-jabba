@@ -52,6 +52,15 @@ This pipeline has been designed to start from scratch using **FASTQ** files or s
 > to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline)
 > with `-profile test` before running the workflow on actual data.
 
+### Setting up the ***samplesheet.csv*** file for input:
+
+You need to create a samplesheet with information regarding the samples that you want to run the pipeline on. You need to specify the path of your **samplesheet** using the `--input` flag to specify the location. Make sure the input file is a *comma-separated* file and must contain headers with info discussed below. *It is highly recommended to provide the **absolute path** for inputs inside the samplesheet rather than relative paths.*
+
+To mention a sample as paired tumor-normal, it has to be specified with the same `patient` ID, a different `sample`, and their respective `status`. For instance, a `tumor` sample should be mentioned **1** in `status` field for a sample, if it is normal mention **0**. If there are multiple `sample` IDs, `nf-jabba` will consider them as separate samples and output the results on separate folders based on `patient`, rest assured all the runs will be separate based on `patient`, so no need to be concerned with getting the outputs mixed.
+
+You need to specify the desired output directory path using `--outdir` flag when you start a run so that the outputs get stored on your designated folder and separated by `tool` and `sample` names in folders.
+
+
 <!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
      Explain what rows and columns represent. For instance (please edit as appropriate):
 
@@ -86,9 +95,11 @@ nextflow run mskilab-org/nf-jabba \
 
 ## Credits
 
-mskilab-org/nf-jabba was originally written by Tanubrata Dey and Shihab Dider.
+`nf-jabba` was originally written by [`Tanubrata Dey`](https://github.com/tanubrata) and [`Shihab Dider`](https://github.com/shihabdider) at the Perlmutter Cancer Center and the New York Genome Center.
 
-We thank the following people for their extensive assistance in the development of this pipeline:
+We thank the following people for their extensive guidance in the development of this pipeline:
+- [Marcin Imielinski](https://github.com/imielinski)
+- [Joel Rosiene](https://github.com/jrosiene)
 
 <!-- TODO nf-core: If applicable, make list of people who have also contributed -->
 
