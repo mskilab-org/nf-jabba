@@ -1,6 +1,6 @@
-# nf-core/heisenbio: Documentation
+# mskilab-org/nf-jabba: Documentation
 
-The nf-core/heisenbio documentation is split into the following pages:
+The mskilab-org/nf-jabba documentation is split into the following pages:
 
 - [Usage](usage.md)
   - An overview of how the pipeline works, how to run it and a description of all of the different command-line flags.

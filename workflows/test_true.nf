@@ -61,7 +61,7 @@ def checkPathParamList = [
 
 
 // Validating the input parameters
-WorkflowHeisenbio.initialise(params, log)
+WorkflowNfjabba.initialise(params, log)
 
 
 /*
@@ -73,7 +73,7 @@ println "This is the output of build_only_index: $params.build_only_index"
 for (param in checkPathParamList) if (param) file(param, checkIfExists: true)
 
 
-// Set input, can either be from --input or from automatic retrieval in WorkflowHeisenbio.groovy
+// Set input, can either be from --input or from automatic retrieval in WorkflowNfjabba.groovy
 if (params.input) {
     ch_from_samplesheet = params.build_only_index ? Channel.empty() : Channel.fromSamplesheet("input")
 } else {
@@ -400,7 +400,7 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow HEISENBIO() {
+workflow NFJABBA() {
 
 	ch_multiqc_config          = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: true)
 	ch_multiqc_custom_config   = params.multiqc_config ? Channel.fromPath( params.multiqc_config, checkIfExists: true ) : Channel.empty()
@@ -454,10 +454,10 @@ workflow HEISENBIO() {
 
 	// MODULE: MultiQC
     //if (!(params.skip_tools && params.skip_tools.split(',').contains('multiqc'))) {
-    //    workflow_summary    = WorkflowHeisenbio.paramsSummaryMultiqc(workflow, summary_params)
+    //    workflow_summary    = WorkflowNfjabba.paramsSummaryMultiqc(workflow, summary_params)
     //    ch_workflow_summary = Channel.value(workflow_summary)
     //    
-    //    methods_description    = WorkflowHeisenbio.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description, params)
+    //    methods_description    = WorkflowNfjabba.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description, params)
     //    ch_methods_description = Channel.value(methods_description)
     //    
     //    ch_multiqc_files = Channel.empty()

@@ -1,6 +1,6 @@
 {
-    "name": "nf-core/heisenbio",
-    "homePage": "https://github.com/nf-core/heisenbio",
+    "name": "mskilab-org/nf-jabba",
+    "homePage": "https://github.com/mskilab-org/nf-jabba",
     "repos": {
         "https://github.com/nf-core/modules.git": {
             "modules": {

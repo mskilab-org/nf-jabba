@@ -1,11 +1,11 @@
 //
-// This file holds several functions specific to the workflow/heisenbio.nf in the nf-core/heisenbio pipeline
+// This file holds several functions specific to the workflow/nfjabba.nf in the mskilab-org/nf-jabba pipeline
 //
 
 import nextflow.Nextflow
 import groovy.text.SimpleTemplateEngine
 
-class WorkflowHeisenbio {
+class WorkflowNfjabba {
 
     //
     // Check and validate parameters

@@ -1,4 +1,4 @@
-# nf-core/heisenbio: Output
+# mskilab-org/nf-jabba: Output
 
 ## Introduction
 

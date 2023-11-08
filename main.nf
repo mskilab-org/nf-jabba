@@ -1,11 +1,11 @@
 #!/usr/bin/env nextflow
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    nf-core/heisenbio
+    mskilab-org/nf-jabba
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://tanubrata/nf-core/heisenbio
-    Website: https://nf-co.re/heisenbio
-    Slack  : https://nfcore.slack.com/channels/heisenbio
+    Github : https://tanubrata/mskilab-org/nf-jabba
+    Website: https://nf-co.re/nfjabba
+    Slack  : https://nfcore.slack.com/channels/nfjabba
 ----------------------------------------------------------------------------------------
 */
 
@@ -68,7 +68,7 @@ params.blacklist_coverage_jabba     = WorkflowMain.getGenomeAttribute(params, 'b
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-params.input_restart = WorkflowHeisenbio.retrieveInput(params, log)
+params.input_restart = WorkflowNfjabba.retrieveInput(params, log)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -100,13 +100,13 @@ WorkflowMain.initialise(workflow, params, log)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { HEISENBIO } from './workflows/heisenbio'
+include { NFJABBA } from './workflows/nfjabba'
 
 //
-// WORKFLOW: Run main nf-core/heisenbio analysis pipeline
+// WORKFLOW: Run main mskilab-org/nf-jabba analysis pipeline
 //
-workflow NFCORE_HEISENBIO {
-    HEISENBIO ()
+workflow MSKILABORG_NFJABBA {
+    NFJABBA ()
 }
 
 /*
@@ -120,7 +120,7 @@ workflow NFCORE_HEISENBIO {
 // See: https://github.com/nf-core/rnaseq/issues/619
 //
 workflow {
-    NFCORE_HEISENBIO ()
+    MSKILABORG_NFJABBA ()
 }
 
 /*
