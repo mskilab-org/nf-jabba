@@ -14,7 +14,7 @@ process JABBA {
     tuple val(meta), path(cbs_seg_rds, stageAs: "cbs_seg.rds")
     tuple val(meta), path(cbs_nseg_rds, stageAs: "cbs_nseg.rds")
     tuple val(meta), path(j_supp)
-    //path(blacklist_junctions)
+    val(blacklist_junctions)    // this is declared as val to allow for "NULL" default value, but is treated like a path
     val(geno)
     val(indel)
     val(tfield)
@@ -43,7 +43,6 @@ process JABBA {
     val(gurobi)
     val(nonintegral)
     val(verbose)
-    val(help)
 
     output:
     tuple val(meta), path("*jabba.simple.rds")      , emit: jabba_rds, optional: true
@@ -61,6 +60,11 @@ process JABBA {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def geno_switch = geno == "TRUE" ? "--geno" : ""
+    def strict_switch = strict == "TRUE" ? "--strict" : ""
+    def allin_switch = allin == "TRUE" ? "--allin" : ""
+    def linear_switch = linear == "TRUE" ? "--linear" : ""
+    def verbose_switch = verbose == "TRUE" ? "--verbose" : ""
 
     def VERSION    = '1.1'
     """
@@ -82,16 +86,6 @@ process JABBA {
         fi
     fi
 
-    set -x
-    #R_LIB_PATH="/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2"
-    #if [ -d "\$R_LIB_PATH" ]; then
-    #    export R_LIBS=\$R_LIB_PATH
-    #fi
-
-    #export R_DATATABLE_NUM_THREADS=1
-    #unset R_HOME
-    #R_PROFILE_USER="/dev/null"
-
     ## find R installation
     echo "USING LIBRARIES: \$(Rscript -e 'print(.libPaths())')"
 
@@ -100,36 +94,41 @@ process JABBA {
     echo \$jba
     set +x
 
-    export cmd="Rscript \$jba $junction $cov_rds \\
-    --j.supp                $j_supp \\
-    --indel					$indel \\
-    --tfield				$tfield \\
-    --iterate				$iter \\
-    --rescue.window			$rescue_window \\
-    --rescue.all			$rescue_all \\
-    --nudgebalanced			$nudgebalanced \\
-    --edgenudge				$edgenudge \\
-    --field					$field \\
-    --seg			        $cbs_seg_rds \\
-    --maxna					$maxna \\
-    --blacklist.coverage	$blacklist_coverage \\
-    --nseg			        $cbs_nseg_rds \\
-    --hets		            $het_pileups_wgs \\
-    --ploidy				$ploidy \\
-    --purity				$purity \\
-    --ppmethod				$pp_method \\
-    --cnsignif				$cnsignif \\
-    --slack					$slack \\
-    --linear				\\
-    --tilim					$tilim \\
-    --epgap					$epgap \\
-    --name                  $name \\
-    --cores                 $task.cpus \\
-    --fix.thres				$fix_thres \\
-    --lp					$lp \\
-    --ism					$ism \\
-    --filter_loose			$filter_loose \\
-    --gurobi				$gurobi \\
+    export cmd="Rscript \$jba $junction $cov_rds    \\
+    --blacklist.junctions   $blacklist_junctions
+    $geno_switch                                    \\
+    --j.supp                $j_supp                 \\
+    --indel					$indel                  \\
+    --tfield				$tfield                 \\
+    --iterate				$iter                   \\
+    --rescue.window			$rescue_window          \\
+    --rescue.all			$rescue_all             \\
+    --nudgebalanced			$nudgebalanced          \\
+    --edgenudge				$edgenudge              \\
+    $strict_switch                                  \\
+    $allin_switch                                   \\
+    --field					$field                  \\
+    --seg			        $cbs_seg_rds            \\
+    --maxna					$maxna                  \\
+    --blacklist.coverage	$blacklist_coverage     \\
+    --nseg			        $cbs_nseg_rds           \\
+    --hets		            $het_pileups_wgs        \\
+    --ploidy				$ploidy                 \\
+    --purity				$purity                 \\
+    --ppmethod				$pp_method              \\
+    --cnsignif				$cnsignif               \\
+    --slack					$slack                  \\
+    $linear_switch                                  \\
+    --tilim					$tilim                  \\
+    --epgap					$epgap                  \\
+    --name                  $name                   \\
+    --cores                 $task.cpus              \\
+    --fix.thres				$fix_thres              \\
+    --lp					$lp                     \\
+    --ism					$ism                    \\
+    --filter_loose			$filter_loose           \\
+    --gurobi				$gurobi                 \\
+    $verbose_switch                                 \\
     "
 
     cat <<-END_VERSIONS > versions.yml

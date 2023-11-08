@@ -264,7 +264,6 @@ blacklist_path_dryclean      = params.blacklist_path_dryclean      ? Channel.fro
 germline_file_dryclean      = params.germline_file_dryclean      ? Channel.fromPath(params.germline_file_dryclean).collect()     : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
 
 // JaBbA
-//blacklist_junctions_jabba		= params.blacklist_junctions_jabba        ? Channel.fromPath(params.blacklist_junctions_jabba).collect() : Channel.empty()
 blacklist_coverage_jabba		= params.blacklist_coverage_jabba		  ? Channel.fromPath(params.blacklist_coverage_jabba).collect() : Channel.empty()
 
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
@@ -314,6 +313,7 @@ field_cbs                       = params.field_cbs                  ?: Channel.e
 name_cbs                        = params.name_cbs                   ?: Channel.empty()
 
 // JaBbA
+blacklist_junctions_jabba		= params.blacklist_junctions_jabba      ?: Channel.empty()
 geno_jabba					    = params.geno_jabba			            ?: Channel.empty()
 indel_jabba					    = params.indel_jabba			        ?: Channel.empty()
 tfield_jabba					= params.tfield_jabba			        ?: Channel.empty()
@@ -1198,7 +1198,7 @@ workflow HEISENBIO {
 
             JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
             sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
-            unfiltered_som_sv, geno_jabba,
+            unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
             indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
             rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
             strict_jabba, allin_jabba, field_jabba, maxna_jabba,
@@ -1206,7 +1206,7 @@ workflow HEISENBIO {
             cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
             epgap_jabba, name_jabba, fix_thres_jabba, lp_jabba,
             ism_jabba, filter_loose_jabba, gurobi_jabba, nonintegral_jabba,
-            verbose_jabba, help_jabba)
+            verbose_jabba)
 
             jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
             jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
