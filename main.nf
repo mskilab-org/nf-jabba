@@ -60,6 +60,7 @@ params.build_dryclean        = WorkflowMain.getGenomeAttribute(params, 'build_dr
 params.hapmap_sites          = WorkflowMain.getGenomeAttribute(params, 'hapmap_sites')
 params.pon_dryclean          = WorkflowMain.getGenomeAttribute(params, 'pon_dryclean')
 params.blacklist_coverage_jabba     = WorkflowMain.getGenomeAttribute(params, 'blacklist_coverage_jabba')
+//params.blacklist_junctions_jabba     = WorkflowMain.getGenomeAttribute(params, 'blacklist_junctions_jabba')
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
