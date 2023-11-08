@@ -9,8 +9,6 @@ Please use the pre-filled template to save time.
 However, don't be put off by this template - other more general issues and suggestions are welcome!
 Contributions to the code are even more welcome ;)
 
-> If you need help using or modifying mskilab-org/nf-jabba then the best place to ask is on the nf-core Slack [#heisenbio](https://nfcore.slack.com/channels/heisenbio) channel ([join our Slack here](https://nf-co.re/join/slack)).
-
 ## Contribution workflow
 
 If you'd like to write some code for mskilab-org/nf-jabba, the standard workflow is as follows:
@@ -51,10 +49,6 @@ These tests are run both with the latest available version of `Nextflow` and als
 - On your own fork, make a new branch `patch` based on `upstream/master`.
 - Fix the bug, and bump version (X.Y.Z+1).
 - A PR should be made on `master` from patch to directly this particular bug.
-
-## Getting help
-
-For further information/help, please consult the [mskilab-org/nf-jabba documentation](https://nf-co.re/heisenbio/usage) and don't hesitate to get in touch on the nf-core Slack [#heisenbio](https://nfcore.slack.com/channels/heisenbio) channel ([join our Slack here](https://nf-co.re/join/slack)).
 
 ## Pipeline contribution conventions
 
