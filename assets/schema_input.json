@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/nf-core/heisenbio/master/assets/schema_input.json",
-    "title": "nf-core/heisenbio pipeline - params.input schema",
+    "$id": "https://raw.githubusercontent.com/mskilab-org/nf-jabba/master/assets/schema_input.json",
+    "title": "mskilab-org/nf-jabba pipeline - params.input schema",
     "description": "Schema for the file provided with params.input",
     "type": "array",
     "items": {

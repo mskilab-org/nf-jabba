@@ -72,7 +72,7 @@ if (params.tools && params.tools.contains("hetpileups"))  checkPathParamList.add
 //if (params.tools && params.tools.contains("fragcounter"))  checkPathParamList.add(params.gcmapdir_frag)
 
 // Validate input parameters
-WorkflowHeisenbio.initialise(params, log)
+WorkflowNfjabba.initialise(params, log)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -465,7 +465,7 @@ include { COV_JUNC_JABBA as JABBA         } from '../subworkflows/local/jabba/ma
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow HEISENBIO {
+workflow NFJABBA {
 
     // MULTIQC
     ch_multiqc_config                     = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: true)
@@ -1208,7 +1208,7 @@ workflow HEISENBIO {
             blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
             cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
             epgap_jabba, name_jabba, fix_thres_jabba, lp_jabba,
-            ism_jabba, filter_loose_jabba, gurobi_jabba, nonintegral_jabba,
+            ism_jabba, filter_loose_jabba, gurobi_jabba,
             verbose_jabba)
 
             jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)

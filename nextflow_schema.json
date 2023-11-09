@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/tanubrata/heisenbio/master/nextflow_schema.json",
-    "title": "tanubrata/heisenbio pipeline parameters",
+    "$id": "https://raw.githubusercontent.com/tanubrata/nfjabba/master/nextflow_schema.json",
+    "title": "tanubrata/nfjabba pipeline parameters",
     "description": "An open-source analysis pipeline to detect germline or somatic variants from whole genome or targeted sequencing",
     "type": "object",
     "definitions": {

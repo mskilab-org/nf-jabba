@@ -2,15 +2,15 @@
 
 # Introduction:
 
-**mskilab-org/nf-JaBbA** is a new state-of-art bioinformatics pipeline from [`mskilab-org`](https://www.mskilab.org/) that is intended to run [`JaBbA`](https://github.com/mskilab-org/JaBbA/tree/master), an MIP based joint inference of copy number and rearrangement state in cancer whole genome sequence data. It runs all the pre-requisite modules necessary to run JaBbA and as followed in `mskilab-org`. This pipeline is built to handle only tumor-normal pairs as input (as of now) and is designed and tested to run on Human samples. 
+**mskilab-org/nf-JaBbA** is a new state-of-art bioinformatics pipeline from [`mskilab-org`](https://www.mskilab.org/) that is intended to run [`JaBbA`](https://github.com/mskilab-org/JaBbA/tree/master), a MIP based joint inference of copy number and rearrangement state in cancer whole genome sequence data. It runs all the pre-requisite modules necessary to run JaBbA in `mskilab-org`. This pipeline is built to handle only tumor-normal pairs as input and is designed and tested to run on human samples.
 
-We drew our inspiration and ideas from [`nf-core/Sarek`](https://github.com/nf-core/sarek), a workflow designed to detect variants on whole genome or targeted sequencing data. **`nf-jabba`** is built using [`Nextflow`](https://www.nextflow.io/) and is implemented using `Nextflow DSL2`. All the modules uses [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers which makes the pipeline easily reproducible and maintain its dependencies. Some of the modules/processes are used from [`nf-core/modules`](https://github.com/nf-core/modules) that are available for the Nextflow Community.
+We drew our inspiration and ideas from [`nf-core/Sarek`](https://github.com/nf-core/sarek), a workflow designed to detect variants on whole genome or targeted sequencing data. **`nf-jabba`** is built using [`Nextflow`](https://www.nextflow.io/) and is implemented using `Nextflow DSL2`. All the modules uses [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers to make the pipeline easily reproducible and maintain its dependencies. Some of the modules/processes are used from [`nf-core/modules`](https://github.com/nf-core/modules).
 
-This pipeline has been designed to start from scratch using **FASTQ** files or start directly from **BAM** files as input and should be supplied in a **CSV** file (*please refer to the documentation below for the input format of the .csv file*). We incorporated a modified version of the `Alignment` step of `nf-JaBbA` pipeline from `nf-core/Sarek`, many thanks to the Sarek community. 
+This pipeline has been designed to start from scratch using **FASTQ** files or start directly from **BAM** files as input. File paths should be supplied in a **CSV** file (*please refer to the documentation below for the input format of the .csv file*). We incorporated a modified version of the `Alignment` step from `nf-core/Sarek`for the `nf-JaBbA` pipeline.
 
-# Setting up a run: 
+# Setting up a run:
 
-To run the pipeline from the beginning, first create an `--input` `samplesheet.csv` file with your file paths. A typical input should look like this:
+To run the pipeline, first create an `--input` `samplesheet.csv` file with your file paths. A typical input should look like this:
 
 ```csv
 patient,sex,status,sample,lane,fastq_1,fastq_2
@@ -22,6 +22,7 @@ A typical command for running the pipeline is as follows:
 ```bash
 nextflow run mskilab-org/nf-jabba --input ./samplesheet.csv --outdir ./results --genome GATK.GRCh37 --tools <TOOLS> -profile singularity
 ```
+
 This will launch the pipeline and run all the processes with the tools specified in `--tools` to `JaBbA`. It will create all the following files in the working directory from where the command is run:
 
 ```bash
@@ -31,7 +32,7 @@ work                # Directory containing the nextflow working files
 # Other nextflow hidden files, eg. history of pipeline runs and old logs.
 ```
 
-If you wish to repeatedly use the same parameters for multiple runs, rather than specifying each flag in the command, you can specify these in a params file.
+If you wish to use the same parameters for multiple runs, rather than specifying each flag in the command, you can specify these in a params file.
 
 Pipeline settings can be provided in a `yaml` or `json` file via `-params-file <file>`.
 
@@ -57,7 +58,7 @@ You can also generate such `YAML`/`JSON` files via [nf-core/launch](https://nf-c
 
 ## Samplesheet input configurations (along with `--step`)
 
-You need to create a samplesheet with information regarding the samples that you want to run the pipeline on. You need to specify the path of your **samplesheet** using the `--input` flag to specify the location. Make sure the input file is a *comma-separated* file and must contain headers with info discussed below. *It is highly recommended to provide the **absolute path** for inputs inside the samplesheet rather than relative paths.*
+You need to create a samplesheet with information regarding the samples that you want to run the pipeline on. You need to specify the path of your **samplesheet** using the `--input` flag to specify the location. Make sure the input file is a *comma-separated* file and contains headers with the info discussed below. *It is highly recommended to provide the **absolute path** for inputs inside the samplesheet rather than relative paths.*
 
 To mention a sample as paired tumor-normal, it has to be specified with the same `patient` ID, a different `sample`, and their respective `status`. For instance, a `tumor` sample should be mentioned **1** in `status` field for a sample, if it is normal mention **0**. If there are multiple `sample` IDs, `nf-jabba` will consider them as separate samples and output the results on separate folders based on `patient`, rest assured all the runs will be separate based on `patient`, so no need to be concerned with getting the outputs mixed.
 
@@ -71,7 +72,7 @@ A typical sample sheet should populate with the column names as shown below:
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
 |   patient       | Patient or Sample ID. This should differentiate each patient/sample. *Note*: Each patient can have multiple sample names.                                 |
 |   sample        | Sample ID for each Patient. Should differentiate between tumor and normal. Sample IDs should be unique to Patient IDs                                     |
-|   lane          | If starting with FASTQ files, if there are multiple lanes for each sample for each patient, mention lane name. **Required for `--step alignment`.         | 
+|   lane          | If starting with FASTQ files, if there are multiple lanes for each sample for each patient, mention lane name. **Required for `--step alignment`.         |
 |   sex           | If known, please provide the sex for the patient. For instance if **Male** type XY, else if **Female** type XX, else others and unknown should be NA.     |
 |   status        | This should tell if your sample is **tumor** or **normal**. For **normal**, write 0, and for **tumor**, write 1.                                          |
 |   fastq_1       | Full Path to FASTQ file read 1. The extension should be `.fastq.gz` or `.fq.gz`. **Required** for `--step alignment`.                                     |
@@ -85,7 +86,7 @@ A typical sample sheet should populate with the column names as shown below:
 |   hets          | Full path to HetPileups .txt file. **Required** for `--step jabba`.                                                                                       |
 
 
-There are multiple `--steps` for `nf-jabba`. The main idea behind this was to make each of the tool separate so that one can only run their only desired tool rather than running the whole pipeline when it is provided with the required outputs. There are 2 primary `--steps` in the pipeline which can lead to `JaBbA` and run the module if mentioned with all the tools using a list of comma-separated names in `--tools`. A full input `csv` files for these 2 steps are shown below:
+There are multiple `--steps` for `nf-jabba`. Each tool is separate so that one can run only their desired tools rather than running every tool in the pipeline. There are 2 primary `--steps` in the pipeline which can lead to `JaBbA`. A full input `csv` files for these 2 steps are shown below:
 - **`--step alignment`**
 
 ```
@@ -107,7 +108,7 @@ TCXX52,NA,0,TCXX52_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
 TCXX52,NA,1,TCXX52_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
 ```
 > **Note**
-> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers 
+> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers
 > and pass the *cram* and *crai* paths there
 
 
@@ -123,7 +124,7 @@ TCXX52,NA,0,TCXX52_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
 TCXX52,NA,1,TCXX52_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
 ```
 > **Note**
-> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers 
+> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers
 > and pass the *cram* and *crai* paths there
 
 
@@ -137,7 +138,7 @@ TCXX52,NA,0,TCXX52_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
 TCXX52,NA,1,TCXX52_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
 ```
 > **Note**
-> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers 
+> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers
 > and pass the *cram* and *crai* paths there
 
 
@@ -161,7 +162,7 @@ TCXX52,NA,0,TCXX52_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
 TCXX52,NA,1,TCXX52_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
 ```
 > **Note**
-> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers 
+> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers
 > and pass the *cram* and *crai* paths there
 
 

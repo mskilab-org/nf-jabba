@@ -41,7 +41,6 @@ process JABBA {
     val(ism)
     val(filter_loose)
     val(gurobi)
-    val(nonintegral)
     val(verbose)
 
     output:

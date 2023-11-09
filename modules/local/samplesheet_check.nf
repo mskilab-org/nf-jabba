@@ -17,7 +17,7 @@ process SAMPLESHEET_CHECK {
     when:
     task.ext.when == null || task.ext.when
 
-    script: // This script is bundled with the pipeline, in nf-core/heisenbio/bin/
+    script: // This script is bundled with the pipeline, in mskilab-org/nf-jabba/bin/
     """
     check_samplesheet.py \\
         $samplesheet \\
