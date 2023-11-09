@@ -25,7 +25,7 @@
 
 **mskilab-org/nf-JaBbA** is a new state-of-art bioinformatics pipeline from [`mskilab-org`](https://www.mskilab.org/) that is intended to run [`JaBbA`](https://github.com/mskilab-org/JaBbA/tree/master), an MIP based joint inference of copy number and rearrangement state in cancer whole genome sequence data. It runs all the pre-requisite modules necessary to run JaBbA and as followed in `mskilab-org`. This pipeline is built to handle only tumor-normal pairs as input (as of now) and is designed and tested to run on Human samples. 
 
-We drew our inspiration and ideas from [`nf-core/Sarek`](https://github.com/nf-core/sarek), a workflow designed to detect variants on whole genome or targeted sequencing data. It is built using [`Nextflow`](https://www.nextflow.io/) and is implemented using `Nextflow DSL2`. All the modules uses [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers which makes the pipeline easily reproducible and maintain its dependencies. Some of the modules/processes are used from [`nf-core/modules`](https://github.com/nf-core/modules) that are available for the Nextflow Community.
+We drew our inspiration and ideas from [`nf-core/Sarek`](https://github.com/nf-core/sarek), a workflow designed to detect variants on whole genome or targeted sequencing data. **`nf-jabba`** is built using [`Nextflow`](https://www.nextflow.io/) and is implemented using `Nextflow DSL2`. All the modules uses [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers which makes the pipeline easily reproducible and maintain its dependencies. Some of the modules/processes are used from [`nf-core/modules`](https://github.com/nf-core/modules) that are available for the Nextflow Community.
 
 This pipeline has been designed to start from scratch using **FASTQ** files or start directly from **BAM** files as input and should be supplied in a **CSV** file (*please refer to the documentation below for the input format of the .csv file*). We incorporated a modified version of the `Alignment` step of `nf-JaBbA` pipeline from `nf-core/Sarek`, many thanks to the Sarek community. 
 
@@ -85,9 +85,8 @@ nextflow run mskilab-org/nf-jabba \
 
 ### Discussion of expected fields in input file and expected inputs for each `--step`
 
-A typical sample sheet should populate with the column names as hown below:
+A typical sample sheet should populate with the column names as shown below:
 
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
 |   Column Name   |                                               Description                                                                                                 |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
 |   patient       | Patient or Sample ID. This should differentiate each patient/sample. *Note*: Each patient can have multiple sample names.                                 |
@@ -104,147 +103,29 @@ A typical sample sheet should populate with the column names as hown below:
 |   table         | Full path to Recalibration table file. **Required** for `--step recalibrate`.                                                                             |
 |   vcf           | Full path to VCF file. **Required** for `--step jabba`.                                                                                                   |
 |   hets          | Full path to HetPileups .txt file. **Required** for `--step jabba`.                                                                                       |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-
-There are multiple `--steps` for `nf-jabba`. The main idea behind this was to make each of the tool separate so that one can only run their only desired tool rather than running the whole pipeline when it is provided with the required outputs. There are 2 primary `--steps` in the pipeline which can lead to `JaBbA` and run the module if mentioned with all the tools using a list of comma-separated names in `--tools`. A full input `csv` files for these 2 steps are shown below:
-- **`--step alignment`**
-
-```
-patient,sex,status,sample,lane,fastq_1,fastq_2
-TCXX49,XX,0,TCXX49_N,lane_1,/path/to/fastq_1.fq.gz,/path/to/fastq_2.gz
-TCXX49,XX,0,TCXX49_N,lane_2,/path/to/fastq_1.fq.gz,/path/to/fastq_2.gz
-TCXX49,XX,1,TCXX49_T,lane_1,/path/to/fastq_1.fq.gz,/path/to/fastq_2.gz
-TCXX49,XX,1,TCXX49_T,lane_2,/path/to/fastq_1.fq.gz,/path/to/fastq_2.gz
-TCXX52,NA,0,TCXX52_N,lane_1,/path/to/fastq_1.fq.gz,/path/to/fastq_2.gz
-TCXX52,NA,1,TCXX52_T,lane_1,/path/to/fastq_1.fq.gz,/path/to/fastq_2.gz
-```
-- **`--step sv_calling`**
-
-```
-patient,sex,status,sample,bam,bai
-TCXX49,XX,0,TCXX49_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX49,XX,1,TCXX49_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX52,NA,0,TCXX52_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX52,NA,1,TCXX52_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
-```
-> **Note**
-> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers 
-> and pass the *cram* and *crai* paths there
 
 
-There are also many secondary `--steps` for this pipeline that are designed to only run a specific `--tools` for the module but is not adequate to run **`JaBbA`**. You can also run only **`JaBbA`** if you have all the inputs available and can be provided in the `--input` `csv` file. Below, we provide the other secondary steps and their desired input `csv` files for each step.
-
-- **`--step markduplicates`**
-
-```
-patient,sex,status,sample,bam,bai
-TCXX49,XX,0,TCXX49_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX49,XX,1,TCXX49_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX52,NA,0,TCXX52_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX52,NA,1,TCXX52_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
-```
-> **Note**
-> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers 
-> and pass the *cram* and *crai* paths there
-
-
-- **`--step prepare_recalibration`**
-
-```
-patient,sex,status,sample,bam,bai
-TCXX49,XX,0,TCXX49_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX49,XX,1,TCXX49_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX52,NA,0,TCXX52_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX52,NA,1,TCXX52_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
-```
-> **Note**
-> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers 
-> and pass the *cram* and *crai* paths there
-
-
-- **`--step recalibrate`**
-
-```
-patient,sex,status,sample,bam,bai,table
-TCXX49,XX,0,TCXX49_N,/path/to/alignment.bam,/path/to/alignment.bam.bai,TCXX49_N.table
-TCXX49,XX,1,TCXX49_T,/path/to/alignment.bam,/path/to/alignment.bam.bai,TCXX49_T.table
-TCXX52,NA,0,TCXX52_N,/path/to/alignment.bam,/path/to/alignment.bam.bai,TCXX52_N.table
-TCXX52,NA,1,TCXX52_T,/path/to/alignment.bam,/path/to/alignment.bam.bai,TCXX52_T.table
-```
-
-- **`--step fragcounter`**
-
-```
-patient,sex,status,sample,bam,bai
-TCXX49,XX,0,TCXX49_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX49,XX,1,TCXX49_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX52,NA,0,TCXX52_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX52,NA,1,TCXX52_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
-```
-> **Note**
-> If you are using cram files, just replace *bam* and *bai* headers with *cram* and *crai* headers 
-> and pass the *cram* and *crai* paths there
-
-
-- **`--step dryclean`** (**Note**: you should also mention `--tools dryclean` to use Dryclean. This step also has `CBS`, if you want to perform both Dryclean and CBS, use `--tools dryclean,cbs`)
-
-```
-patient,sex,status,sample,cov
-TCXX49,XX,0,TCXX49_N,/path/to/coverage.rds
-TCXX49,XX,1,TCXX49_T,/path/to/coverage.rds
-TCXX52,NA,0,TCXX52_N,/path/to/coverage.rds
-TCXX52,NA,1,TCXX52_T,/path/to/coverage.rds
-```
-
-- **`--step hetpileups`** (**Note**: you should also mention `--tools hetpileups` to use HetPileups.)
-
-```
-patient,sex,status,sample,bam,bai
-TCXX49,XX,0,TCXX49_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX49,XX,1,TCXX49_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX52,NA,0,TCXX52_N,/path/to/alignment.bam,/path/to/alignment.bam.bai
-TCXX52,NA,1,TCXX52_T,/path/to/alignment.bam,/path/to/alignment.bam.bai
-```
-> **Note**
-> HetPileups does not support for *`cram`* files, you must use *`bam`* files for this step.
-
-
-- **`--step ascat`** (**Note**: you should also mention `--tools ascat` to use ASCAT.)
-
-```
-patient,sex,status,sample,cov,hets
-TCXX49,XX,1,TCXX49_T,/path/to/coverage.rds,/path/to/hetpileups/sites.txt
-TCXX52,NA,1,TCXX52_T,/path/to/coverage.rds,/path/to/hetpileups/sites.txt
-```
-
-
-- **`--step jabba`** (**Note**: you should also mention `--tools jabba` to use JaBbA.)
-
-```
-patient,sex,status,sample,cov,vcf
-TCXX49,XX,1,TCXX49_T,/path/to/tumor/coverage.rds,/path/to/sv_caller/tumor/somatic.vcf
-TCXX52,NA,1,TCXX52_T,/path/to/tumor/coverage.rds,/path/to/sv_caller/tumor/somatic.vcf
-```
+For more information  and further functionality regarding the pipeline usage and inputs necesaary for each step please follow the [Usage](docs//usage.md) documentation as suggested here.
 
 ### Helpful Core Nextflow Commands:
 
 #### `-resume`
 This is a life saving command which is part of Nextflow. If a Process of the pipeline fails at some point, Nextflow has the ability to start from that step where the job failed rather than starting all the way from the beginning. You must specify this in the `-CLI` or on the `command-line` when restarting a pipeline. You can also supply a run name to resume a specific run using: `-resume` [run-name]. Use the `nextflow log` command to show previous run names.
 
-### `-profile`
+#### `-profile`
 Use this parameter for choosing a configuration profile. Profiles can give configuration presets for different computing environments.
 
 Several generic profiles have been provided with the pipeline which instruct the pipeline to use software packaged using different methods. You need to use this option to mention when using containers (singularity/Docker) which is highly recommended for running the pipeline. 
 
-### `-c`
+#### `-c`
 You can mention custom configuration scripts to run the pipeline with using `-c` flag and providing the path to the `.config` file. This is advised when you want to submit processes into an executor like `slurm/LSF/..`.
 
-### `-bg`
+#### `-bg`
 The Nextflow `-bg` flag helps launching Nextflow pipeline in the background, and being detached from your terminal so that the curren run does not stop if you log out of your session and the log of the run are saved inside a file. Alternative ways include using `screen` or `tmux` sessions which you can easily detach and log back in at a later time.
 
 ## Debugging any step/process:
 
-To debug any step or process that failed, please check your current `execution_trace*.txt` file inside the `<outdir>/pipeline_info/` folder and gather the `hash` number for that process. Then go inside the `work` folder and paste that `hash` number to locate thw working directory for that process. There should be multiple `.command.*` files inside that folder which corresponds to your run. This includes log, sh, trace, error files. One good thing is you can run ``.command.sh` script locally to check where it is exactly breaking and replicat the issue (though you might need to edit the command a bit to run it successfully locally).
+To debug any step or process that failed, please check your current `execution_trace*.txt` file inside the `<outdir>/pipeline_info/` folder and gather the `hash` number for that process. Then go inside the `work` folder and paste that `hash` number to locate thw working directory for that process. There should be multiple `.command.*` files inside that folder which corresponds to your run. This includes log, sh, trace, error files. One good thing is you can run `.command.sh` script locally to check where it is exactly breaking and replicat the issue (though you might need to edit the command a bit to run it successfully locally).
 
 ## Credits
 
