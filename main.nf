@@ -1,11 +1,11 @@
 #!/usr/bin/env nextflow
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    nf-core/heisenbio
+    mskilab-org/nf-jabba
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://tanubrata/nf-core/heisenbio
-    Website: https://nf-co.re/heisenbio
-    Slack  : https://nfcore.slack.com/channels/heisenbio
+    Github : https://tanubrata/mskilab-org/nf-jabba
+    Website: https://nf-co.re/nfjabba
+    Slack  : https://nfcore.slack.com/channels/nfjabba
 ----------------------------------------------------------------------------------------
 */
 
@@ -17,11 +17,11 @@ nextflow.enable.dsl = 2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-//params.ascat_alleles         = WorkflowMain.getGenomeAttribute(params, 'ascat_alleles')
-//params.ascat_genome          = WorkflowMain.getGenomeAttribute(params, 'ascat_genome')
-//params.ascat_loci            = WorkflowMain.getGenomeAttribute(params, 'ascat_loci')
-//params.ascat_loci_gc         = WorkflowMain.getGenomeAttribute(params, 'ascat_loci_gc')
-//params.ascat_loci_rt         = WorkflowMain.getGenomeAttribute(params, 'ascat_loci_rt')
+params.ascat_alleles         = WorkflowMain.getGenomeAttribute(params, 'ascat_alleles')
+params.ascat_genome          = WorkflowMain.getGenomeAttribute(params, 'ascat_genome')
+params.ascat_loci            = WorkflowMain.getGenomeAttribute(params, 'ascat_loci')
+params.ascat_loci_gc         = WorkflowMain.getGenomeAttribute(params, 'ascat_loci_gc')
+params.ascat_loci_rt         = WorkflowMain.getGenomeAttribute(params, 'ascat_loci_rt')
 params.bwa                   = WorkflowMain.getGenomeAttribute(params, 'bwa')
 params.bwamem2               = WorkflowMain.getGenomeAttribute(params, 'bwamem2')
 params.cf_chrom_len          = WorkflowMain.getGenomeAttribute(params, 'cf_chrom_len')
@@ -55,6 +55,12 @@ params.germ_sv_db            = WorkflowMain.getGenomeAttribute(params, 'germ_sv_
 params.simple_seq_db         = WorkflowMain.getGenomeAttribute(params, 'simple_seq_db')
 params.blacklist_gridss      = WorkflowMain.getGenomeAttribute(params, 'blacklist_gridss')
 params.pon_gridss            = WorkflowMain.getGenomeAttribute(params, 'pon_gridss')
+params.gcmapdir_frag         = WorkflowMain.getGenomeAttribute(params, 'gcmapdir_frag')
+params.build_dryclean        = WorkflowMain.getGenomeAttribute(params, 'build_dryclean')
+params.hapmap_sites          = WorkflowMain.getGenomeAttribute(params, 'hapmap_sites')
+params.pon_dryclean          = WorkflowMain.getGenomeAttribute(params, 'pon_dryclean')
+params.blacklist_coverage_jabba     = WorkflowMain.getGenomeAttribute(params, 'blacklist_coverage_jabba')
+//params.blacklist_junctions_jabba     = WorkflowMain.getGenomeAttribute(params, 'blacklist_junctions_jabba')
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,7 +68,7 @@ params.pon_gridss            = WorkflowMain.getGenomeAttribute(params, 'pon_grid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-params.input_restart = WorkflowHeisenbio.retrieveInput(params, log)
+params.input_restart = WorkflowNfjabba.retrieveInput(params, log)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -94,13 +100,13 @@ WorkflowMain.initialise(workflow, params, log)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { HEISENBIO } from './workflows/heisenbio'
+include { NFJABBA } from './workflows/nfjabba'
 
 //
-// WORKFLOW: Run main nf-core/heisenbio analysis pipeline
+// WORKFLOW: Run main mskilab-org/nf-jabba analysis pipeline
 //
-workflow NFCORE_HEISENBIO {
-    HEISENBIO ()
+workflow MSKILABORG_NFJABBA {
+    NFJABBA ()
 }
 
 /*
@@ -114,7 +120,7 @@ workflow NFCORE_HEISENBIO {
 // See: https://github.com/nf-core/rnaseq/issues/619
 //
 workflow {
-    NFCORE_HEISENBIO ()
+    MSKILABORG_NFJABBA ()
 }
 
 /*

@@ -1,5 +1,5 @@
 //
-// This file holds several functions specific to the main.nf workflow in the nf-core/heisenbio pipeline
+// This file holds several functions specific to the main.nf workflow in the mskilab-org/nf-jabba pipeline
 //
 
 import nextflow.Nextflow

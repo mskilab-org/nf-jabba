@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/nf-core/heisenbio/master/assets/schema_input.json",
-    "title": "nf-core/heisenbio pipeline - params.input schema",
+    "$id": "https://raw.githubusercontent.com/mskilab-org/nf-jabba/master/assets/schema_input.json",
+    "title": "mskilab-org/nf-jabba pipeline - params.input schema",
     "description": "Schema for the file provided with params.input",
     "type": "array",
     "items": {
@@ -153,6 +153,36 @@
                     {
                         "type": "string",
                         "pattern": "^\\S+\\.bai$"
+                    },
+                    {
+                        "type": "string",
+                        "maxLength": 0
+                    }
+                ],
+                "format": "file-path",
+                "exists": true
+            },
+            "cov": {
+                "errorMessage": "COV file cannot contain spaces and must have extension '.rds'",
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "pattern": "^\\S+\\.rds$"
+                    },
+                    {
+                        "type": "string",
+                        "maxLength": 0
+                    }
+                ],
+                "format": "file-path",
+                "exists": true
+            },
+            "hets": {
+                "errorMessage": "Pileups file and must have extension '.txt'",
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "pattern": "^\\S+\\.txt$"
                     },
                     {
                         "type": "string",

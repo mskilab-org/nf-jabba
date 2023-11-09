@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/tanubrata/heisenbio/master/nextflow_schema.json",
-    "title": "tanubrata/heisenbio pipeline parameters",
+    "$id": "https://raw.githubusercontent.com/tanubrata/nfjabba/master/nextflow_schema.json",
+    "title": "tanubrata/nfjabba pipeline parameters",
     "description": "An open-source analysis pipeline to detect germline or somatic variants from whole genome or targeted sequencing",
     "type": "object",
     "definitions": {
@@ -11,7 +11,10 @@
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
             "help_text": "Specify input samplesheet, step and output folder.",
-            "required": ["step", "outdir"],
+            "required": [
+                "step",
+                "outdir"
+            ],
             "properties": {
                 "input": {
                     "description": "Path to comma-separated file containing information about the samples in the experiment.",
@@ -46,6 +49,11 @@
                         "prepare_recalibration",
                         "recalibrate",
                         "sv_calling",
+                        "ascat",
+                        "fragcounter",
+                        "dryclean",
+                        "hetpileups",
+                        "jabba",
                         "variant_calling",
                         "annotate"
                     ]
@@ -101,7 +109,7 @@
                     "fa_icon": "fas fa-toolbox",
                     "description": "Tools to use for duplicate marking, variant calling and/or for annotation.",
                     "help_text": "Multiple tools separated with commas.\n\n**Variant Calling:**\n\nGermline variant calling can currently be performed with the following variant callers:\n- SNPs/Indels: DeepVariant, FreeBayes, GATK HaplotypeCaller, mpileup, Sentieon Haplotyper, Strelka\n- Structural Variants: Manta, TIDDIT\n- Copy-number: CNVKit\n\nTumor-only somatic variant calling can currently be performed with the following variant callers:\n- SNPs/Indels: FreeBayes, mpileup, Mutect2, Strelka\n- Structural Variants: Manta, TIDDIT\n- Copy-number: CNVKit, ControlFREEC\n\nSomatic variant calling can currently only be performed with the following variant callers:\n- SNPs/Indels: FreeBayes, Mutect2, Strelka2\n- Structural variants: Manta, TIDDIT\n- Copy-Number: ASCAT, CNVKit, Control-FREEC\n- Microsatellite Instability: MSIsensorpro\n\n> **NB** Mutect2 for somatic variant calling cannot be combined with `--no_intervals`\n\n**Annotation:**\n \n- snpEff, VEP, merge (both consecutively).\n\n> **NB** As Sarek will use bgzip and tabix to compress and index VCF files annotated, it expects VCF files to be sorted when starting from `--step annotate`.",
-                    "pattern": "^((ascat|cnvkit|controlfreec|deepvariant|freebayes|haplotypecaller|manta|merge|mpileup|msisensorpro|mutect2|snpeff|strelka|tiddit|vep|svaba|gridss)?,?)*(?<!,)$"
+                    "pattern": "^((ascat|cnvkit|controlfreec|deepvariant|freebayes|haplotypecaller|manta|merge|mpileup|msisensorpro|mutect2|snpeff|strelka|tiddit|vep|svaba|gridss|fragcounter|dryclean|hetpileups|cbs|jabba)?,?)*(?<!,)$"
                 },
                 "skip_tools": {
                     "type": "string",
@@ -172,19 +180,6 @@
                     "description": "Save trimmed FastQ file intermediates.",
                     "hidden": true
                 },
-                "umi_read_structure": {
-                    "type": "string",
-                    "fa_icon": "fas fa-tape",
-                    "description": "Specify UMI read structure",
-                    "help_text": "One structure if UMI is present on one end (i.e. '+T 2M11S+T'), or two structures separated by a blank space if UMIs a present on both ends (i.e. '2M11S+T 2M11S+T'); please note, this does not handle duplex-UMIs.\n\nFor more info on UMI usage in the pipeline, also check docs [here](./docs/usage.md/#how-to-handle-umis)."
-                },
-                "group_by_umi_strategy": {
-                    "type": "string",
-                    "default": "Adjacency",
-                    "description": "Default strategy with UMI",
-                    "hidden": true,
-                    "help_text": "Available values: Identity, Edit, Adjacency, Paired"
-                },
                 "save_split_fastqs": {
                     "type": "boolean",
                     "fa_icon": "fas fa-vial",
@@ -204,7 +199,10 @@
                     "type": "string",
                     "default": "bwa-mem",
                     "fa_icon": "fas fa-puzzle-piece",
-                    "enum": ["bwa-mem", "bwa-mem2"],
+                    "enum": [
+                        "bwa-mem",
+                        "bwa-mem2"
+                    ],
                     "description": "Specify aligner to be used to map reads to reference genome.",
                     "help_text": "Sarek will build missing indices automatically if not provided. Set `--bwa false` if indices should be (re-)built.\nIf DragMap is selected as aligner, it is recommended to skip baserecalibration with `--skip_tools baserecalibrator`. For more info see [here](https://gatk.broadinstitute.org/hc/en-us/articles/4407897446939--How-to-Run-germline-single-sample-short-variant-discovery-in-DRAGEN-mode)."
                 },
@@ -218,13 +216,6 @@
                     "type": "boolean",
                     "description": "Saves output from mapping (if `--save_mapped`), Markduplicates & Baserecalibration as BAM file instead of CRAM",
                     "fa_icon": "fas fa-download"
-                },
-                "use_gatk_spark": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Enable usage of GATK Spark implementation for duplicate marking and/or base quality score recalibration",
-                    "help_text": "Multiple separated with commas.\n\n> The GATK4 Base Quality Score recalibration tools `Baserecalibrator` and `ApplyBQSR` are currently available as Beta release. Use with caution!",
-                    "pattern": "^((baserecalibrator|markduplicates)?,?)*(?<!,)$"
                 }
             }
         },
@@ -278,7 +269,459 @@
                     "hidden": true,
                     "help_text": "Provide the PON directory for GRIDSS. Must contain both .bed and .bedpe file."
                 }
-            } 
+            }
+        },
+        "hetpileups": {
+            "title": "HetPileUps",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "filter_hets": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "Whether to perform filtering on low quality hets",
+                    "help_text": "By default, it is TRUE so that it filters low quality calls",
+                    "fa_icon": "fas fa-filter"
+                },
+                "max_depth": {
+                    "type": "integer",
+                    "default": 1000,
+                    "description": "Bin size to do hetpileups",
+                    "help_text": "By default it is set to 1000 to correspond with CBS/dryclean bin size",
+                    "fa_icon": "fas fa-cut"
+                },
+                "hapmap_sites": {
+                    "type": "string",
+                    "default": "None",
+                    "description": "Hapmap reference file based on genome",
+                    "help_text": "Provide the population hapmap reference file based on genome version",
+                    "fa_icon": "fas fa-file"
+                }
+            },
+            "fa_icon": "fas fa-suitcase"
+        },
+        "fragcounter": {
+            "title": "FragCounter",
+            "type": "object",
+            "description": "Configure coverage tools fragCounter",
+            "default": "",
+            "fa_icon": "fas fa-toolbox",
+            "properties": {
+                "midpoint_frag": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Option for counting method in fragCounter",
+                    "help_text": "If TRUE only count midpoint if FALSE then count bin footprint of every fragment interval"
+                },
+                "paired_frag": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Option to mention whether the dataset is paired or single ended for fragCounter",
+                    "help_text": "If TRUE, will consider the dataset is paired ended, else single ended"
+                },
+                "exome_frag": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Bin counting method for fragCounter on whether it is exome or genome",
+                    "help_text": "If TRUE, will consider the input the data as exome, else if FALSE will consider it genome",
+                    "hidden": true
+                },
+                "windowsize_frag": {
+                    "type": "number",
+                    "default": 200,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Default bin size for fragCounter",
+                    "help_text": "By default the bin size is 200, adjust as necessary."
+                },
+                "minmapq_frag": {
+                    "type": "number",
+                    "default": 1,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Minimal Mapping Quality for fragCounter",
+                    "help_text": "By default the minimum mapping quality is 200, adjust as necessary."
+                },
+                "gcmapdir_frag": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "GC and Mappabilty directory for fragCounter",
+                    "help_text": "Provide the directory containing .rds file for gc and mappability bias based on genome version"
+                }
+            }
+        },
+        "dryclean": {
+            "title": "Dryclean",
+            "type": "object",
+            "description": "Configure genome wide cleaning using Dryclean",
+            "default": "",
+            "fa_icon": "fas fa-toolbox",
+            "properties": {
+                "pon_dryclean": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Dryclean PON",
+                    "help_text": "Provide the PON .rds file based on genome version"
+                },
+                "centered_dryclean": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Option to specify whether the samples are centered",
+                    "help_text": "are the samples centered",
+                    "default": "TRUE"
+                },
+                "cbs_dryclean": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Option to specify whether to perform CBS",
+                    "hidden": true,
+                    "help_text": "if TRUE, perform cbs on the drycleaned coverage",
+                    "default": "FALSE"
+                },
+                "cnsignif_dryclean": {
+                    "type": "number",
+                    "default": 0.00001,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Significance level for CBS",
+                    "help_text": "the significance levels for the test to accept change-points in cbs"
+                },
+                "wholeGenome_dryclean": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Option to specify whether perform dryclean on whole genome",
+                    "hidden": true,
+                    "help_text": "if TRUE, it will process all chromosomes and parallelize it",
+                    "default": "TRUE"
+                },
+                "blacklist_dryclean": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Option to specify whether there are blacklisted makers",
+                    "hidden": true,
+                    "help_text": "if TRUE, will assume there is blacklisted makers",
+                    "default": "FALSE"
+                },
+                "blacklist_path_dryclean": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Dryclean blacklist path",
+                    "help_text": "Provide the path to dryclean blacklist, default is null",
+                    "default": "NA"
+                },
+                "germline_filter_dryclean": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "If PON based germline filter is to be used for removing some common germline events",
+                    "hidden": true,
+                    "help_text": "If set to TRUE, give path to germline annotated file",
+                    "default": "FALSE"
+                },
+                "germline_file_dryclean": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Path to file annotated with germline calls, if germline.filter == TRUE",
+                    "help_text": "Path to file annotated with germline calls, if germline.filter == TRUE",
+                    "default": "NA"
+                },
+                "human_dryclean": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Specify if the samples under consideration are human",
+                    "hidden": true,
+                    "help_text": "Specify if the samples under consideration are human",
+                    "default": "TRUE"
+                },
+                "field_dryclean": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Field name in GRanges metadata to use for drycleaning",
+                    "help_text": "Specify Field name in GRanges metadata to use for drycleaning",
+                    "default": "reads.corrected"
+                },
+                "build_dryclean": {
+                    "type": "string",
+                    "default": "hg19",
+                    "description": "Mention whether it is hg19 or hg38",
+                    "fa_icon": "fas fa-font"
+                }
+            }
+        },
+        "cbs": {
+            "title": "CBS",
+            "type": "object",
+            "description": "Input params to run CBS",
+            "default": "",
+            "properties": {
+                "cnsignif_cbs": {
+                    "type": "number",
+                    "default": 0.01,
+                    "description": "Significance level to consider for CBS",
+                    "help_text": "Default is set to 10% or 0.01",
+                    "fa_icon": "fas fa-filter"
+                },
+                "field_cbs": {
+                    "type": "string",
+                    "default": "foreground",
+                    "description": "Field to apply CBS on",
+                    "help_text": "Defualt field is \"foreground\" if it comes from dryclean. Else, select the column to apply CBS on",
+                    "fa_icon": "fas fa-font"
+                },
+                "name_cbs": {
+                    "type": "string",
+                    "default": "tumor",
+                    "description": "Name of CBS run",
+                    "fa_icon": "fas fa-font",
+                    "hidden": true
+                }
+            },
+            "fa_icon": "fas fa-suitcase"
+        },
+        "ascat_seg": {
+            "title": "ASCAT SEG",
+            "type": "object",
+            "description": "Run ASCAT using Hetpileups and Segments files as inputs",
+            "default": "",
+            "fa_icon": "fas fa-toolbox",
+            "properties": {
+                "field_ascat": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "field to use for ascat from coverage, default is ratio",
+                    "help_text": "Provide the field from cbs cov",
+                    "default": "foreground"
+                },
+                "hets_thresh_ascat": {
+                    "type": "number",
+                    "default": 0.2,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Significance level for CBS",
+                    "help_text": "the significance levels for the test to accept change-points in cbs"
+                },
+                "penalty_ascat": {
+                    "type": "number",
+                    "default": 70,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Significance level for CBS",
+                    "help_text": "the significance levels for the test to accept change-points in cbs"
+                },
+                "gc_correct_ascat": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "whether to perform gc correction on coverage",
+                    "help_text": "By default it is true and should perform gc corrections",
+                    "default": "TRUE"
+                },
+                "rebin_width_ascat": {
+                    "type": "number",
+                    "default": 50000,
+                    "fa_icon": "fas fa-wrench",
+                    "description": "Width of bins to do",
+                    "help_text": "The bin size, default is 5e4"
+                },
+                "from_maf_ascat": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward",
+                    "description": "whether to start from MAF stage",
+                    "help_text": "By default it is FALSE and should not start from MAF stage",
+                    "default": "FALSE",
+                    "hidden": true
+                }
+            }
+        },
+        "jabba": {
+            "title": "JaBbA",
+            "type": "object",
+            "description": "Input params to run JaBbA",
+            "default": "",
+            "properties": {
+                "blacklist_junctions_jabba": {
+                    "type": "string",
+                    "description": "rearrangement junctions to be excluded from consideration",
+                    "fa_icon": "fas fa-file"
+                },
+                "geno_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "whether the junction has genotype information",
+                    "hidden": true
+                },
+                "indel_jabba": {
+                    "type": "string",
+                    "default": "exclude",
+                    "description": "character of the decision to 'exclude' or 'include' small(< min.nbins * coverage bin width) isolated INDEL-like events into the model."
+                },
+                "tfield_jabba": {
+                    "type": "string",
+                    "default": "tier",
+                    "description": "tier confidence meta data field in ra. tiers are 1 = must use, 2 = may use, 3 = use only in iteration>1 if near loose end. Default 'tier'.",
+                    "fa_icon": "fas fa-font"
+                },
+                "iter_jabba": {
+                    "type": "integer",
+                    "default": 2,
+                    "description": "the number of extra re-iterations allowed, to rescue lower confidence junctions that are near loose end. Default 0. This requires junctions to be tiered via a metadata field tfield.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-wrench"
+                },
+                "rescue_window_jabba": {
+                    "type": "integer",
+                    "default": 10000,
+                    "description": "window size in bp within which to look for lower confidence junctions. Default 1000.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-wrench"
+                },
+                "rescue_all_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "nudgebalanced_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "whether to attempt to add a small incentive for chains of quasi-reciprocal junctions.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "strict_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "if used will only include junctions that exactly overlap segs",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "edgenudge_jabba": {
+                    "type": "number",
+                    "default": 0.1,
+                    "description": "numeric hyper-parameter of how much to nudge or reward aberrant junction incorporation. Default 0.1 (should be several orders of magnitude lower than average 1/sd on individual segments), a nonzero value encourages incorporation of perfectly balanced rearrangements which would be equivalently optimal with 0 copies or more copies.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-wrench"
+                },
+                "allin_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "if TRUE will put all tiers in the first round of iteration",
+                    "hidden": true,
+                    "fa_icon": "fas fa-wrench"
+                },
+                "field_jabba": {
+                    "type": "string",
+                    "default": "foreground",
+                    "description": "name of the metadata column of coverage that contains the data. Default 'ratio' (coverage ratio between tumor and normal). If using dryclean, it is 'foreground'.",
+                    "fa_icon": "fas fa-font"
+                },
+                "maxna_jabba": {
+                    "type": "number",
+                    "default": 0.9,
+                    "description": "Any node with more NA than this fraction will be ignored",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "ploidy_jabba": {
+                    "type": "string",
+                    "default": "NA",
+                    "description": "Ploidy guess, can be a length 2 range",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "purity_jabba": {
+                    "type": "string",
+                    "default": "NA",
+                    "description": "Purity guess, can be a length 2 range",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "pp_method_jabba": {
+                    "type": "string",
+                    "default": "ppgrid",
+                    "description": "select from 'ppgrid', 'ppurple', and 'sequenza' to infer purity and ploidy if not both given. Default, 'sequenza'.",
+                    "fa_icon": "fas fa-calculator"
+                },
+                "cnsignif_jabba": {
+                    "type": "number",
+                    "default": 0.00001,
+                    "description": "alpha value for CBS",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "slack_jabba": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "Slack penalty to apply per loose end",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "linear_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "if TRUE will use L1 loose end penalty",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "tilim_jabba": {
+                    "type": "integer",
+                    "default": 7200,
+                    "description": "Time limit for JaBbA MIP",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "epgap_jabba": {
+                    "type": "number",
+                    "description": "threshold for calling convergence",
+                    "fa_icon": "fas fa-wrench"
+                },
+                "fix_thres_jabba": {
+                    "type": "integer",
+                    "default": -1,
+                    "fa_icon": "fas fa-wrench"
+                },
+                "lp_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "Run as LP",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "ism_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "Include infinite sites constraints",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "filter_loose_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "whether to filter loose ends",
+                    "fa_icon": "fas fa-forward"
+                },
+                "gurobi_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "Whether to run with GUROBI instead of CPLEX",
+                    "hidden": true,
+                    "fa_icon": "fas fa-tools"
+                },
+                "nonintegral_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "fa_icon": "fas fa-forward"
+                },
+                "verbose_jabba": {
+                    "type": "string",
+                    "default": "TRUE",
+                    "description": "verbose output",
+                    "hidden": true,
+                    "fa_icon": "fas fa-forward"
+                },
+                "help_jabba": {
+                    "type": "string",
+                    "default": "FALSE",
+                    "description": "Show this help message and exitsage: jba JUNCTIONS COVERAGE [options]",
+                    "hidden": true,
+                    "fa_icon": "fas fa-file"
+                },
+                "blacklist_coverage_jabba": {
+                    "type": "string",
+                    "default": "None",
+                    "description": "File path to remove blacklisted positions from coverage",
+                    "fa_icon": "fas fa-file"
+                }
+            },
+            "fa_icon": "fas fa-suitcase"
         },
         "variant_calling": {
             "title": "Variant Calling",
@@ -309,44 +752,6 @@
                     "type": "boolean",
                     "fa_icon": "fas fa-angle-double-right",
                     "description": "Runs Mutect2 in joint (multi-sample) mode for better concordance among variant calls of tumor samples from the same patient. Mutect2 outputs will be stored in a subfolder named with patient ID under `variant_calling/mutect2/` folder. Only a single normal sample per patient is allowed. Tumor-only mode is also supported."
-                },
-                "ascat_min_base_qual": {
-                    "type": "number",
-                    "default": 20,
-                    "fa_icon": "fas fa-greater-than",
-                    "description": "Overwrite Ascat min base quality required for a read to be counted.",
-                    "hidden": true,
-                    "help_text": "For more details see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)"
-                },
-                "ascat_min_counts": {
-                    "type": "number",
-                    "default": 10,
-                    "fa_icon": "fas fa-align-center",
-                    "description": "Overwrite Ascat minimum depth required in the normal for a SNP to be considered.",
-                    "hidden": true,
-                    "help_text": "For more details, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)."
-                },
-                "ascat_min_map_qual": {
-                    "type": "number",
-                    "default": 35,
-                    "fa_icon": "fas fa-balance-scale-left",
-                    "description": "Overwrite Ascat min mapping quality required for a read to be counted.",
-                    "hidden": true,
-                    "help_text": "For more details, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)."
-                },
-                "ascat_ploidy": {
-                    "type": "number",
-                    "fa_icon": "fas fa-bacon",
-                    "help_text": "ASCAT: optional argument to override ASCAT optimization and supply psi parameter (expert parameter, do not adapt unless you know what you are doing). See [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)",
-                    "hidden": true,
-                    "description": "Overwrite ASCAT ploidy."
-                },
-                "ascat_purity": {
-                    "type": "number",
-                    "fa_icon": "fas fa-broom",
-                    "description": "Overwrite ASCAT purity.",
-                    "help_text": "Overwrites ASCAT's `rho_manual` parameter. Expert use only, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf) for details.\nRequires that `--ascat_ploidy` is set.",
-                    "hidden": true
                 },
                 "cf_chrom_len": {
                     "type": "string",
@@ -416,20 +821,6 @@
                     "description": "Copy-number reference for CNVkit",
                     "hidden": true
                 },
-                "pon": {
-                    "type": "string",
-                    "fa_icon": "fas fa-file",
-                    "description": "Panel-of-normals VCF (bgzipped) for GATK Mutect2",
-                    "help_text": "Without PON, there will be no calls with PASS in the INFO field, only an unfiltered VCF is written.\nIt is highly recommended to make your own PON, as it depends on sequencer and library preparation.\n\nThe pipeline is shipped with a panel-of-normals for `--genome GATK.GRCh38` provided by [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-). \n\nSee [PON documentation](https://gatk.broadinstitute.org/hc/en-us/articles/360042479112-CreateSomaticPanelOfNormals-BETA)\n> **NB** PON file should be bgzipped.",
-                    "hidden": true
-                },
-                "pon_tbi": {
-                    "type": "string",
-                    "fa_icon": "fas fa-file",
-                    "description": "Index of PON panel-of-normals VCF.",
-                    "help_text": "If none provided, will be generated automatically from the PON bgzipped VCF file.",
-                    "hidden": true
-                },
                 "ignore_soft_clipped_bases": {
                     "type": "boolean",
                     "fa_icon": "fas fa-ban",
@@ -444,6 +835,44 @@
                     "description": "Option for selecting output and emit-mode of Sentieon's Haplotyper.",
                     "help_text": "The option `--sentieon_haplotyper_emit_mode` can be set to the same string values as the Haplotyper's `--emit_mode`. To output both a vcf and a gvcf, specify both a vcf-option (currently, `all`, `confident` and `variant`) and `gvcf`. For example, to obtain a vcf and gvcf one could set `--sentieon_haplotyper_emit_mode` to `variant, gvcf`.",
                     "pattern": "^(all|confident|gvcf|variant|gvcf,all|gvcf,confident|gvcf,variant|all,gvcf|confident,gvcf|variant,gvcf)(?<!,)$"
+                },
+                "ascat_min_base_qual": {
+                    "type": "number",
+                    "default": 20,
+                    "fa_icon": "fas fa-greater-than",
+                    "description": "Overwrite Ascat min base quality required for a read to be counted.",
+                    "hidden": true,
+                    "help_text": "For more details see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)"
+                },
+                "ascat_min_counts": {
+                    "type": "number",
+                    "default": 10,
+                    "fa_icon": "fas fa-align-center",
+                    "description": "Overwrite Ascat minimum depth required in the normal for a SNP to be considered.",
+                    "hidden": true,
+                    "help_text": "For more details, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)."
+                },
+                "ascat_min_map_qual": {
+                    "type": "number",
+                    "default": 35,
+                    "fa_icon": "fas fa-balance-scale-left",
+                    "description": "Overwrite Ascat min mapping quality required for a read to be counted.",
+                    "hidden": true,
+                    "help_text": "For more details, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)."
+                },
+                "ascat_ploidy": {
+                    "type": "number",
+                    "fa_icon": "fas fa-bacon",
+                    "help_text": "ASCAT: optional argument to override ASCAT optimization and supply psi parameter (expert parameter, do not adapt unless you know what you are doing). See [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf)",
+                    "hidden": true,
+                    "description": "Overwrite ASCAT ploidy."
+                },
+                "ascat_purity": {
+                    "type": "number",
+                    "fa_icon": "fas fa-broom",
+                    "description": "Overwrite ASCAT purity.",
+                    "help_text": "Overwrites ASCAT's `rho_manual` parameter. Expert use only, see [here](https://raw.githubusercontent.com/VanLoo-lab/ascat/master/man/ASCAT-manual.pdf) for details.\nRequires that `--ascat_ploidy` is set.",
+                    "hidden": true
                 }
             }
         },
@@ -587,7 +1016,11 @@
                     "type": "string",
                     "default": "vcf",
                     "description": "VEP output-file format.",
-                    "enum": ["json", "tab", "vcf"],
+                    "enum": [
+                        "json",
+                        "tab",
+                        "vcf"
+                    ],
                     "help_text": "Sets the format of the output-file from VEP. Available formats: json, tab and vcf.",
                     "fa_icon": "fas fa-table",
                     "hidden": true
@@ -612,7 +1045,11 @@
                     "fa_icon": "fa-solid fa-text",
                     "description": "ASCAT genome.",
                     "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\n\nMust be set to run ASCAT, either hg19 or hg38. If you use AWS iGenomes, this has already been set for you appropriately.",
-                    "enum": ["None", "hg19", "hg38"],
+                    "enum": [
+                        "None",
+                        "hg19",
+                        "hg38"
+                    ],
                     "hidden": true
                 },
                 "ascat_alleles": {
@@ -690,13 +1127,6 @@
                     "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\n\n> **NB** If none provided, will be generated automatically from the FASTA reference. Combine with `--save_reference` to save for future runs.",
                     "hidden": true
                 },
-                "dragmap": {
-                    "type": "string",
-                    "fa_icon": "fas fa-copy",
-                    "description": "Path to dragmap indices.",
-                    "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\n\nIf you wish to recompute indices available on igenomes, set `--dragmap false`.\n\n> **NB** If none provided, will be generated automatically from the FASTA reference, if `--aligner dragmap` is specified. Combine with `--save_reference` to save for future runs.",
-                    "hidden": true
-                },
                 "fasta": {
                     "type": "string",
                     "format": "file-path",
@@ -712,20 +1142,6 @@
                     "fa_icon": "fas fa-file",
                     "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\n\n> **NB** If none provided, will be generated automatically from the FASTA reference. Combine with `--save_reference` to save for future runs.",
                     "description": "Path to FASTA reference index."
-                },
-                "germline_resource": {
-                    "type": "string",
-                    "fa_icon": "fas fa-file",
-                    "description": "Path to GATK Mutect2 Germline Resource File.",
-                    "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\n\nThe germline resource VCF file (bgzipped and tabixed) needed by GATK4 Mutect2 is a collection of calls that are likely present in the sample, with allele frequencies.\nThe AF info field must be present.\nYou can find a smaller, stripped gnomAD VCF file (most of the annotation is removed and only calls signed by PASS are stored) in the AWS iGenomes Annotation/GermlineResource folder.",
-                    "hidden": true
-                },
-                "germline_resource_tbi": {
-                    "type": "string",
-                    "fa_icon": "fas fa-file",
-                    "description": "Path to GATK Mutect2 Germline Resource Index.",
-                    "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\n\n> **NB** If none provided, will be generated automatically from the Germline Resource file, if provided. Combine with `--save_reference` to save for future runs.",
-                    "hidden": true
                 },
                 "known_indels": {
                     "type": "string",
@@ -762,48 +1178,6 @@
                     "fa_icon": "fas fa-copy",
                     "description": "If you use AWS iGenomes, this has already been set for you appropriately.\n\nlabel string for VariantRecalibration (haplotypecaller joint variant calling)"
                 },
-                "mappability": {
-                    "type": "string",
-                    "fa_icon": "fas fa-file",
-                    "description": "Path to Control-FREEC mappability file.",
-                    "hidden": true,
-                    "help_text": "If you use AWS iGenomes, this has already been set for you appropriately."
-                },
-                "snpeff_db": {
-                    "type": "string",
-                    "fa_icon": "fas fa-database",
-                    "description": "snpEff DB version.",
-                    "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\nThis is used to specify the database to be use to annotate with.\nAlternatively databases' names can be listed with the `snpEff databases`.",
-                    "hidden": true
-                },
-                "snpeff_genome": {
-                    "type": "string",
-                    "fa_icon": "fas fa-microscope",
-                    "description": "snpEff genome.",
-                    "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\nThis is used to specify the genome when using the container with pre-downloaded cache.",
-                    "hidden": true
-                },
-                "vep_genome": {
-                    "type": "string",
-                    "fa_icon": "fas fa-microscope",
-                    "description": "VEP genome.",
-                    "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\nThis is used to specify the genome when using the container with pre-downloaded cache.",
-                    "hidden": true
-                },
-                "vep_species": {
-                    "type": "string",
-                    "fa_icon": "fas fa-microscope",
-                    "description": "VEP species.",
-                    "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\nAlternatively species listed in Ensembl Genomes caches can be used.",
-                    "hidden": true
-                },
-                "vep_cache_version": {
-                    "type": "number",
-                    "fa_icon": "fas fa-tag",
-                    "description": "VEP cache version.",
-                    "help_text": "If you use AWS iGenomes, this has already been set for you appropriately.\nAlternatively cache version can be use to specify the correct Ensembl Genomes version number as these differ from the concurrent Ensembl/VEP version numbers",
-                    "hidden": true
-                },
                 "save_reference": {
                     "type": "boolean",
                     "fa_icon": "fas fa-download",
@@ -827,6 +1201,13 @@
                     "format": "directory-path",
                     "description": "Directory / URL base for iGenomes references.",
                     "default": "s3://ngi-igenomes/igenomes/",
+                    "fa_icon": "fas fa-cloud-download-alt"
+                },
+                "mski_base": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Directory / URL base for iGenomes references.",
+                    "default": "s3://mskilab-pipeline/",
                     "fa_icon": "fas fa-cloud-download-alt"
                 },
                 "igenomes_ignore": {
@@ -884,13 +1265,6 @@
                     "hidden": true,
                     "fa_icon": "fas fa-users-cog"
                 },
-                "test_data_base": {
-                    "type": "string",
-                    "default": "https://raw.githubusercontent.com/nf-core/test-datasets/sarek3",
-                    "description": "Base path / URL for data used in the test profiles",
-                    "help_text": "Warning: The `-profile test` samplesheet file itself contains remote paths. Setting this parameter does not alter the contents of that file.",
-                    "hidden": true
-                },
                 "seq_center": {
                     "type": "string",
                     "fa_icon": "fas fa-university",
@@ -925,7 +1299,7 @@
                 "max_memory": {
                     "type": "string",
                     "description": "Maximum amount of memory that can be requested for any single job.",
-                    "default": "128.GB",
+                    "default": "256.GB",
                     "fa_icon": "fas fa-memory",
                     "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
                     "hidden": true,
@@ -934,7 +1308,7 @@
                 "max_time": {
                     "type": "string",
                     "description": "Maximum amount of time that can be requested for any single job.",
-                    "default": "240.h",
+                    "default": "360.h",
                     "fa_icon": "far fa-clock",
                     "pattern": "^(\\d+\\.?\\s*(s|m|h|d|day)\\s*)+$",
                     "hidden": true,
@@ -967,7 +1341,14 @@
                     "description": "Method used to save pipeline results to output directory.",
                     "help_text": "The Nextflow `publishDir` option specifies which intermediate files should be saved to the output directory. This option tells the pipeline what method should be used to move these files. See [Nextflow docs](https://www.nextflow.io/docs/latest/process.html#publishdir) for details.",
                     "fa_icon": "fas fa-copy",
-                    "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"],
+                    "enum": [
+                        "symlink",
+                        "rellink",
+                        "link",
+                        "copy",
+                        "copyNoFollow",
+                        "move"
+                    ],
                     "hidden": true
                 },
                 "email": {
@@ -1080,6 +1461,27 @@
             "$ref": "#/definitions/preprocessing"
         },
         {
+            "$ref": "#/definitions/sv_calling"
+        },
+        {
+            "$ref": "#/definitions/hetpileups"
+        },
+        {
+            "$ref": "#/definitions/fragcounter"
+        },
+        {
+            "$ref": "#/definitions/dryclean"
+        },
+        {
+            "$ref": "#/definitions/cbs"
+        },
+        {
+            "$ref": "#/definitions/ascat_seg"
+        },
+        {
+            "$ref": "#/definitions/jabba"
+        },
+        {
             "$ref": "#/definitions/variant_calling"
         },
         {
@@ -1097,5 +1499,11 @@
         {
             "$ref": "#/definitions/generic_options"
         }
-    ]
+    ],
+    "properties": {
+        "validationSchemaIgnoreParams": {
+            "type": "string",
+            "default": "genomes, cf_ploidy"
+        }
+    }
 }

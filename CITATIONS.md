@@ -1,4 +1,4 @@
-# nf-core/heisenbio: Citations
+# mskilab-org/nf-jabba: Citations
 
 ## [nf-core](https://pubmed.ncbi.nlm.nih.gov/32055031/)
 

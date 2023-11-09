@@ -47,22 +47,32 @@ def checkPathParamList = [
     params.mappability,
     params.multiqc_config,
     params.pon,
-    params.pon_tbi
+    params.pon_tbi,
+    params.gcmapdir_frag,
+    params.pon_dryclean,
+    params.blacklist_coverage_jabba
 ]
 // only check if we are using the tools
 if (params.tools && params.tools.contains("snpeff")) checkPathParamList.add(params.snpeff_cache)
 if (params.tools && params.tools.contains("vep"))    checkPathParamList.add(params.vep_cache)
 
+// checking inputs if using SVABA
 if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.indel_mask)
 if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.germ_sv_db)
 if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.simple_seq_db)
 
+// checking inputs if using GRIDSS
 if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.blacklist_gridss)
 if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.pon_gridss)
 
+if (params.tools && params.tools.contains("hetpileups"))  checkPathParamList.add(params.hapmap_sites)
+
+
+// Checking inputs if running fragCounter
+//if (params.tools && params.tools.contains("fragcounter"))  checkPathParamList.add(params.gcmapdir_frag)
 
 // Validate input parameters
-WorkflowHeisenbio.initialise(params, log)
+WorkflowNfjabba.initialise(params, log)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,9 +91,9 @@ if (params.input) {
 }
 
 input_sample = ch_from_samplesheet
-        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, vcf, variantcaller ->
+        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller ->
             // generate patient_sample key to group lanes together
-            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, vcf, variantcaller] ]
+            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller] ]
         }
         .tap{ ch_with_patient_sample } // save the channel
         .groupTuple() //group by patient_sample to get all lanes
@@ -94,7 +104,7 @@ input_sample = ch_from_samplesheet
         .combine(ch_with_patient_sample, by: 0) // for each entry add numLanes
         .map { patient_sample, num_lanes, ch_items ->
 
-            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, vcf, variantcaller) = ch_items
+            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller) = ch_items
             if (meta.lane && fastq_2) {
                 meta           = meta + [id: "${meta.sample}-${meta.lane}".toString()]
                 def CN         = params.seq_center ? "CN:${params.seq_center}\\t" : ''
@@ -123,7 +133,7 @@ input_sample = ch_from_samplesheet
 
                 if (params.step != 'annotate') return [ meta - meta.subMap('lane'), bam, bai ]
                 else {
-                    error("Samplesheet contains bam files but step is `annotate`. The pipeline is expecting vcf files for the annotation. Please check your samplesheet or adjust the step parameter.\nhttps://nf-co.re/sarek/usage#input-samplesheet-configurations")
+                    error("Samplesheet contains bam files but step is `annotate`. The pipeline is expecting vcf files for the annotation. Please check your samplesheet or adjust the step parameter.")
                 }
 
             // recalibration
@@ -132,7 +142,7 @@ input_sample = ch_from_samplesheet
 
                 if (!(params.step == 'alignment' || params.step == 'annotate')) return [ meta - meta.subMap('lane'), cram, crai, table ]
                 else {
-                    error("Samplesheet contains cram files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.\nhttps://nf-co.re/sarek/usage#input-samplesheet-configurations")
+                    error("Samplesheet contains cram files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
 
             // recalibration when skipping MarkDuplicates
@@ -141,7 +151,7 @@ input_sample = ch_from_samplesheet
 
                 if (!(params.step == 'alignment' || params.step == 'annotate')) return [ meta - meta.subMap('lane'), bam, bai, table ]
                 else {
-                    error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.\nhttps://nf-co.re/sarek/usage#input-samplesheet-configurations")
+                    error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
 
             // prepare_recalibration or variant_calling
@@ -150,7 +160,7 @@ input_sample = ch_from_samplesheet
 
                 if (!(params.step == 'alignment' || params.step == 'annotate')) return [ meta - meta.subMap('lane'), cram, crai ]
                 else {
-                    error("Samplesheet contains cram files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.\nhttps://nf-co.re/sarek/usage#input-samplesheet-configurations")
+                    error("Samplesheet contains cram files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
 
             // prepare_recalibration when skipping MarkDuplicates or `--step markduplicates`
@@ -159,18 +169,33 @@ input_sample = ch_from_samplesheet
 
                 if (!(params.step == 'alignment' || params.step == 'annotate')) return [ meta - meta.subMap('lane'), bam, bai ]
                 else {
-                    error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.\nhttps://nf-co.re/sarek/usage#input-samplesheet-configurations")
+                    error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
+            // hetpileups
+            } else if (cov && hets) {
+                meta = meta + [id: meta.sample, data_type: ['cov', 'hets']]
 
-            // annotation
-            } else if (vcf) {
-                meta = meta + [id: meta.sample, data_type: 'vcf', variantcaller: variantcaller ?: '']
-
-                if (params.step == 'annotate') return [ meta - meta.subMap('lane'), vcf ]
+                if (params.step == 'ascat') return [ meta - meta.subMap('lane'), cov, hets ]
                 else {
-                    error("Samplesheet contains vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.\nhttps://nf-co.re/sarek/usage#input-samplesheet-configurations")
+                    error("Samplesheet contains cov .rds and hets .txt files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
-            } else {
+                // jabba
+            } else if (cov && vcf) {
+                meta = meta + [id: meta.sample, data_type: ['vcf', 'cov']]
+
+                if (params.step == 'jabba') return [ meta - meta.subMap('lane'), vcf, cov]
+                else {
+                    error("Samplesheet contains cov .rds and vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                }
+                // dryclean
+            } else if (cov) {
+                meta = meta + [id: meta.sample, data_type: 'cov']
+
+                if (params.step == 'dryclean') return [ meta - meta.subMap('lane'), cov ]
+                else {
+                    error("Samplesheet contains cov .rds files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                }
+        } else {
                 error("Missing or unknown field in csv file header. Please check your samplesheet")
             }
         }
@@ -183,10 +208,17 @@ if (!params.dbsnp && !params.known_indels) {
     }
 }
 
-
+// Fails when missing sex information for CNV tools
+if (params.tools && (params.tools.split(',').contains('ascat'))) {
+    input_sample.map{
+        if (it[0].sex == 'NA' ) {
+            error("Please specify sex information for each sample in your samplesheet when using '--tools' with 'ascat'")
+        }
+    }
+}
 
 if ((params.download_cache) && (params.snpeff_cache || params.vep_cache)) {
-    error("Please specify either `--download_cache` or `--snpeff_cache`, `--vep_cache`.\nhttps://nf-co.re/sarek/dev/usage#how-to-customise-snpeff-and-vep-annotation")
+    error("Please specify either `--download_cache` or `--snpeff_cache`, `--vep_cache`.")
 }
 
 /*
@@ -210,11 +242,30 @@ known_indels       = params.known_indels       ? Channel.fromPath(params.known_i
 known_snps         = params.known_snps         ? Channel.fromPath(params.known_snps).collect()        : Channel.value([])
 mappability        = params.mappability        ? Channel.fromPath(params.mappability).collect()       : Channel.value([])
 pon                = params.pon                ? Channel.fromPath(params.pon).collect()               : Channel.value([]) // PON is optional for Mutect2 (but highly recommended)
+
+// SVABA
 indel_mask         = params.indel_mask         ? Channel.fromPath(params.indel_mask).collect()        : Channel.empty()   // This is the indel mask for SVABA
 germ_sv_db         = params.germ_sv_db         ? Channel.fromPath(params.germ_sv_db).collect()        : Channel.empty()   // This is the germline SV mask for Svaba
 simple_seq_db      = params.simple_seq_db      ? Channel.fromPath(params.simple_seq_db).collect()     : Channel.empty()   // This is the file containing sites of simple DNA that can confuse the contig re-alignment for SVABA
+
+// GRIDSS
 blacklist_gridss   = params.blacklist_gridss   ? Channel.fromPath(params.blacklist_gridss).collect()  : Channel.empty()   // This is the mask for gridss SV calls
 pon_gridss         = params.pon_gridss         ? Channel.fromPath(params.pon_gridss).collect()        : Channel.empty()   //This is the pon directory for GRIDSS SOMATIC. (MUST CONTAIN .bed and .bedpe files)
+
+// FragCounter
+gcmapdir_frag      = params.gcmapdir_frag      ? Channel.fromPath(params.gcmapdir_frag).collect()     : Channel.empty()   // This is the GC/Mappability directory for fragCounter. (Must contain gc* & map* .rds files)
+
+// HetPileups
+hapmap_sites       = params.hapmap_sites       ? Channel.fromPath(params.hapmap_sites).collect()      : Channel.empty()
+
+// Dryclean
+pon_dryclean      = params.pon_dryclean      ? Channel.fromPath(params.pon_dryclean).collect()     : Channel.empty()   // This is the path to the PON for Dryclean.
+blacklist_path_dryclean      = params.blacklist_path_dryclean      ? Channel.fromPath(params.blacklist_path_dryclean).collect()     : Channel.empty()   // This is the path to the blacklist for Dryclean (optional).
+germline_file_dryclean      = params.germline_file_dryclean      ? Channel.fromPath(params.germline_file_dryclean).collect()     : Channel.empty()   // This is the path to the germline mask for dryclean (optional).
+
+// JaBbA
+blacklist_coverage_jabba		= params.blacklist_coverage_jabba		  ? Channel.fromPath(params.blacklist_coverage_jabba).collect() : Channel.empty()
+
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
 ascat_genome       = params.ascat_genome       ?: Channel.empty()
 dbsnp_vqsr         = params.dbsnp_vqsr         ? Channel.value(params.dbsnp_vqsr) : Channel.empty()
@@ -224,7 +275,73 @@ snpeff_db          = params.snpeff_db          ?: Channel.empty()
 vep_cache_version  = params.vep_cache_version  ?: Channel.empty()
 vep_genome         = params.vep_genome         ?: Channel.empty()
 vep_species        = params.vep_species        ?: Channel.empty()
-error_rate         = params.error_rate         ?: Channel.empty()
+error_rate         = params.error_rate         ?: Channel.empty()                                                         // For SVABA
+
+// Hetpileups
+filter_hets         = params.filter_hets       ?: Channel.empty()
+max_depth           = params.max_depth         ?: Channel.empty()
+
+// FragCounter
+windowsize_frag    = params.windowsize_frag    ?: Channel.empty()                                                         // For fragCounter
+minmapq_frag       = params.minmapq_frag       ?: Channel.empty()                                                         // For fragCounter
+midpoint_frag      = params.midpoint_frag      ?: Channel.empty()                                                         // For fragCounter
+paired_frag        = params.paired_frag        ?: Channel.empty()                                                         // For fragCounter
+exome_frag         = params.exome_frag         ?: Channel.empty()                                                         // For fragCounter
+
+// Dryclean
+centered_dryclean           = params.centered_dryclean          ?: Channel.empty()
+cbs_dryclean                = params.cbs_dryclean               ?: Channel.empty()
+cnsignif_dryclean           = params.cnsignif_dryclean          ?: Channel.empty()
+wholeGenome_dryclean        = params.wholeGenome_dryclean       ?: Channel.empty()
+blacklist_dryclean          = params.blacklist_dryclean         ?: Channel.empty()
+germline_filter_dryclean    = params.germline_filter_dryclean   ?: Channel.empty()
+human_dryclean              = params.human_dryclean             ?: Channel.empty()
+field_dryclean              = params.field_dryclean             ?: Channel.empty()
+build_dryclean              = params.build_dryclean             ?: Channel.empty()
+
+// ASCAT_seg
+field_ascat                 = params.field_ascat                ?: Channel.empty()
+hets_thresh_ascat           = params.hets_thresh_ascat          ?: Channel.empty()
+penalty_ascat               = params.penalty_ascat              ?: Channel.empty()
+gc_correct_ascat            = params.gc_correct_ascat           ?: Channel.empty()
+rebin_width_ascat           = params.rebin_width_ascat          ?: Channel.empty()
+from_maf_ascat              = params.from_maf_ascat             ?: Channel.empty()
+
+// CBS
+cnsignif_cbs                    = params.cnsignif_cbs               ?: Channel.empty()
+field_cbs                       = params.field_cbs                  ?: Channel.empty()
+name_cbs                        = params.name_cbs                   ?: Channel.empty()
+
+// JaBbA
+blacklist_junctions_jabba       = params.blacklist_junctions_jabba      ?: Channel.empty()
+geno_jabba					    = params.geno_jabba			            ?: Channel.empty()
+indel_jabba					    = params.indel_jabba			        ?: Channel.empty()
+tfield_jabba					= params.tfield_jabba			        ?: Channel.empty()
+iter_jabba					    = params.iter_jabba			            ?: Channel.empty()
+rescue_window_jabba				= params.rescue_window_jabba			?: Channel.empty()
+rescue_all_jabba				= params.rescue_all_jabba			    ?: Channel.empty()
+nudgebalanced_jabba				= params.nudgebalanced_jabba			?: Channel.empty()
+edgenudge_jabba					= params.edgenudge_jabba			    ?: Channel.empty()
+strict_jabba					= params.strict_jabba			        ?: Channel.empty()
+allin_jabba					    = params.allin_jabba			        ?: Channel.empty()
+field_jabba					    = params.field_jabba			        ?: Channel.empty()
+maxna_jabba					    = params.maxna_jabba			        ?: Channel.empty()
+purity_jabba					= params.purity_jabba                   ?: Channel.empty()
+//ploidy_jabba					= params.ploidy_jabba                   ?: Channel.empty()
+pp_method_jabba					= params.pp_method_jabba                ?: Channel.empty()
+cnsignif_jabba					= params.cnsignif_jabba                 ?: Channel.empty()
+slack_jabba					    = params.slack_jabba                    ?: Channel.empty()
+linear_jabba					= params.linear_jabba                   ?: Channel.empty()
+tilim_jabba					    = params.tilim_jabba                    ?: Channel.empty()
+epgap_jabba					    = params.epgap_jabba                    ?: Channel.empty()
+fix_thres_jabba					= params.fix_thres_jabba			    ?: Channel.empty()
+lp_jabba					    = params.lp_jabba			            ?: Channel.empty()
+ism_jabba					    = params.ism_jabba			            ?: Channel.empty()
+filter_loose_jabba				= params.filter_loose_jabba			    ?: Channel.empty()
+gurobi_jabba					= params.gurobi_jabba			        ?: Channel.empty()
+nonintegral_jabba				= params.nonintegral_jabba			    ?: Channel.empty()
+verbose_jabba					= params.verbose_jabba			        ?: Channel.empty()
+help_jabba					    = params.help_jabba			            ?: Channel.empty()
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
 if (params.snpeff_cache && params.tools && params.tools.contains("snpeff")) {
@@ -263,6 +380,7 @@ include { CHANNEL_MARKDUPLICATES_CREATE_CSV           } from '../subworkflows/lo
 include { CHANNEL_BASERECALIBRATOR_CREATE_CSV         } from '../subworkflows/local/channel_baserecalibrator_create_csv/main'
 include { CHANNEL_APPLYBQSR_CREATE_CSV                } from '../subworkflows/local/channel_applybqsr_create_csv/main'
 include { CHANNEL_SVCALLING_CREATE_CSV                } from '../subworkflows/local/channel_svcalling_create_csv/main'
+include { CHANNEL_HETPILEUPS_CREATE_CSV               } from '../subworkflows/local/channel_hetpileups_create_csv/main'
 
 // Download annotation cache if needed
 include { PREPARE_CACHE                               } from '../subworkflows/local/prepare_cache/main'
@@ -301,6 +419,8 @@ include { SAMTOOLS_CONVERT as BAM_TO_CRAM_MAPPING     } from '../modules/nf-core
 // Convert CRAM files (optional)
 include { SAMTOOLS_CONVERT as CRAM_TO_BAM             } from '../modules/nf-core/samtools/convert/main'
 include { SAMTOOLS_CONVERT as CRAM_TO_BAM_RECAL       } from '../modules/nf-core/samtools/convert/main'
+include { SAMTOOLS_CONVERT as CRAM_TO_BAM_NORMAL      } from '../modules/nf-core/samtools/convert/main'
+include { SAMTOOLS_CONVERT as CRAM_TO_BAM_TUMOR       } from '../modules/nf-core/samtools/convert/main'
 
 // Mark Duplicates (+QC)
 include { BAM_MARKDUPLICATES                          } from '../subworkflows/local/bam_markduplicates/main'
@@ -321,13 +441,31 @@ include { BAM_SVCALLING_SVABA                         } from '../subworkflows/lo
 //GRIDSS
 include { BAM_SVCALLING_GRIDSS                        } from '../subworkflows/local/bam_svcalling_gridss/main'
 include { BAM_SVCALLING_GRIDSS_SOMATIC                } from '../subworkflows/local/bam_svcalling_gridss/main'
+
+// HETPILEUPS
+include { BAM_HETPILEUPS                              } from '../subworkflows/local/bam_hetpileups/main'
+
+// fragCounter
+include { BAM_FRAGCOUNTER as TUMOR_FRAGCOUNTER         } from '../subworkflows/local/bam_fragCounter/main'
+include { BAM_FRAGCOUNTER as NORMAL_FRAGCOUNTER        } from '../subworkflows/local/bam_fragCounter/main'
+
+// dryclean
+include { COV_DRYCLEAN as TUMOR_DRYCLEAN               } from '../subworkflows/local/cov_dryclean/main'
+include { COV_DRYCLEAN as NORMAL_DRYCLEAN              } from '../subworkflows/local/cov_dryclean/main'
+
+//ASCAT
+include { COV_ASCAT                                   } from '../subworkflows/local/cov_ascat/main'
+
+include { COV_CBS as CBS                            } from '../subworkflows/local/cov_cbs/main'
+
+include { COV_JUNC_JABBA as JABBA         } from '../subworkflows/local/jabba/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow HEISENBIO {
+workflow NFJABBA {
 
     // MULTIQC
     ch_multiqc_config                     = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: true)
@@ -377,11 +515,11 @@ workflow HEISENBIO {
                                     : PREPARE_GENOME.out.bwa
     bwamem2    = params.bwamem2     ? Channel.fromPath(params.bwamem2).collect()
                                     : PREPARE_GENOME.out.bwamem2
-    
+
     // Gather index for mapping given the chosen aligner
     index_alignement = (params.aligner == "bwa-mem") ? bwa :
         params.aligner == "bwa-mem2" ? bwamem2 : null
-    
+
     // TODO: add a params for msisensorpro_scan
     msisensorpro_scan      = PREPARE_GENOME.out.msisensorpro_scan
 
@@ -432,7 +570,7 @@ workflow HEISENBIO {
         if ( num_intervals < 1 ) [ [], [], num_intervals ]
         else [ intervals[0], intervals[1], num_intervals ]
     }
-    
+
     // Gather used softwares versions
     versions = versions.mix(PREPARE_GENOME.out.versions)
     versions = versions.mix(PREPARE_INTERVALS.out.versions)
@@ -771,7 +909,8 @@ workflow HEISENBIO {
             // - crams from markduplicates = ch_cram_for_bam_baserecalibrator if skip BQSR but not started from step recalibration
             cram_variant_calling = Channel.empty().mix(ch_cram_for_bam_baserecalibrator)
         }
-        cram_sv_calling = cram_variant_calling
+        cram_sv_calling        = cram_variant_calling
+        //cram_fragcounter_calling  = cram_variant_calling
     }
 
 
@@ -788,6 +927,7 @@ workflow HEISENBIO {
             versions = versions.mix(BAM_TO_CRAM.out.versions)
 
             cram_sv_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_sv_calling_convert.cram)
+                                .map{ meta, cram, crai -> [ meta + [data_type: "cram"], cram, crai ] }           //making sure that the input data_type is correct
 
         }
 
@@ -796,6 +936,7 @@ workflow HEISENBIO {
             normal: it[0].status == 0
             tumor:  it[0].status == 1
         }
+
 
         // All normal samples
         cram_sv_calling_normal_to_cross = cram_sv_calling_status.normal.map{ meta, cram, crai -> [ meta.patient, meta, cram, crai ] }
@@ -819,17 +960,21 @@ workflow HEISENBIO {
 
         //cram_sv_calling_pair.view()
         if (params.tools && params.tools.split(',').contains('svaba')) {
-            BAM_SVCALLING_SVABA(cram_sv_calling_pair, fasta, fasta_fai, bwa, dbsnp, dbsnp_tbi, indel_mask, germ_sv_db, simple_seq_db, error_rate) 
+            BAM_SVCALLING_SVABA(cram_sv_calling_pair, fasta, fasta_fai, bwa, dbsnp, dbsnp_tbi, indel_mask, germ_sv_db, simple_seq_db, error_rate)
 
             versions = versions.mix(BAM_SVCALLING_SVABA.out.versions)
 
-            vcf_from_sv_calling = Channel.empty()
-            vcf_from_sv_calling = vcf_from_sv_calling.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
+            all_sv_vcfs = Channel.empty()
+            all_sv_vcfs = all_sv_vcfs.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
 
-        }  
+            vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_SVABA.out.som_sv)
+
+            unfiltered_som_sv = Channel.empty()
+            unfiltered_som_sv = unfiltered_som_sv.mix(BAM_SVCALLING_SVABA.out.unfiltered_som_sv)
+        }
 
         if (params.tools && params.tools.split(',').contains('gridss')) {
-            BAM_SVCALLING_GRIDSS(cram_sv_calling_pair, fasta, fasta_fai, bwa, blacklist_gridss)
+            BAM_SVCALLING_GRIDSS(cram_sv_calling_pair, fasta, fasta_fai, bwa, blacklist_gridss)     // running GRIDSS
 
             versions = versions.mix(BAM_SVCALLING_GRIDSS.out.versions)
 
@@ -838,17 +983,245 @@ workflow HEISENBIO {
             //vcf_from_gridss_gridss.view()
 
 
-            BAM_SVCALLING_GRIDSS_SOMATIC(vcf_from_gridss_gridss, pon_gridss)
+            BAM_SVCALLING_GRIDSS_SOMATIC(vcf_from_gridss_gridss, pon_gridss)               //running the somatic filter for GRIDSS
             versions = versions.mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.versions)
 
             vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.all_vcf)
-            vcf_from_sv_calling.view()
-        } 
+            //vcf_from_sv_calling.view()
+        }
 
-        //CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
+        // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
+        cram_fragcounter_calling = cram_sv_calling
+    }
+
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter']) {
+
+        if (params.step == 'fragcounter') {
+            input_fragcounter_convert = input_sample.branch{
+                bam:  it[0].data_type == "bam"
+                cram: it[0].data_type == "cram"
+            }
+            // BAM files first must be converted to CRAM files since from this step on we base everything on CRAM format
+            BAM_TO_CRAM(input_fragcounter_convert.bam, fasta, fasta_fai)
+            versions = versions.mix(BAM_TO_CRAM.out.versions)
+
+            cram_fragcounter_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_fragcounter_convert.cram)
+                                .map{ meta, cram, crai -> [ meta + [data_type: "cram"], cram, crai ] }           //making sure that the input data_type is correct
+
+        }
+
+        // getting the tumor and normal cram files separated
+        cram_fragcounter_status = cram_fragcounter_calling.branch{
+            normal: it[0].status == 0
+            tumor:  it[0].status == 1
+        }
+
+        if (params.tools && params.tools.split(',').contains('fragcounter')) {
+            NORMAL_FRAGCOUNTER(cram_fragcounter_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+            normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
+
+            TUMOR_FRAGCOUNTER(cram_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+            tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.fragcounter_cov)
+
+            // Only need one versions because its just one program (fragcounter)
+            versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
+        }
+
+            // TODO: Add a subworkflow to write the output file paths into a csv
+    }
+
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups']) {
+
+
+        if (!(params.step == "alignment" || params.step == "markduplicates" ||
+            params.step == "prepare_recalibration" || params.step == "recalibrate" ||
+            params.step == "ascat" || params.step == "dryclean" || params.step == "jabba") || params.step == 'hetpileups') {
+
+                bam_hetpileups_calling = input_sample                // Will this work if someone starts from fastq files?
+            }
+
+
+
+        // getting the tumor and normal cram files separated
+        bam_hetpileups_status = bam_hetpileups_calling.branch{
+            normal: it[0].status == 0
+            tumor:  it[0].status == 1
+        }
+
+        // All normal samples
+        bam_hetpileups_normal_to_cross = bam_hetpileups_status.normal.map{ meta, bam, bai -> [ meta.patient, meta + [id: meta.sample], bam, bai ] }
+
+        // All tumor samples
+        bam_hetpileups_tumor_to_cross = bam_hetpileups_status.tumor.map{ meta, bam, bai -> [ meta.patient, meta + [id: meta.sample], bam, bai ] }
+
+        // Crossing the normal and tumor samples to create tumor and normal pairs
+        bam_hetpileups_pair = bam_hetpileups_normal_to_cross.cross(bam_hetpileups_tumor_to_cross)
+            .map { normal, tumor ->
+                def meta = [:]
+                meta.id         = "${tumor[1].sample}_vs_${normal[1].sample}".toString()
+                meta.normal_id  = normal[1].sample
+                meta.patient    = normal[0]
+                meta.sex        = normal[1].sex
+                meta.tumor_id   = tumor[1].sample
+
+                [ meta, normal[2], normal[3], tumor[2], tumor[3] ]
+        }
+
+        if (params.tools && params.tools.split(',').contains('hetpileups')) {
+            BAM_HETPILEUPS(bam_hetpileups_pair, filter_hets, max_depth, hapmap_sites)
+
+            versions = versions.mix(BAM_HETPILEUPS.out.versions)
+
+            sites_from_het_pileups_wgs = Channel.empty().mix(BAM_HETPILEUPS.out.het_pileups_wgs)
+
+            // Commenting out because not necessary for running from this step
+            // CSV should be written for the file actually out out, either bam or BAM
+            //csv_hetpileups = Channel.empty().mix(BAM_HETPILEUPS.out.het_pileups_wgs)
+
+            // Create CSV to restart from this step
+            //CHANNEL_HETPILEUPS_CREATE_CSV(csv_hetpileups)
+        }
 
     }
 
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean']) {
+
+        if (params.step == 'dryclean') {
+            input_dryclean = input_sample
+                                .map{ meta, cov -> [ meta + [data_type: "cov"], cov ] }
+
+            input_dryclean_status = input_dryclean.branch{
+                normal: it[0].status == 0
+                tumor:  it[0].status == 1
+            }
+
+            tumor_frag_cov  = Channel.empty().mix(input_dryclean_status.tumor)
+            normal_frag_cov = Channel.empty().mix(input_dryclean_status.normal)
+
+        }
+        if (params.tools && params.tools.split(',').contains('dryclean')) {
+            // Dryclean for both tumor & normal
+            TUMOR_DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
+                    cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
+                    blacklist_dryclean, blacklist_path_dryclean,
+                    germline_filter_dryclean, germline_file_dryclean, human_dryclean,
+                    field_dryclean, build_dryclean)
+            tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
+
+
+            NORMAL_DRYCLEAN(normal_frag_cov, pon_dryclean, centered_dryclean,
+                    cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
+                    blacklist_dryclean, blacklist_path_dryclean,
+                    germline_filter_dryclean, germline_file_dryclean, human_dryclean,
+                    field_dryclean, build_dryclean)
+            normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
+
+            // Only need one versions because it's one program (dryclean)
+            versions = versions.mix(TUMOR_DRYCLEAN.out.versions)
+        }
+
+        // TODO: Add a subworkflow to write the output file paths into a csv
+
+        if (params.tools && params.tools.split(',').contains('cbs')) {
+
+            // All normal samples
+            normal_dryclean_cov_to_cross = normal_dryclean_cov.map { tuple ->
+                                                                def (meta, cov) = tuple
+                                                                [meta.patient, meta + [id: meta.sample], cov] }
+            // All tumor samples
+            tumor_dryclean_cov_to_cross = tumor_dryclean_cov.map { tuple ->
+                                                                def (meta, cov) = tuple
+                                                                [meta.patient, meta + [id: meta.sample], cov] }
+
+            cov_cbs = normal_dryclean_cov_to_cross.cross(tumor_dryclean_cov_to_cross)
+                .map { normal, tumor ->
+                    def meta = [:]
+                        meta.id             = "${tumor[1].sample}_vs_${normal[1].sample}".toString()
+                        meta.normal_id      = normal[1].sample
+                        meta.patient        = normal[0]
+                        meta.sex            = normal[1].sex
+                        meta.tumor_id       = tumor[1].sample
+
+                        [ meta, normal[2], tumor[2] ]
+                }
+
+            CBS(cov_cbs, cnsignif_cbs, field_cbs, name_cbs)
+
+            versions       = versions.mix(CBS.out.versions)
+            cbs_cov_rds    = Channel.empty().mix(CBS.out.cbs_cov_rds)
+            cbs_seg_rds    = Channel.empty().mix(CBS.out.cbs_seg_rds)
+            cbs_nseg_rds   = Channel.empty().mix(CBS.out.cbs_nseg_rds)
+
+        }
+    }
+
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'ascat']) {
+
+        if (params.step == 'ascat') {
+            input_ascat = input_sample
+                                .map{ meta, cov, hets -> [ meta + [data_type: "cov"], cov, hets ] }
+
+            input_cov_ascat = input_ascat
+                                .map{ meta, cov, hets -> [ meta, cov ] }
+
+            input_hets_ascat = input_ascat
+                                .map{ meta, cov, hets -> [ meta, hets ] }
+
+            sites_from_het_pileups_wgs  = Channel.empty().mix(input_hets_ascat)
+            tumor_dryclean_cov   = Channel.empty().mix(input_cov_ascat)
+
+        }
+
+        if (params.tools && params.tools.split(',').contains('ascat')) {
+            //sites_from_het_pileups_wgs.view()
+            //tumor_dryclean_cov.view()
+
+            COV_ASCAT(sites_from_het_pileups_wgs, tumor_dryclean_cov, field_ascat, hets_thresh_ascat,
+                    penalty_ascat, gc_correct_ascat, rebin_width_ascat, from_maf_ascat)
+
+            versions = versions.mix(COV_ASCAT.out.versions)
+            purityploidy = Channel.empty().mix(COV_ASCAT.out.pp)
+            purity = Channel.empty().mix(COV_ASCAT.out.purity)
+            ploidy = Channel.empty().mix(COV_ASCAT.out.ploidy)
+        }
+        // TODO: Add a subworkflow to write the output file paths into a csv
+    }
+
+    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'jabba']) {
+
+        if (params.tools && params.tools.split(',').contains('jabba')) {
+            if (params.tools && params.tools.split(',').contains('ascat')) {
+                ploidy_jabba = ploidy
+            } else {
+                ploidy_jabba = input_sample.map{ meta -> [ meta, ploidy_jabba ] }
+            }
+
+            //name_jabba = input_sample .map{ meta -> meta.id }
+            name_jabba = 'tumor'
+
+            JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
+            sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
+            unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
+            indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
+            rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
+            strict_jabba, allin_jabba, field_jabba, maxna_jabba,
+            blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
+            cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
+            epgap_jabba, name_jabba, fix_thres_jabba, lp_jabba,
+            ism_jabba, filter_loose_jabba, gurobi_jabba,
+            verbose_jabba)
+
+            jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
+            jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
+            jabba_vcf           = Channel.empty().mix(JABBA.out.jabba_vcf)
+            jabba_raw_rds       = Channel.empty().mix(JABBA.out.jabba_raw_rds)
+            opti                = Channel.empty().mix(JABBA.out.opti)
+            jabba_seg           = Channel.empty().mix(JABBA.out.jabba_seg)
+            karyograph          = Channel.empty().mix(JABBA.out.karyograph)
+            versions = versions.mix(JABBA.out.versions)
+        }
+
+    }
 }
 
 

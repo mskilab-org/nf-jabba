@@ -1,10 +1,17 @@
 {
-    "name": "nf-core/heisenbio",
-    "homePage": "https://github.com/nf-core/heisenbio",
+    "name": "mskilab-org/nf-jabba",
+    "homePage": "https://github.com/mskilab-org/nf-jabba",
     "repos": {
         "https://github.com/nf-core/modules.git": {
             "modules": {
                 "nf-core": {
+                    "ascat": {
+                        "branch": "master",
+                        "git_sha": "516189e968feb4ebdd9921806988b4c12b4ac2dc",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
                     "bwa/index": {
                         "branch": "master",
                         "git_sha": "bfed129da5134b4439b1821c917972570d44d39c",
