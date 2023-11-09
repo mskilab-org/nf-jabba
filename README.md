@@ -23,11 +23,12 @@
 
 ## Introduction
 
-**mskilab-org/nf-JaBbA** is a new state-of-the-art bioinformatics pipeline from [`mskilab-org`](https://www.mskilab.org/) for running [`JaBbA`](https://github.com/mskilab-org/JaBbA/tree/master), an algorithm that does MIP based joint inference of copy number and rearrangement state in cancer whole genome sequence data. This pipeline runs all the pre-requisite modules and generates the necessary inputs for running JaBbA. It is built to take tumor-normal pairs as input and is designed and tested to run on human samples. 
+**mskilab-org/nf-JaBbA** is a new state-of-the-art bioinformatics pipeline from [`mskilab-org`](https://www.mskilab.org/) for running [`JaBbA`](https://github.com/mskilab-org/JaBbA/tree/master), our algorithm for doing MIP based joint inference of copy number and rearrangement state in cancer whole genome sequence data. This pipeline runs all the pre-requisite modules and generates the necessary inputs for running JaBbA. It is designed to take tumor-normal pairs of human samples as input. 
 
-We took inspiration from [`nf-core/Sarek`](https://github.com/nf-core/sarek), a workflow for detecting variants in whole genome or targeted sequencing data. **`nf-jabba`** is built using [`Nextflow`](https://www.nextflow.io/) and is implemented using `Nextflow DSL2`. All the modules use [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers, for easy execution and reproducibility. Some of the modules/processes are derived from open source [`nf-core/modules`](https://github.com/nf-core/modules).
+We took inspiration from [`nf-core/Sarek`](https://github.com/nf-core/sarek), a workflow for detecting variants in whole genome or targeted sequencing data. **`nf-jabba`** is built using [`Nextflow`](https://www.nextflow.io/) and the `Nextflow DSL2`. All the modules use [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers, for easy execution and reproducibility. Some of the modules/processes are derived from open source [`nf-core/modules`](https://github.com/nf-core/modules).
 
-This pipeline has been designed to start from **FASTQ** files or directly from **BAM** files. Paths to these files should be supplied in a **CSV** file (*please refer to the documentation below for the input format of the .csv file*). 
+This pipeline has been designed to start from **FASTQ** files or directly from **BAM** files. Paths to these files should be supplied in a **CSV** file (*please refer to the section below for the input format of the .csv file*). 
+
 ## Workflow Summary:
 1. Alignment to Reference Genome (currently supports `BWA-MEM` & `BWA-MEM2`; a modified version of the `Alignment` step from `nf-core/Sarek` is used here). 
 )
@@ -123,13 +124,34 @@ You can mention custom configuration scripts to run the pipeline with using the 
 #### `-bg`
 The Nextflow `-bg` flag launches the Nextflow pipeline as a background process. This allows you to detach or exit your terminal without interrupting the run. A log of the run will be saved inside a file upon completion. You can also use `screen` or `tmux` sessions to persist runs.
 
+## Containers:
+Every module in the pipeline has been containerized. Some modules are partially modified versions of [nf-core/modules](https://nf-co.re/modules), these modules use nf-core containers. Modules that use our lab packages and scripts were containerized into Docker images. These images can be found on our [DockerHub](https://hub.docker.com/repositories/mskilab).
+
+> **Warning:**
+> JaBbA depends on CPLEX MIP Optimizer to work. Because CPLEX is a proprietary software, it isn't included in the image and needs to be installed by the user. 
+> To add CPLEX:
+>  1. Download CPLEX (Linux x86-64). (You may need to use the HTTP method.)
+>  2. Pull image and run the container using:
+> ```
+> docker pull mskilab/jabba:latest
+> docker run -it --rm --platform linux/amd64 mskilab/jabba:latest
+> ``` 
+>  3. Copy CPLEX binary into the container: docker cp /PATH/TO/DOWNLOADED_CPLEX.bin CONTAINER_ID:/opt/cplex_studio
+>  4. Install CPLEX: /opt/cplex_studio/DOWNLOADED_CPLEX.bin (If you get a Permission denied error, run 
+>  chmod 777 /PATH/TO/DOWNLOADED_CPLEX.bin before copying it into the container.)
+>  5. When prompted for an installation path, type /opt/cplex. This is what the CPLEX_DIR environmental variable is set to.
+>  6. Save changes to a new image for future use:
+>           Exit container (type exit or press Ctrl-D)
+>           Run docker commit CONTAINER_ID NEW_IMAGE_ID
+
+
 ## Debugging any step/process:
 
-To debug any step or process that failed, first check your current `execution_trace*.txt` file inside the `<outdir>/pipeline_info/` folder and gather the `hash` number for that process. Then navigate to the `work` directory and use that `hash` number to locate that process's working directory. This directory will contain multiple `.command.*` files that correspond to your run and contain valuable information that can help you debug your error. You can also run the `.command.sh` script to do a manual, isolated execution of the offending process.
+To debug any step or process that failed, first check your current `execution_trace*.txt` file inside the `<outdir>/pipeline_info/` folder. There you'll find a `hash` number for that process. You can use that `hash` number to locate that process's working directory. This directory will contain multiple `.command.*` files that correspond to your run and contain valuable information that can help you debug your error. You can also run the `.command.sh` script to do a manual, isolated execution of the offending process for quick testing.
 
 ## Credits
 
-`nf-jabba` was originally written by [`Tanubrata Dey`](https://github.com/tanubrata) and [`Shihab Dider`](https://github.com/shihabdider) at the Perlmutter Cancer Center and the New York Genome Center.
+`nf-jabba` was written by [`Tanubrata Dey`](https://github.com/tanubrata) and [`Shihab Dider`](https://github.com/shihabdider) at the Perlmutter Cancer Center and the New York Genome Center.
 
 We thank the following people for their extensive guidance in the development of this pipeline:
 - [Marcin Imielinski](https://github.com/imielinski)
