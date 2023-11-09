@@ -95,7 +95,7 @@ process JABBA {
     set +x
 
     export cmd="Rscript \$jba $junction $cov_rds    \\
-    --blacklist.junctions   $blacklist_junctions
+    --blacklist.junctions   $blacklist_junctions    \\
     $geno_switch                                    \\
     --j.supp                $j_supp                 \\
     --indel					$indel                  \\
@@ -145,7 +145,7 @@ process JABBA {
         exit \$cmdsig
     fi
 
-    exit 0
+    ## exit 0
     """
 
     stub:
