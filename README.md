@@ -23,14 +23,14 @@
 
 ## Introduction
 
-**mskilab-org/nf-JaBbA** is a new state-of-art bioinformatics pipeline from [`mskilab-org`](https://www.mskilab.org/) that is intended to run [`JaBbA`](https://github.com/mskilab-org/JaBbA/tree/master), a MIP based joint inference of copy number and rearrangement state in cancer whole genome sequence data. It runs all the pre-requisite modules in `mskilab-org` necessary for JaBbA. This pipeline is built to handle tumor-normal pairs as input and is designed and tested to run on Human samples. 
+**mskilab-org/nf-JaBbA** is a new state-of-the-art bioinformatics pipeline from [`mskilab-org`](https://www.mskilab.org/) for running [`JaBbA`](https://github.com/mskilab-org/JaBbA/tree/master), an algorithm that does MIP based joint inference of copy number and rearrangement state in cancer whole genome sequence data. This pipeline runs all the pre-requisite modules and generates the necessary inputs for running JaBbA. It is built to take tumor-normal pairs as input and is designed and tested to run on human samples. 
 
-We drew our inspiration and ideas from [`nf-core/Sarek`](https://github.com/nf-core/sarek), a workflow designed to detect variants in whole genome or targeted sequencing data. **`nf-jabba`** is built using [`Nextflow`](https://www.nextflow.io/) and is implemented using `Nextflow DSL2`. All the modules use [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers, making the pipeline easily reproducible. Some of the modules/processes are derived from open source [`nf-core/modules`](https://github.com/nf-core/modules).
+We took inspiration from [`nf-core/Sarek`](https://github.com/nf-core/sarek), a workflow for detecting variants in whole genome or targeted sequencing data. **`nf-jabba`** is built using [`Nextflow`](https://www.nextflow.io/) and is implemented using `Nextflow DSL2`. All the modules use [`Docker`](https://www.docker.com/) and [`Singularity`](https://sylabs.io/docs/) containers, for easy execution and reproducibility. Some of the modules/processes are derived from open source [`nf-core/modules`](https://github.com/nf-core/modules).
 
-This pipeline has been designed to start from **FASTQ** files or directly from **BAM** files. Paths to these files should be supplied in a **CSV** file (*please refer to the documentation below for the input format of the .csv file*). We incorporated a modified version of the `Alignment` step from `nf-core/Sarek` for the `nf-JaBbA` pipeline. 
-
+This pipeline has been designed to start from **FASTQ** files or directly from **BAM** files. Paths to these files should be supplied in a **CSV** file (*please refer to the documentation below for the input format of the .csv file*). 
 ## Workflow Summary:
-1. Alignment to Reference Genome (currently supports `BWA-MEM` & `BWA-MEM2`)
+1. Alignment to Reference Genome (currently supports `BWA-MEM` & `BWA-MEM2`; a modified version of the `Alignment` step from `nf-core/Sarek` is used here). 
+)
 2. Quality Control (using [`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 3. Trimming (must turn on using `--trim_fastq`) (using `fastp`)
 4. Marking Duplicates (using `GATK MarkDuplicates`)
@@ -54,7 +54,7 @@ This pipeline has been designed to start from **FASTQ** files or directly from *
 
 ### Setting up the ***samplesheet.csv*** file for input:
 
-You need to create a samplesheet with information regarding the samples that you want to run the pipeline on. You need to specify the path of your **samplesheet** using the `--input` flag to specify the location. Make sure the input file is a *comma-separated* file and contains the headers discussed below. *It is highly recommended to provide the **absolute path** for inputs inside the samplesheet rather than relative paths.*
+You need to create a samplesheet with information regarding the samples you want to run the pipeline on. You need to specify the path of your **samplesheet** using the `--input` flag to specify the location. Make sure the input file is a *comma-separated* file and contains the headers discussed below. *It is highly recommended to provide the **absolute path** for inputs inside the samplesheet rather than relative paths.*
 
 To mention a sample as paired tumor-normal, it has to be specified with the same `patient` ID, a different `sample`, and their respective `status`. A **1** in the `status` field indicates a tumor sample, while a **0** indicates a normal sample. If there are multiple `sample` IDs, `nf-jabba` will consider them as separate samples and output the results in separate folders based on the `patient` attribute. All the runs will be separated by `patient`, to ensure that there is no mixing of outputs.
 
