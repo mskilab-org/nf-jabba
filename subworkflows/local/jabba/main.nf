@@ -41,7 +41,6 @@ workflow COV_JUNC_JABBA {
     ism_jabba
     filter_loose_jabba
     gurobi_jabba
-    nonintegral_jabba
     verbose_jabba
 
     main:
@@ -62,7 +61,7 @@ workflow COV_JUNC_JABBA {
     blacklist_coverage_jabba, purity_jabba, pp_method_jabba, cnsignif_jabba,
     slack_jabba, linear_jabba, tilim_jabba, epgap_jabba, name_jabba,
     fix_thres_jabba, lp_jabba, ism_jabba, filter_loose_jabba, gurobi_jabba,
-    nonintegral_jabba, verbose_jabba)
+    verbose_jabba)
 
     jabba_rds           = JABBA.out.jabba_rds
     jabba_gg            = JABBA.out.jabba_gg

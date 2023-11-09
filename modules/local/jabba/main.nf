@@ -41,7 +41,6 @@ process JABBA {
     val(ism)
     val(filter_loose)
     val(gurobi)
-    val(nonintegral)
     val(verbose)
 
     output:
@@ -95,7 +94,7 @@ process JABBA {
     set +x
 
     export cmd="Rscript \$jba $junction $cov_rds    \\
-    --blacklist.junctions   $blacklist_junctions
+    --blacklist.junctions   $blacklist_junctions    \\
     $geno_switch                                    \\
     --j.supp                $j_supp                 \\
     --indel					$indel                  \\
