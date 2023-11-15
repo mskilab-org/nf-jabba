@@ -1,10 +1,10 @@
 # N.B: You should create a separate directory for each run or experiment and
-# copy/run this script and 'nygc.config' (which lets you run via slurm) in that
-# directory.
+# copy/run this script
 
 # This is the path to the shared container images (NOT WRITABLE)
 export NXF_SINGULARITY_LIBRARYDIR=/gpfs/commons/groups/imielinski_lab/data/pipeline/container_images_cache
 # This is the path to your local container images (WRITABLE)
+# Will be created if it doesn't exist
 export NXF_SINGULARIY_CACHEDIR="${HOME}/local_singularity_cache"
 mkdir -p $NXF_SINGULARIY_CACHEDIR
 
@@ -26,6 +26,7 @@ samplesheet_csv=${1:-samplesheet.csv}
 # You can switch this to a different local PON if necessary
 pon_path=/gpfs/commons/groups/imielinski_lab/data/dryclean/MONSTER_PON_RAW/MONSTER_PON_RAW_SORTED/fixed.detergent.rds
 
+nygc_config=/gpfs/commons/groups/imielinski_lab/projects/nf-jabba/nygc.config
 # You can change the flags/parameters below to suit your run.
 
 # Use `nf-core launch` on the command line to launch a web based gui
@@ -35,7 +36,7 @@ pon_path=/gpfs/commons/groups/imielinski_lab/data/dryclean/MONSTER_PON_RAW/MONST
 # --tools: tools listed are the minimal set necessary for JaBbA output
 # --step: change this to 'alignment' if you are starting from fastqs
 # -resume: always tries to resume if possible, otherwise will start from beginning
-# -c nygc.config: include this flag/parameter if you want to run via slurm
+# -c nygc_config: include this flag/parameter if you want to run via slurm
 nextflow run "$pipeline_dir" --input "$samplesheet_csv" \
 	--outdir ./results/	\
 	--genome GATK.GRCh37	\
@@ -45,6 +46,6 @@ nextflow run "$pipeline_dir" --input "$samplesheet_csv" \
 	--tools svaba,hetpileups,fragcounter,dryclean,ascat,cbs,jabba	\
 	--step sv_calling	\
 	--pon_dryclean "$pon_path" \
-    -c nygc.config \
+    -c $nygc_config \
 	-resume
 
