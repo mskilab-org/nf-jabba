@@ -35,7 +35,6 @@ workflow COV_JUNC_JABBA {
     linear_jabba
     tilim_jabba
     epgap_jabba
-    name_jabba
     fix_thres_jabba
     lp_jabba
     ism_jabba
@@ -59,9 +58,8 @@ workflow COV_JUNC_JABBA {
     iter_jabba, rescue_window_jabba, rescue_all_jabba, nudgebalanced_jabba,
     edgenudge_jabba, strict_jabba, allin_jabba, field_jabba, maxna_jabba,
     blacklist_coverage_jabba, purity_jabba, pp_method_jabba, cnsignif_jabba,
-    slack_jabba, linear_jabba, tilim_jabba, epgap_jabba, name_jabba,
-    fix_thres_jabba, lp_jabba, ism_jabba, filter_loose_jabba, gurobi_jabba,
-    verbose_jabba)
+    slack_jabba, linear_jabba, tilim_jabba, epgap_jabba, fix_thres_jabba,
+    lp_jabba, ism_jabba, filter_loose_jabba, gurobi_jabba, verbose_jabba)
 
     jabba_rds           = JABBA.out.jabba_rds
     jabba_gg            = JABBA.out.jabba_gg

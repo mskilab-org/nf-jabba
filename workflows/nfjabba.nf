@@ -1196,9 +1196,6 @@ workflow NFJABBA {
                 ploidy_jabba = input_sample.map{ meta -> [ meta, ploidy_jabba ] }
             }
 
-            //name_jabba = input_sample .map{ meta -> meta.id }
-            name_jabba = 'tumor'
-
             JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
             sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
             unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
@@ -1207,9 +1204,8 @@ workflow NFJABBA {
             strict_jabba, allin_jabba, field_jabba, maxna_jabba,
             blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
             cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
-            epgap_jabba, name_jabba, fix_thres_jabba, lp_jabba,
-            ism_jabba, filter_loose_jabba, gurobi_jabba,
-            verbose_jabba)
+            epgap_jabba, fix_thres_jabba, lp_jabba, ism_jabba,
+            filter_loose_jabba, gurobi_jabba, verbose_jabba)
 
             jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
             jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)

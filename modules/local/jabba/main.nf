@@ -35,7 +35,6 @@ process JABBA {
     val(linear)
     val(tilim)
     val(epgap)
-    val(name)
     val(fix_thres)
     val(lp)
     val(ism)
@@ -120,7 +119,7 @@ process JABBA {
     $linear_switch                                  \\
     --tilim					$tilim                  \\
     --epgap					$epgap                  \\
-    --name                  $name                   \\
+    --name                  $meta.id                \\
     --cores                 $task.cpus              \\
     --mem                   32                      \\
     --fix.thres				$fix_thres              \\
