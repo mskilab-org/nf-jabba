@@ -91,9 +91,9 @@ if (params.input) {
 }
 
 input_sample = ch_from_samplesheet
-        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller ->
+        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, vcf2, seg, nseg, variantcaller ->
             // generate patient_sample key to group lanes together
-            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller] ]
+            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, vcf2, seg, nseg, variantcaller] ]
         }
         .tap{ ch_with_patient_sample } // save the channel
         .groupTuple() //group by patient_sample to get all lanes
@@ -104,7 +104,7 @@ input_sample = ch_from_samplesheet
         .combine(ch_with_patient_sample, by: 0) // for each entry add numLanes
         .map { patient_sample, num_lanes, ch_items ->
 
-            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller) = ch_items
+            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, vcf2, seg, nseg, variantcaller) = ch_items
             if (meta.lane && fastq_2) {
                 meta           = meta + [id: "${meta.sample}-${meta.lane}".toString()]
                 def CN         = params.seq_center ? "CN:${params.seq_center}\\t" : ''
@@ -172,6 +172,14 @@ input_sample = ch_from_samplesheet
                     error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
             // hetpileups
+            } else if (cov && hets && vcf && vcf2 && seg && nseg) {
+                meta = meta + [id: meta.sample, data_type: ['cov', 'vcf', 'hets', 'seg']]
+
+                if (params.step == 'jabba') return [ meta - meta.subMap('lane'), cov, hets, vcf, vcf2, seg, nseg ]
+                else {
+                    error("Samplesheet contains cov .rds and vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                }
+                // dryclean
             } else if (cov && hets) {
                 meta = meta + [id: meta.sample, data_type: ['cov', 'hets']]
 
@@ -180,14 +188,6 @@ input_sample = ch_from_samplesheet
                     error("Samplesheet contains cov .rds and hets .txt files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
                 // jabba
-            } else if (cov && vcf) {
-                meta = meta + [id: meta.sample, data_type: ['vcf', 'cov']]
-
-                if (params.step == 'jabba') return [ meta - meta.subMap('lane'), vcf, cov]
-                else {
-                    error("Samplesheet contains cov .rds and vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
-                }
-                // dryclean
             } else if (cov) {
                 meta = meta + [id: meta.sample, data_type: 'cov']
 
@@ -327,7 +327,7 @@ allin_jabba					    = params.allin_jabba			        ?: Channel.empty()
 field_jabba					    = params.field_jabba			        ?: Channel.empty()
 maxna_jabba					    = params.maxna_jabba			        ?: Channel.empty()
 purity_jabba					= params.purity_jabba                   ?: Channel.empty()
-//ploidy_jabba					= params.ploidy_jabba                   ?: Channel.empty()
+ploidy_jab     					= params.ploidy_jabba                   ?: Channel.empty()
 pp_method_jabba					= params.pp_method_jabba                ?: Channel.empty()
 cnsignif_jabba					= params.cnsignif_jabba                 ?: Channel.empty()
 slack_jabba					    = params.slack_jabba                    ?: Channel.empty()
@@ -456,9 +456,9 @@ include { COV_DRYCLEAN as NORMAL_DRYCLEAN              } from '../subworkflows/l
 //ASCAT
 include { COV_ASCAT                                   } from '../subworkflows/local/cov_ascat/main'
 
-include { COV_CBS as CBS                            } from '../subworkflows/local/cov_cbs/main'
+include { COV_CBS as CBS                              } from '../subworkflows/local/cov_cbs/main'
 
-include { COV_JUNC_JABBA as JABBA         } from '../subworkflows/local/jabba/main'
+include { COV_JUNC_JABBA as JABBA                     } from '../subworkflows/local/jabba/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -1189,15 +1189,46 @@ workflow NFJABBA {
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'jabba']) {
 
+        if (params.step == 'jabba') {
+            input_jabba = input_sample
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta + [data_type: ['cov','hets','vcf','seg']], cov, hets, vcf, vcf2, seg, nseg ] }
+
+            input_cov_jabba = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, cov ] }
+
+            input_hets_jabba = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, hets ] }
+
+            input_vcf_jabba  = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, vcf ] }
+
+            input_vcf2_jabba = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, vcf2 ] }
+
+            input_seg_jabba  = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, seg ] }
+
+            input_nseg_jabba = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, nseg ] }            
+
+            tumor_dryclean_cov          = Channel.empty().mix(input_cov_jabba)
+            sites_from_het_pileups_wgs  = Channel.empty().mix(input_hets_jabba)
+            vcf_from_sv_calling         = Channel.empty().mix(input_vcf_jabba)
+            unfiltered_som_sv           = Channel.empty().mix(input_vcf2_jabba)
+            cbs_seg_rds                 = Channel.empty().mix(input_seg_jabba)
+            cbs_nseg_rds                = Channel.empty().mix(input_nseg_jabba)
+        }
+
         if (params.tools && params.tools.split(',').contains('jabba')) {
+            //ploidy_jabba = "NA"
             if (params.tools && params.tools.split(',').contains('ascat')) {
                 ploidy_jabba = ploidy
             } else {
-                ploidy_jabba = input_sample.map{ meta -> [ meta, ploidy_jabba ] }
+                ploidy_jabba = input_sample.map{ tuple -> [ tuple[0], ploidy_jab ] }
             }
 
             //name_jabba = input_sample .map{ meta -> meta.id }
-            name_jabba = 'tumor'
+            //name_jabba = 'tumor'
 
             JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
             sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
@@ -1207,7 +1238,7 @@ workflow NFJABBA {
             strict_jabba, allin_jabba, field_jabba, maxna_jabba,
             blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
             cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
-            epgap_jabba, name_jabba, fix_thres_jabba, lp_jabba,
+            epgap_jabba, fix_thres_jabba, lp_jabba,
             ism_jabba, filter_loose_jabba, gurobi_jabba,
             verbose_jabba)
 

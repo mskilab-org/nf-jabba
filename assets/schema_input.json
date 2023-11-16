@@ -163,11 +163,11 @@
                 "exists": true
             },
             "cov": {
-                "errorMessage": "COV file cannot contain spaces and must have extension '.rds'",
+                "errorMessage": "COV file cannot contain spaces and must have extension '.rds' or '.txt'",
                 "anyOf": [
                     {
                         "type": "string",
-                        "pattern": "^\\S+\\.rds$"
+                        "pattern": "^\\S+\\.(rds|txt)$"
                     },
                     {
                         "type": "string",
@@ -186,6 +186,14 @@
                     },
                     {
                         "type": "string",
+                        "pattern": "^NA$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^/dev/null$"
+                    },
+                    {
+                        "type": "string",
                         "maxLength": 0
                     }
                 ],
@@ -198,6 +206,75 @@
                     {
                         "type": "string",
                         "pattern": "^\\S+\\.vcf(\\.gz)?$"
+                    },
+                    {
+                        "type": "string",
+                        "maxLength": 0
+                    }
+                ],
+                "format": "file-path",
+                "exists": true
+            },
+            "vcf2": {
+                "errorMessage": "VCF file for reads 1 cannot contain spaces and must have extension '.vcf' or '.vcf.gz'",
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "pattern": "^\\S+\\.vcf(\\.gz)?$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^NA$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^/dev/null$"
+                    },
+                    {
+                        "type": "string",
+                        "maxLength": 0
+                    }
+                ],
+                "format": "file-path",
+                "exists": true
+            },
+            "seg": {
+                "errorMessage": "SEG file cannot contain spaces and must have extension '.rds'",
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "pattern": "^\\S+\\.rds$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^NA$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^/dev/null$"
+                    },
+                    {
+                        "type": "string",
+                        "maxLength": 0
+                    }
+                ],
+                "format": "file-path",
+                "exists": true
+            },
+            "nseg": {
+                "errorMessage": "NSEG file cannot contain spaces and must have extension '.rds'",
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "pattern": "^\\S+\\.rds$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^NA$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^/dev/null$"
                     },
                     {
                         "type": "string",

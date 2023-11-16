@@ -3,17 +3,17 @@ process JABBA {
     label 'process_high'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://mskilab/jabba:latest':
+        '/gpfs/commons/home/tdey/lab/singularity_files/nextflow_singularity_cache/mskilab-jabba_cplex-latest.img':
         'mskilab/jabba:latest' }"
 
     input:
     tuple val(meta), path(cov_rds)
     tuple val(meta), path(junction)
     tuple val(meta), val(ploidy)
-    tuple val(meta), path(het_pileups_wgs)
-    tuple val(meta), path(cbs_seg_rds, stageAs: "cbs_seg.rds")
-    tuple val(meta), path(cbs_nseg_rds, stageAs: "cbs_nseg.rds")
-    tuple val(meta), path(j_supp)
+    tuple val(meta), val(het_pileups_wgs)
+    tuple val(meta), val(cbs_seg_rds)
+    tuple val(meta), val(cbs_nseg_rds)
+    tuple val(meta), val(j_supp)
     val(blacklist_junctions)    // this is declared as val to allow for "NULL" default value, but is treated like a path
     val(geno)
     val(indel)
@@ -35,7 +35,6 @@ process JABBA {
     val(linear)
     val(tilim)
     val(epgap)
-    val(name)
     val(fix_thres)
     val(lp)
     val(ism)
@@ -64,6 +63,11 @@ process JABBA {
     def allin_switch = allin == "TRUE" ? "--allin" : ""
     def linear_switch = linear == "TRUE" ? "--linear" : ""
     def verbose_switch = verbose == "TRUE" ? "--verbose" : ""
+    def cbs_seg_rds = cbs_seg_rds == '/dev/null' || cbs_seg_rds == 'NA' || cbs_seg_rds == 'NULL' ? "" : "--seg ${cbs_seg_rds}"
+    def cbs_nseg_rds = cbs_nseg_rds == '/dev/null' || cbs_nseg_rds == 'NA' || cbs_nseg_rds == 'NULL' ? "" : "--nseg ${cbs_nseg_rds}"
+    def het_pileups_wgs = het_pileups_wgs == '/dev/null' || het_pileups_wgs == 'NA' || het_pileups_wgs == 'NULL' ? "" : "--hets ${het_pileups_wgs}"
+    def j_supp = j_supp == '/dev/null' || j_supp == 'NA' || j_supp == 'NULL' ? "" : "--j.supp ${j_supp}"
+
 
     def VERSION    = '1.1'
     """
@@ -96,7 +100,7 @@ process JABBA {
     export cmd="Rscript \$jba $junction $cov_rds    \\
     --blacklist.junctions   $blacklist_junctions    \\
     $geno_switch                                    \\
-    --j.supp                $j_supp                 \\
+    $j_supp                                         \\
     --indel					$indel                  \\
     --tfield				$tfield                 \\
     --iterate				$iter                   \\
@@ -107,11 +111,11 @@ process JABBA {
     $strict_switch                                  \\
     $allin_switch                                   \\
     --field					$field                  \\
-    --seg			        $cbs_seg_rds            \\
+    $cbs_seg_rds                                    \\
     --maxna					$maxna                  \\
     --blacklist.coverage	$blacklist_coverage     \\
-    --nseg			        $cbs_nseg_rds           \\
-    --hets		            $het_pileups_wgs        \\
+    $cbs_nseg_rds                                   \\
+    $het_pileups_wgs                                \\
     --ploidy				$ploidy                 \\
     --purity				$purity                 \\
     --ppmethod				$pp_method              \\
@@ -120,7 +124,7 @@ process JABBA {
     $linear_switch                                  \\
     --tilim					$tilim                  \\
     --epgap					$epgap                  \\
-    --name                  $name                   \\
+    --name                  ${meta.patient}         \\
     --cores                 $task.cpus              \\
     --fix.thres				$fix_thres              \\
     --lp					$lp                     \\
