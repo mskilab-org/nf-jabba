@@ -67,7 +67,7 @@ process SVABA {
         --id-string $meta.id \\
         --reference-genome $fasta \\
         --g-zip \\
-        $args
+        $args \\
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
