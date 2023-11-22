@@ -10,7 +10,7 @@ process GRIDSS_GRIDSS {
 
 
     input:
-    tuple val(meta), path(normalbam), path(normalbai), path(tumorbam), path(tumorbai)         // required: [meta, normal_cram, normal_crai, tumor_cram, tumor_crai]
+    tuple val(meta), path(normalbam, stageAs: "normal.bam"), path(normalbai, stageAs: "normal.bam.bai"), path(tumorbam, stageAs: "tumor.bam"), path(tumorbai, stageAs: "tumor.bam.bai")         // required: [meta, normal_cram, normal_crai, tumor_cram, tumor_crai]
     path(fasta)                                                                               // required: reference fasta
     path(fasta_fai)
     path(bwa_index)                                                                           // required: bwa index folder
