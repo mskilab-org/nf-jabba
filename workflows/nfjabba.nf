@@ -212,7 +212,7 @@ if (!params.dbsnp && !params.known_indels) {
 if (params.tools && (params.tools.split(',').contains('ascat'))) {
     input_sample.map{
         if (it[0].sex == 'NA' ) {
-            error("Please specify sex information for each sample in your samplesheet when using '--tools' with 'ascat'")
+            log.warn "Please specify sex information for each sample in your samplesheet when using '--tools' with 'ascat' if known for comparison"
         }
     }
 }
