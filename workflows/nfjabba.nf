@@ -459,6 +459,9 @@ include { COV_ASCAT                                   } from '../subworkflows/lo
 include { COV_CBS as CBS                              } from '../subworkflows/local/cov_cbs/main'
 
 include { COV_JUNC_JABBA as JABBA                     } from '../subworkflows/local/jabba/main'
+include { COV_JUNC_JABBA as JABBA_WITH_SVABA          } from '../subworkflows/local/jabba/main'
+include { COV_JUNC_JABBA as JABBA_WITH_GRIDSS         } from '../subworkflows/local/jabba/main'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -974,7 +977,7 @@ workflow NFJABBA {
             versions = versions.mix(BAM_SVCALLING_SVABA.out.versions)
 
             all_sv_vcfs = Channel.empty()
-            all_sv_vcfs = all_sv_vcfs.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
+            all_sv_vcfs = all_sv_vcfs.mix(BAM_SVCALLING_SVABA.out.all_output)                     //This one contains multiple files of vcf, to get individual files, call individual output
 
             vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_SVABA.out.som_sv)
 
@@ -988,16 +991,15 @@ workflow NFJABBA {
             versions = versions.mix(BAM_SVCALLING_GRIDSS.out.versions)
 
             vcf_from_gridss_gridss = Channel.empty()
-            vcf_from_gridss_gridss = vcf_from_gridss_gridss.mix(BAM_SVCALLING_GRIDSS.out.vcf)                                                       // This one contain only one vcf
-            //vcf_from_gridss_gridss.view()
+            vcf_from_gridss_gridss = vcf_from_gridss_gridss.mix(BAM_SVCALLING_GRIDSS.out.vcf)             // This one contain only one vcf
 
 
             BAM_SVCALLING_GRIDSS_SOMATIC(vcf_from_gridss_gridss, pon_gridss)               //running the somatic filter for GRIDSS
             versions = versions.mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.versions)
 
-            vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.somatic_high_confidence)
-            unfiltered_som_sv = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.somatic_all)
-            //vcf_from_sv_calling.view()
+            vcf_from_sv_calling_gridss = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.somatic_high_confidence)
+            unfiltered_som_sv_gridss = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.somatic_all)
+            
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
@@ -1238,7 +1240,7 @@ workflow NFJABBA {
         if (params.tools && params.tools.split(',').contains('jabba')) {
             //ploidy_jabba = "NA"
             if (params.tools && params.tools.split(',').contains('ascat')) {
-                
+
                 // A conditional check to see if for some reason ASCAT failed and ploidy is empty
                 ploidy = ploidy.ifEmpty { 
                     [ input_sample[0][0], ploidy_jab ]
@@ -1252,26 +1254,83 @@ workflow NFJABBA {
             //name_jabba = input_sample .map{ meta -> meta.id }
             //name_jabba = 'tumor'
 
-            JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
-            sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
-            unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
-            indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
-            rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
-            strict_jabba, allin_jabba, field_jabba, maxna_jabba,
-            blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
-            cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
-            epgap_jabba, fix_thres_jabba, lp_jabba,
-            ism_jabba, filter_loose_jabba, gurobi_jabba,
-            verbose_jabba)
+            if (params.tools && params.tools.split(',').contains('svaba')) {
 
-            jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
-            jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
-            jabba_vcf           = Channel.empty().mix(JABBA.out.jabba_vcf)
-            jabba_raw_rds       = Channel.empty().mix(JABBA.out.jabba_raw_rds)
-            opti                = Channel.empty().mix(JABBA.out.opti)
-            jabba_seg           = Channel.empty().mix(JABBA.out.jabba_seg)
-            karyograph          = Channel.empty().mix(JABBA.out.karyograph)
-            versions = versions.mix(JABBA.out.versions)
+                JABBA_WITH_SVABA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
+                sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
+                unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
+                indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
+                rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
+                strict_jabba, allin_jabba, field_jabba, maxna_jabba,
+                blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
+                cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
+                epgap_jabba, fix_thres_jabba, lp_jabba,
+                ism_jabba, filter_loose_jabba, gurobi_jabba,
+                verbose_jabba)
+
+                jabba_rds_with_svaba           = Channel.empty().mix(JABBA_WITH_SVABA.out.jabba_rds)
+                jabba_gg_with_svaba            = Channel.empty().mix(JABBA_WITH_SVABA.out.jabba_gg)
+                jabba_vcf_with_svaba           = Channel.empty().mix(JABBA_WITH_SVABA.out.jabba_vcf)
+                jabba_raw_rds_with_svaba       = Channel.empty().mix(JABBA_WITH_SVABA.out.jabba_raw_rds)
+                opti_with_svaba                = Channel.empty().mix(JABBA_WITH_SVABA.out.opti)
+                jabba_seg_with_svaba           = Channel.empty().mix(JABBA_WITH_SVABA.out.jabba_seg)
+                karyograph_with_svaba          = Channel.empty().mix(JABBA_WITH_SVABA.out.karyograph)
+                versions_with_svaba            = versions.mix(JABBA_WITH_SVABA.out.versions)
+
+            }
+
+            if (params.tools && params.tools.split(',').contains('gridss')) {
+
+                JABBA_WITH_GRIDSS(tumor_dryclean_cov, vcf_from_sv_calling_gridss, ploidy_jabba,
+                sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
+                unfiltered_som_sv_gridss, blacklist_junctions_jabba, geno_jabba,
+                indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
+                rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
+                strict_jabba, allin_jabba, field_jabba, maxna_jabba,
+                blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
+                cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
+                epgap_jabba, fix_thres_jabba, lp_jabba,
+                ism_jabba, filter_loose_jabba, gurobi_jabba,
+                verbose_jabba)
+
+                jabba_rds_with_gridss           = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_rds)
+                jabba_gg_with_gridss            = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_gg)
+                jabba_vcf_with_gridss           = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_vcf)
+                jabba_raw_rds_with_gridss       = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_raw_rds)
+                opti_with_gridss                = Channel.empty().mix(JABBA_WITH_GRIDSS.out.opti)
+                jabba_seg_with_gridss           = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_seg)
+                karyograph_with_gridss          = Channel.empty().mix(JABBA_WITH_GRIDSS.out.karyograph)
+                versions_with_gridss            = versions.mix(JABBA_WITH_GRIDSS.out.versions)
+
+            }
+
+            if (params.step == 'jabba') {
+
+                JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
+                sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
+                unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
+                indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
+                rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
+                strict_jabba, allin_jabba, field_jabba, maxna_jabba,
+                blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
+                cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
+                epgap_jabba, fix_thres_jabba, lp_jabba,
+                ism_jabba, filter_loose_jabba, gurobi_jabba,
+                verbose_jabba)
+
+                jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
+                jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
+                jabba_vcf           = Channel.empty().mix(JABBA.out.jabba_vcf)
+                jabba_raw_rds       = Channel.empty().mix(JABBA.out.jabba_raw_rds)
+                opti                = Channel.empty().mix(JABBA.out.opti)
+                jabba_seg           = Channel.empty().mix(JABBA.out.jabba_seg)
+                karyograph          = Channel.empty().mix(JABBA.out.karyograph)
+                versions            = versions.mix(JABBA.out.versions)
+
+            }
+
+
+            
         }
 
     }
