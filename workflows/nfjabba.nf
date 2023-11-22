@@ -910,6 +910,15 @@ workflow NFJABBA {
             cram_variant_calling = Channel.empty().mix(ch_cram_for_bam_baserecalibrator)
         }
         cram_sv_calling        = cram_variant_calling
+
+        // Converting to BAM files to work downstream (SvABA has very low success rate with CRAMs)
+        CRAM_TO_BAM(cram_sv_calling, fasta, fasta_fai)
+        versions = versions.mix(CRAM_TO_BAM.out.versions)
+
+        // Gets the BAM files in a channel (format: [meta, bam, bai]); confirms data type is correct
+        bam_sv_calling = Channel.empty().mix(CRAM_TO_BAM.out.alignment_index)
+                            .map{ meta, bam, bai -> [ meta + [data_type: "bam"], bam, bai ] }
+
         //cram_fragcounter_calling  = cram_variant_calling
     }
 
@@ -923,29 +932,29 @@ workflow NFJABBA {
                 cram: it[0].data_type == "cram"
             }
             // BAM files first must be converted to CRAM files since from this step on we base everything on CRAM format
-            BAM_TO_CRAM(input_sv_calling_convert.bam, fasta, fasta_fai)
-            versions = versions.mix(BAM_TO_CRAM.out.versions)
+            CRAM_TO_BAM(input_sv_calling_convert.cram, fasta, fasta_fai)
+            versions = versions.mix(CRAM_TO_BAM.out.versions)
 
-            cram_sv_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_sv_calling_convert.cram)
-                                .map{ meta, cram, crai -> [ meta + [data_type: "cram"], cram, crai ] }           //making sure that the input data_type is correct
+            bam_sv_calling = Channel.empty().mix(CRAM_TO_BAM.out.alignment_index, input_sv_calling_convert.bam)
+                                .map{ meta, bam, bai -> [ meta + [data_type: "bam"], bam, bai ] }           //making sure that the input data_type is correct
 
         }
 
         // getting the tumor and normal cram files separated
-        cram_sv_calling_status = cram_sv_calling.branch{
+        bam_sv_calling_status = bam_sv_calling.branch{
             normal: it[0].status == 0
             tumor:  it[0].status == 1
         }
 
 
         // All normal samples
-        cram_sv_calling_normal_to_cross = cram_sv_calling_status.normal.map{ meta, cram, crai -> [ meta.patient, meta, cram, crai ] }
+        bam_sv_calling_normal_to_cross = bam_sv_calling_status.normal.map{ meta, bam, bai -> [ meta.patient, meta, bam, bai ] }
 
         // All tumor samples
-        cram_sv_calling_tumor_to_cross = cram_sv_calling_status.tumor.map{ meta, cram, crai -> [ meta.patient, meta, cram, crai ] }
+        bam_sv_calling_tumor_to_cross = bam_sv_calling_status.tumor.map{ meta, bam, bai -> [ meta.patient, meta, bam, bai ] }
 
         // Crossing the normal and tumor samples to create tumor and normal pairs
-        cram_sv_calling_pair = cram_sv_calling_normal_to_cross.cross(cram_sv_calling_tumor_to_cross)
+        bam_sv_calling_pair = bam_sv_calling_normal_to_cross.cross(bam_sv_calling_tumor_to_cross)
             .map { normal, tumor ->
                 def meta = [:]
 
@@ -958,9 +967,9 @@ workflow NFJABBA {
                 [ meta, normal[2], normal[3], tumor[2], tumor[3] ]
         }
 
-        //cram_sv_calling_pair.view()
+        //bam_sv_calling_pair.view()
         if (params.tools && params.tools.split(',').contains('svaba')) {
-            BAM_SVCALLING_SVABA(cram_sv_calling_pair, fasta, fasta_fai, bwa, dbsnp, dbsnp_tbi, indel_mask, germ_sv_db, simple_seq_db, error_rate)
+            BAM_SVCALLING_SVABA(bam_sv_calling_pair, fasta, fasta_fai, bwa, dbsnp, dbsnp_tbi, indel_mask, germ_sv_db, simple_seq_db, error_rate)
 
             versions = versions.mix(BAM_SVCALLING_SVABA.out.versions)
 
@@ -974,7 +983,7 @@ workflow NFJABBA {
         }
 
         if (params.tools && params.tools.split(',').contains('gridss')) {
-            BAM_SVCALLING_GRIDSS(cram_sv_calling_pair, fasta, fasta_fai, bwa, blacklist_gridss)     // running GRIDSS
+            BAM_SVCALLING_GRIDSS(bam_sv_calling_pair, fasta, fasta_fai, bwa, blacklist_gridss)     // running GRIDSS
 
             versions = versions.mix(BAM_SVCALLING_GRIDSS.out.versions)
 
@@ -986,12 +995,13 @@ workflow NFJABBA {
             BAM_SVCALLING_GRIDSS_SOMATIC(vcf_from_gridss_gridss, pon_gridss)               //running the somatic filter for GRIDSS
             versions = versions.mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.versions)
 
-            vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.all_vcf)
+            vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.somatic_high_confidence)
+            unfiltered_som_sv = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.somatic_all)
             //vcf_from_sv_calling.view()
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
-        cram_fragcounter_calling = cram_sv_calling
+        bam_fragcounter_calling = bam_sv_calling
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter']) {
@@ -1001,46 +1011,51 @@ workflow NFJABBA {
                 bam:  it[0].data_type == "bam"
                 cram: it[0].data_type == "cram"
             }
-            // BAM files first must be converted to CRAM files since from this step on we base everything on CRAM format
-            BAM_TO_CRAM(input_fragcounter_convert.bam, fasta, fasta_fai)
-            versions = versions.mix(BAM_TO_CRAM.out.versions)
+            // CRAM files first must be converted to BAM files since from this step on we base everything on BAM format
+            CRAM_TO_BAM(input_fragcounter_convert.cram, fasta, fasta_fai)
+            versions = versions.mix(CRAM_TO_BAM.out.versions)
 
-            cram_fragcounter_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_fragcounter_convert.cram)
-                                .map{ meta, cram, crai -> [ meta + [data_type: "cram"], cram, crai ] }           //making sure that the input data_type is correct
+            bam_fragcounter_calling = Channel.empty().mix(CRAM_TO_BAM.out.alignment_index, input_fragcounter_convert.bam)
+                                        .map{ meta, bam, bai -> [ meta + [data_type: "bam"], bam, bai ] }           //making sure that the input data_type is correct
 
         }
 
-        // getting the tumor and normal cram files separated
-        cram_fragcounter_status = cram_fragcounter_calling.branch{
+        // getting the tumor and normal bam files separated
+        bam_fragcounter_status = bam_fragcounter_calling.branch{
             normal: it[0].status == 0
             tumor:  it[0].status == 1
         }
 
         if (params.tools && params.tools.split(',').contains('fragcounter')) {
-            NORMAL_FRAGCOUNTER(cram_fragcounter_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+            NORMAL_FRAGCOUNTER(bam_fragcounter_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
             normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
 
-            TUMOR_FRAGCOUNTER(cram_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+            TUMOR_FRAGCOUNTER(bam_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
             tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.fragcounter_cov)
 
             // Only need one versions because its just one program (fragcounter)
             versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
         }
 
+        bam_hetpileups_calling = bam_fragcounter_calling
             // TODO: Add a subworkflow to write the output file paths into a csv
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups']) {
 
 
-        if (!(params.step == "alignment" || params.step == "markduplicates" ||
-            params.step == "prepare_recalibration" || params.step == "recalibrate" ||
-            params.step == "ascat" || params.step == "dryclean" || params.step == "jabba") || params.step == 'hetpileups') {
+        if (params.step == 'hetpileups') {
 
-                bam_hetpileups_calling = input_sample                // Will this work if someone starts from fastq files?
+            input_hetpileups_calling_convert = input_sample.branch{
+                bam:  it[0].data_type == "bam"
+                cram: it[0].data_type == "cram"
             }
+            CRAM_TO_BAM(input_hetpileups_calling_convert.cram, fasta, fasta_fai)
+            versions = versions.mix(CRAM_TO_BAM.out.versions)
 
-
+            bam_hetpileups_calling = Channel.empty().mix(CRAM_TO_BAM.out.alignment_index, input_hetpileups_calling_convert.bam)
+                                        .map{ meta, bam, bai -> [ meta + [data_type: "bam"], bam, bai ] }           //making sure that the input data_type is correct
+        }
 
         // getting the tumor and normal cram files separated
         bam_hetpileups_status = bam_hetpileups_calling.branch{
@@ -1068,8 +1083,8 @@ workflow NFJABBA {
         }
 
         if (params.tools && params.tools.split(',').contains('hetpileups')) {
-            BAM_HETPILEUPS(bam_hetpileups_pair, filter_hets, max_depth, hapmap_sites)
 
+            BAM_HETPILEUPS(bam_hetpileups_pair, filter_hets, max_depth, hapmap_sites)        //Running Pileups for inputs
             versions = versions.mix(BAM_HETPILEUPS.out.versions)
 
             sites_from_het_pileups_wgs = Channel.empty().mix(BAM_HETPILEUPS.out.het_pileups_wgs)
@@ -1106,14 +1121,15 @@ workflow NFJABBA {
                     blacklist_dryclean, blacklist_path_dryclean,
                     germline_filter_dryclean, germline_file_dryclean, human_dryclean,
                     field_dryclean, build_dryclean)
-            tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
 
+            tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
 
             NORMAL_DRYCLEAN(normal_frag_cov, pon_dryclean, centered_dryclean,
                     cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
                     blacklist_dryclean, blacklist_path_dryclean,
                     germline_filter_dryclean, germline_file_dryclean, human_dryclean,
                     field_dryclean, build_dryclean)
+
             normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
 
             // Only need one versions because it's one program (dryclean)
@@ -1222,7 +1238,13 @@ workflow NFJABBA {
         if (params.tools && params.tools.split(',').contains('jabba')) {
             //ploidy_jabba = "NA"
             if (params.tools && params.tools.split(',').contains('ascat')) {
-                ploidy_jabba = ploidy
+                
+                // A conditional check to see if for some reason ASCAT failed and ploidy is empty
+                ploidy = ploidy.ifEmpty { 
+                    [ input_sample[0][0], ploidy_jab ]
+                }
+                ploidy_jabba = ploidy // If ASCAT is used and it is not empty, then use the value from ASCAT
+
             } else {
                 ploidy_jabba = input_sample.map{ tuple -> [ tuple[0], ploidy_jab ] }
             }
