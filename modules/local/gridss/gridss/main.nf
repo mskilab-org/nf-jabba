@@ -39,15 +39,15 @@ process GRIDSS_GRIDSS {
     """
     ${bwa}
 
-    gridss \\
+        gridss \\
         --output ${prefix}.vcf.gz \\
         --reference ${fasta} \\
         --threads ${task.cpus} \\
         $assembly_bam \\
         $blacklist \\
         --picardoptions VALIDATION_STRINGENCY=LENIENT \\
-        --jvmheap ${task.memory.toGiga() - 1}g \\
-        --otherjvmheap ${task.memory.toGiga() - 1}g \\
+        --jvmheap 31g \\
+        --otherjvmheap 31g \\
         ${normalbam} \\
         ${tumorbam}
 
