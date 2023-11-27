@@ -1243,8 +1243,9 @@ workflow NFJABBA {
 
                 // A conditional check to see if for some reason ASCAT failed and ploidy is empty
                 ploidy = ploidy.ifEmpty { 
-                    [ input_sample[0][0], ploidy_jab ]
-                }
+                    input_sample.map { tuple -> [tuple[0], ploidy_jab] } 
+                    }
+                
                 ploidy_jabba = ploidy // If ASCAT is used and it is not empty, then use the value from ASCAT
 
             } else {
