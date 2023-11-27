@@ -170,3 +170,36 @@ process JABBA {
     END_VERSIONS
     """
 }
+
+process COERCE_SEQNAMES {
+
+    input:
+    tuple val(meta), path(file)
+
+    output:
+    tuple val(meta), path("coerced_chr*"), emit: file, optional: true
+
+    script:
+    """
+    #!/usr/bin/env Rscript
+
+    fn <- "${file}"
+    outputfn <- "coerced_chr_${file.name}"
+
+    if(grepl('.rds', "${file.name}")){
+        library(GenomicRanges)
+        data <- readRDS(fn)
+        seqlevels(data, pruning.mode = "coarse") <- gsub("chr","",seqlevels(data))
+        saveRDS(data, file = outputfn)
+    } else if (grepl('.vcf', "${file.name}")){
+	library(VariantAnnotation)
+	data <- readVcf(fn)
+	seqlevelsStyle(data) <- 'NCBI'
+	writeVcf(data, file = outputfn)
+    } else {
+      data <- read.table(fn, header=T)
+      data[[1]] <- gsub("chr","",data[[1]])
+      write.table(data, file = outputfn, sep = "\\t", row.names = F, quote = F)
+    }
+    """
+}

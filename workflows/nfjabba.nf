@@ -999,7 +999,7 @@ workflow NFJABBA {
 
             vcf_from_sv_calling_gridss = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.somatic_high_confidence)
             unfiltered_som_sv_gridss = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.somatic_all)
-            
+
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
@@ -1227,7 +1227,7 @@ workflow NFJABBA {
                                 .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, seg ] }
 
             input_nseg_jabba = input_jabba
-                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, nseg ] }            
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, nseg ] }
 
             tumor_dryclean_cov          = Channel.empty().mix(input_cov_jabba)
             sites_from_het_pileups_wgs  = Channel.empty().mix(input_hets_jabba)
@@ -1242,10 +1242,10 @@ workflow NFJABBA {
             if (params.tools && params.tools.split(',').contains('ascat')) {
 
                 // A conditional check to see if for some reason ASCAT failed and ploidy is empty
-                ploidy = ploidy.ifEmpty { 
-                    input_sample.map { tuple -> [tuple[0], ploidy_jab] } 
+                ploidy = ploidy.ifEmpty {
+                    input_sample.map { tuple -> [tuple[0], ploidy_jab] }
                     }
-                
+
                 ploidy_jabba = ploidy // If ASCAT is used and it is not empty, then use the value from ASCAT
 
             } else {
@@ -1331,7 +1331,7 @@ workflow NFJABBA {
             }
 
 
-            
+
         }
 
     }
