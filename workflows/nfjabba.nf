@@ -91,9 +91,9 @@ if (params.input) {
 }
 
 input_sample = ch_from_samplesheet
-        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller ->
+        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, vcf2, seg, nseg, variantcaller ->
             // generate patient_sample key to group lanes together
-            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller] ]
+            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, vcf2, seg, nseg, variantcaller] ]
         }
         .tap{ ch_with_patient_sample } // save the channel
         .groupTuple() //group by patient_sample to get all lanes
@@ -104,7 +104,7 @@ input_sample = ch_from_samplesheet
         .combine(ch_with_patient_sample, by: 0) // for each entry add numLanes
         .map { patient_sample, num_lanes, ch_items ->
 
-            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, variantcaller) = ch_items
+            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, vcf2, seg, nseg, variantcaller) = ch_items
             if (meta.lane && fastq_2) {
                 meta           = meta + [id: "${meta.sample}-${meta.lane}".toString()]
                 def CN         = params.seq_center ? "CN:${params.seq_center}\\t" : ''
@@ -172,6 +172,14 @@ input_sample = ch_from_samplesheet
                     error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
             // hetpileups
+            } else if (cov && hets && vcf && vcf2 && seg && nseg) {
+                meta = meta + [id: meta.sample, data_type: ['cov', 'vcf', 'hets', 'seg']]
+
+                if (params.step == 'jabba') return [ meta - meta.subMap('lane'), cov, hets, vcf, vcf2, seg, nseg ]
+                else {
+                    error("Samplesheet contains cov .rds and vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                }
+                // dryclean
             } else if (cov && hets) {
                 meta = meta + [id: meta.sample, data_type: ['cov', 'hets']]
 
@@ -180,14 +188,6 @@ input_sample = ch_from_samplesheet
                     error("Samplesheet contains cov .rds and hets .txt files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
                 }
                 // jabba
-            } else if (cov && vcf) {
-                meta = meta + [id: meta.sample, data_type: ['vcf', 'cov']]
-
-                if (params.step == 'jabba') return [ meta - meta.subMap('lane'), vcf, cov]
-                else {
-                    error("Samplesheet contains cov .rds and vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
-                }
-                // dryclean
             } else if (cov) {
                 meta = meta + [id: meta.sample, data_type: 'cov']
 
@@ -212,7 +212,7 @@ if (!params.dbsnp && !params.known_indels) {
 if (params.tools && (params.tools.split(',').contains('ascat'))) {
     input_sample.map{
         if (it[0].sex == 'NA' ) {
-            error("Please specify sex information for each sample in your samplesheet when using '--tools' with 'ascat'")
+            log.warn "Please specify sex information for each sample in your samplesheet when using '--tools' with 'ascat' if known for comparison"
         }
     }
 }
@@ -327,7 +327,7 @@ allin_jabba					    = params.allin_jabba			        ?: Channel.empty()
 field_jabba					    = params.field_jabba			        ?: Channel.empty()
 maxna_jabba					    = params.maxna_jabba			        ?: Channel.empty()
 purity_jabba					= params.purity_jabba                   ?: Channel.empty()
-//ploidy_jabba					= params.ploidy_jabba                   ?: Channel.empty()
+ploidy_jab     					= params.ploidy_jabba                   ?: Channel.empty()
 pp_method_jabba					= params.pp_method_jabba                ?: Channel.empty()
 cnsignif_jabba					= params.cnsignif_jabba                 ?: Channel.empty()
 slack_jabba					    = params.slack_jabba                    ?: Channel.empty()
@@ -456,9 +456,12 @@ include { COV_DRYCLEAN as NORMAL_DRYCLEAN              } from '../subworkflows/l
 //ASCAT
 include { COV_ASCAT                                   } from '../subworkflows/local/cov_ascat/main'
 
-include { COV_CBS as CBS                            } from '../subworkflows/local/cov_cbs/main'
+include { COV_CBS as CBS                              } from '../subworkflows/local/cov_cbs/main'
 
-include { COV_JUNC_JABBA as JABBA         } from '../subworkflows/local/jabba/main'
+include { COV_JUNC_JABBA as JABBA                     } from '../subworkflows/local/jabba/main'
+include { COV_JUNC_JABBA as JABBA_WITH_SVABA          } from '../subworkflows/local/jabba/main'
+include { COV_JUNC_JABBA as JABBA_WITH_GRIDSS         } from '../subworkflows/local/jabba/main'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -910,6 +913,15 @@ workflow NFJABBA {
             cram_variant_calling = Channel.empty().mix(ch_cram_for_bam_baserecalibrator)
         }
         cram_sv_calling        = cram_variant_calling
+
+        // Converting to BAM files to work downstream (SvABA has very low success rate with CRAMs)
+        CRAM_TO_BAM(cram_sv_calling, fasta, fasta_fai)
+        versions = versions.mix(CRAM_TO_BAM.out.versions)
+
+        // Gets the BAM files in a channel (format: [meta, bam, bai]); confirms data type is correct
+        bam_sv_calling = Channel.empty().mix(CRAM_TO_BAM.out.alignment_index)
+                            .map{ meta, bam, bai -> [ meta + [data_type: "bam"], bam, bai ] }
+
         //cram_fragcounter_calling  = cram_variant_calling
     }
 
@@ -923,29 +935,29 @@ workflow NFJABBA {
                 cram: it[0].data_type == "cram"
             }
             // BAM files first must be converted to CRAM files since from this step on we base everything on CRAM format
-            BAM_TO_CRAM(input_sv_calling_convert.bam, fasta, fasta_fai)
-            versions = versions.mix(BAM_TO_CRAM.out.versions)
+            CRAM_TO_BAM(input_sv_calling_convert.cram, fasta, fasta_fai)
+            versions = versions.mix(CRAM_TO_BAM.out.versions)
 
-            cram_sv_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_sv_calling_convert.cram)
-                                .map{ meta, cram, crai -> [ meta + [data_type: "cram"], cram, crai ] }           //making sure that the input data_type is correct
+            bam_sv_calling = Channel.empty().mix(CRAM_TO_BAM.out.alignment_index, input_sv_calling_convert.bam)
+                                .map{ meta, bam, bai -> [ meta + [data_type: "bam"], bam, bai ] }           //making sure that the input data_type is correct
 
         }
 
         // getting the tumor and normal cram files separated
-        cram_sv_calling_status = cram_sv_calling.branch{
+        bam_sv_calling_status = bam_sv_calling.branch{
             normal: it[0].status == 0
             tumor:  it[0].status == 1
         }
 
 
         // All normal samples
-        cram_sv_calling_normal_to_cross = cram_sv_calling_status.normal.map{ meta, cram, crai -> [ meta.patient, meta, cram, crai ] }
+        bam_sv_calling_normal_to_cross = bam_sv_calling_status.normal.map{ meta, bam, bai -> [ meta.patient, meta, bam, bai ] }
 
         // All tumor samples
-        cram_sv_calling_tumor_to_cross = cram_sv_calling_status.tumor.map{ meta, cram, crai -> [ meta.patient, meta, cram, crai ] }
+        bam_sv_calling_tumor_to_cross = bam_sv_calling_status.tumor.map{ meta, bam, bai -> [ meta.patient, meta, bam, bai ] }
 
         // Crossing the normal and tumor samples to create tumor and normal pairs
-        cram_sv_calling_pair = cram_sv_calling_normal_to_cross.cross(cram_sv_calling_tumor_to_cross)
+        bam_sv_calling_pair = bam_sv_calling_normal_to_cross.cross(bam_sv_calling_tumor_to_cross)
             .map { normal, tumor ->
                 def meta = [:]
 
@@ -958,14 +970,14 @@ workflow NFJABBA {
                 [ meta, normal[2], normal[3], tumor[2], tumor[3] ]
         }
 
-        //cram_sv_calling_pair.view()
+        //bam_sv_calling_pair.view()
         if (params.tools && params.tools.split(',').contains('svaba')) {
-            BAM_SVCALLING_SVABA(cram_sv_calling_pair, fasta, fasta_fai, bwa, dbsnp, dbsnp_tbi, indel_mask, germ_sv_db, simple_seq_db, error_rate)
+            BAM_SVCALLING_SVABA(bam_sv_calling_pair, fasta, fasta_fai, bwa, dbsnp, dbsnp_tbi, indel_mask, germ_sv_db, simple_seq_db, error_rate)
 
             versions = versions.mix(BAM_SVCALLING_SVABA.out.versions)
 
             all_sv_vcfs = Channel.empty()
-            all_sv_vcfs = all_sv_vcfs.mix(BAM_SVCALLING_SVABA.out.all_output)                                                      //This one contains multiple files of vcf, to get individual files, call individual output
+            all_sv_vcfs = all_sv_vcfs.mix(BAM_SVCALLING_SVABA.out.all_output)                     //This one contains multiple files of vcf, to get individual files, call individual output
 
             vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_SVABA.out.som_sv)
 
@@ -974,24 +986,24 @@ workflow NFJABBA {
         }
 
         if (params.tools && params.tools.split(',').contains('gridss')) {
-            BAM_SVCALLING_GRIDSS(cram_sv_calling_pair, fasta, fasta_fai, bwa, blacklist_gridss)     // running GRIDSS
+            BAM_SVCALLING_GRIDSS(bam_sv_calling_pair, fasta, fasta_fai, bwa, blacklist_gridss)     // running GRIDSS
 
             versions = versions.mix(BAM_SVCALLING_GRIDSS.out.versions)
 
             vcf_from_gridss_gridss = Channel.empty()
-            vcf_from_gridss_gridss = vcf_from_gridss_gridss.mix(BAM_SVCALLING_GRIDSS.out.vcf)                                                       // This one contain only one vcf
-            //vcf_from_gridss_gridss.view()
+            vcf_from_gridss_gridss = vcf_from_gridss_gridss.mix(BAM_SVCALLING_GRIDSS.out.vcf)             // This one contain only one vcf
 
 
             BAM_SVCALLING_GRIDSS_SOMATIC(vcf_from_gridss_gridss, pon_gridss)               //running the somatic filter for GRIDSS
             versions = versions.mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.versions)
 
-            vcf_from_sv_calling = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.all_vcf)
-            //vcf_from_sv_calling.view()
+            vcf_from_sv_calling_gridss = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.somatic_high_confidence)
+            unfiltered_som_sv_gridss = Channel.empty().mix(BAM_SVCALLING_GRIDSS_SOMATIC.out.somatic_all)
+            
         }
 
         // TODO: CHANNEL_SVCALLING_CREATE_CSV(vcf_from_sv_calling, params.tools, params.outdir) // Need to fix this!!!!!
-        cram_fragcounter_calling = cram_sv_calling
+        bam_fragcounter_calling = bam_sv_calling
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter']) {
@@ -1001,46 +1013,51 @@ workflow NFJABBA {
                 bam:  it[0].data_type == "bam"
                 cram: it[0].data_type == "cram"
             }
-            // BAM files first must be converted to CRAM files since from this step on we base everything on CRAM format
-            BAM_TO_CRAM(input_fragcounter_convert.bam, fasta, fasta_fai)
-            versions = versions.mix(BAM_TO_CRAM.out.versions)
+            // CRAM files first must be converted to BAM files since from this step on we base everything on BAM format
+            CRAM_TO_BAM(input_fragcounter_convert.cram, fasta, fasta_fai)
+            versions = versions.mix(CRAM_TO_BAM.out.versions)
 
-            cram_fragcounter_calling = Channel.empty().mix(BAM_TO_CRAM.out.alignment_index, input_fragcounter_convert.cram)
-                                .map{ meta, cram, crai -> [ meta + [data_type: "cram"], cram, crai ] }           //making sure that the input data_type is correct
+            bam_fragcounter_calling = Channel.empty().mix(CRAM_TO_BAM.out.alignment_index, input_fragcounter_convert.bam)
+                                        .map{ meta, bam, bai -> [ meta + [data_type: "bam"], bam, bai ] }           //making sure that the input data_type is correct
 
         }
 
-        // getting the tumor and normal cram files separated
-        cram_fragcounter_status = cram_fragcounter_calling.branch{
+        // getting the tumor and normal bam files separated
+        bam_fragcounter_status = bam_fragcounter_calling.branch{
             normal: it[0].status == 0
             tumor:  it[0].status == 1
         }
 
         if (params.tools && params.tools.split(',').contains('fragcounter')) {
-            NORMAL_FRAGCOUNTER(cram_fragcounter_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+            NORMAL_FRAGCOUNTER(bam_fragcounter_status.normal, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
             normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
 
-            TUMOR_FRAGCOUNTER(cram_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+            TUMOR_FRAGCOUNTER(bam_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
             tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.fragcounter_cov)
 
             // Only need one versions because its just one program (fragcounter)
             versions = versions.mix(NORMAL_FRAGCOUNTER.out.versions)
         }
 
+        bam_hetpileups_calling = bam_fragcounter_calling
             // TODO: Add a subworkflow to write the output file paths into a csv
     }
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups']) {
 
 
-        if (!(params.step == "alignment" || params.step == "markduplicates" ||
-            params.step == "prepare_recalibration" || params.step == "recalibrate" ||
-            params.step == "ascat" || params.step == "dryclean" || params.step == "jabba") || params.step == 'hetpileups') {
+        if (params.step == 'hetpileups') {
 
-                bam_hetpileups_calling = input_sample                // Will this work if someone starts from fastq files?
+            input_hetpileups_calling_convert = input_sample.branch{
+                bam:  it[0].data_type == "bam"
+                cram: it[0].data_type == "cram"
             }
+            CRAM_TO_BAM(input_hetpileups_calling_convert.cram, fasta, fasta_fai)
+            versions = versions.mix(CRAM_TO_BAM.out.versions)
 
-
+            bam_hetpileups_calling = Channel.empty().mix(CRAM_TO_BAM.out.alignment_index, input_hetpileups_calling_convert.bam)
+                                        .map{ meta, bam, bai -> [ meta + [data_type: "bam"], bam, bai ] }           //making sure that the input data_type is correct
+        }
 
         // getting the tumor and normal cram files separated
         bam_hetpileups_status = bam_hetpileups_calling.branch{
@@ -1068,8 +1085,8 @@ workflow NFJABBA {
         }
 
         if (params.tools && params.tools.split(',').contains('hetpileups')) {
-            BAM_HETPILEUPS(bam_hetpileups_pair, filter_hets, max_depth, hapmap_sites)
 
+            BAM_HETPILEUPS(bam_hetpileups_pair, filter_hets, max_depth, hapmap_sites)        //Running Pileups for inputs
             versions = versions.mix(BAM_HETPILEUPS.out.versions)
 
             sites_from_het_pileups_wgs = Channel.empty().mix(BAM_HETPILEUPS.out.het_pileups_wgs)
@@ -1106,14 +1123,15 @@ workflow NFJABBA {
                     blacklist_dryclean, blacklist_path_dryclean,
                     germline_filter_dryclean, germline_file_dryclean, human_dryclean,
                     field_dryclean, build_dryclean)
-            tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
 
+            tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
 
             NORMAL_DRYCLEAN(normal_frag_cov, pon_dryclean, centered_dryclean,
                     cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
                     blacklist_dryclean, blacklist_path_dryclean,
                     germline_filter_dryclean, germline_file_dryclean, human_dryclean,
                     field_dryclean, build_dryclean)
+
             normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
 
             // Only need one versions because it's one program (dryclean)
@@ -1189,36 +1207,131 @@ workflow NFJABBA {
 
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'jabba']) {
 
+        if (params.step == 'jabba') {
+            input_jabba = input_sample
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta + [data_type: ['cov','hets','vcf','seg']], cov, hets, vcf, vcf2, seg, nseg ] }
+
+            input_cov_jabba = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, cov ] }
+
+            input_hets_jabba = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, hets ] }
+
+            input_vcf_jabba  = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, vcf ] }
+
+            input_vcf2_jabba = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, vcf2 ] }
+
+            input_seg_jabba  = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, seg ] }
+
+            input_nseg_jabba = input_jabba
+                                .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, nseg ] }            
+
+            tumor_dryclean_cov          = Channel.empty().mix(input_cov_jabba)
+            sites_from_het_pileups_wgs  = Channel.empty().mix(input_hets_jabba)
+            vcf_from_sv_calling         = Channel.empty().mix(input_vcf_jabba)
+            unfiltered_som_sv           = Channel.empty().mix(input_vcf2_jabba)
+            cbs_seg_rds                 = Channel.empty().mix(input_seg_jabba)
+            cbs_nseg_rds                = Channel.empty().mix(input_nseg_jabba)
+        }
+
         if (params.tools && params.tools.split(',').contains('jabba')) {
+            //ploidy_jabba = "NA"
             if (params.tools && params.tools.split(',').contains('ascat')) {
-                ploidy_jabba = ploidy
+
+                // A conditional check to see if for some reason ASCAT failed and ploidy is empty
+                ploidy = ploidy.ifEmpty { 
+                    input_sample.map { tuple -> [tuple[0], ploidy_jab] } 
+                    }
+                
+                ploidy_jabba = ploidy // If ASCAT is used and it is not empty, then use the value from ASCAT
+
             } else {
-                ploidy_jabba = input_sample.map{ meta -> [ meta, ploidy_jabba ] }
+                ploidy_jabba = input_sample.map{ tuple -> [ tuple[0], ploidy_jab ] }
             }
 
             //name_jabba = input_sample .map{ meta -> meta.id }
-            name_jabba = 'tumor'
+            //name_jabba = 'tumor'
 
-            JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
-            sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
-            unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
-            indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
-            rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
-            strict_jabba, allin_jabba, field_jabba, maxna_jabba,
-            blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
-            cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
-            epgap_jabba, name_jabba, fix_thres_jabba, lp_jabba,
-            ism_jabba, filter_loose_jabba, gurobi_jabba,
-            verbose_jabba)
+            if (params.tools && params.tools.split(',').contains('svaba')) {
 
-            jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
-            jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
-            jabba_vcf           = Channel.empty().mix(JABBA.out.jabba_vcf)
-            jabba_raw_rds       = Channel.empty().mix(JABBA.out.jabba_raw_rds)
-            opti                = Channel.empty().mix(JABBA.out.opti)
-            jabba_seg           = Channel.empty().mix(JABBA.out.jabba_seg)
-            karyograph          = Channel.empty().mix(JABBA.out.karyograph)
-            versions = versions.mix(JABBA.out.versions)
+                JABBA_WITH_SVABA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
+                sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
+                unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
+                indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
+                rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
+                strict_jabba, allin_jabba, field_jabba, maxna_jabba,
+                blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
+                cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
+                epgap_jabba, fix_thres_jabba, lp_jabba,
+                ism_jabba, filter_loose_jabba, gurobi_jabba,
+                verbose_jabba)
+
+                jabba_rds_with_svaba           = Channel.empty().mix(JABBA_WITH_SVABA.out.jabba_rds)
+                jabba_gg_with_svaba            = Channel.empty().mix(JABBA_WITH_SVABA.out.jabba_gg)
+                jabba_vcf_with_svaba           = Channel.empty().mix(JABBA_WITH_SVABA.out.jabba_vcf)
+                jabba_raw_rds_with_svaba       = Channel.empty().mix(JABBA_WITH_SVABA.out.jabba_raw_rds)
+                opti_with_svaba                = Channel.empty().mix(JABBA_WITH_SVABA.out.opti)
+                jabba_seg_with_svaba           = Channel.empty().mix(JABBA_WITH_SVABA.out.jabba_seg)
+                karyograph_with_svaba          = Channel.empty().mix(JABBA_WITH_SVABA.out.karyograph)
+                versions_with_svaba            = versions.mix(JABBA_WITH_SVABA.out.versions)
+
+            }
+
+            if (params.tools && params.tools.split(',').contains('gridss')) {
+
+                JABBA_WITH_GRIDSS(tumor_dryclean_cov, vcf_from_sv_calling_gridss, ploidy_jabba,
+                sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
+                unfiltered_som_sv_gridss, blacklist_junctions_jabba, geno_jabba,
+                indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
+                rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
+                strict_jabba, allin_jabba, field_jabba, maxna_jabba,
+                blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
+                cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
+                epgap_jabba, fix_thres_jabba, lp_jabba,
+                ism_jabba, filter_loose_jabba, gurobi_jabba,
+                verbose_jabba)
+
+                jabba_rds_with_gridss           = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_rds)
+                jabba_gg_with_gridss            = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_gg)
+                jabba_vcf_with_gridss           = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_vcf)
+                jabba_raw_rds_with_gridss       = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_raw_rds)
+                opti_with_gridss                = Channel.empty().mix(JABBA_WITH_GRIDSS.out.opti)
+                jabba_seg_with_gridss           = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_seg)
+                karyograph_with_gridss          = Channel.empty().mix(JABBA_WITH_GRIDSS.out.karyograph)
+                versions_with_gridss            = versions.mix(JABBA_WITH_GRIDSS.out.versions)
+
+            }
+
+            if (params.step == 'jabba') {
+
+                JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
+                sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
+                unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
+                indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
+                rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
+                strict_jabba, allin_jabba, field_jabba, maxna_jabba,
+                blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
+                cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
+                epgap_jabba, fix_thres_jabba, lp_jabba,
+                ism_jabba, filter_loose_jabba, gurobi_jabba,
+                verbose_jabba)
+
+                jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
+                jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
+                jabba_vcf           = Channel.empty().mix(JABBA.out.jabba_vcf)
+                jabba_raw_rds       = Channel.empty().mix(JABBA.out.jabba_raw_rds)
+                opti                = Channel.empty().mix(JABBA.out.opti)
+                jabba_seg           = Channel.empty().mix(JABBA.out.jabba_seg)
+                karyograph          = Channel.empty().mix(JABBA.out.karyograph)
+                versions            = versions.mix(JABBA.out.versions)
+
+            }
+
+
+            
         }
 
     }

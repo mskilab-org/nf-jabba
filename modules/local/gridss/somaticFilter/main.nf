@@ -13,9 +13,9 @@ process GRIDSS_SOMATIC {
     path(pondir_gridss)
 
     output:
-    tuple val(meta), path("*high_confidence_somatic.vcf.gz")              , emit: somatic_high_vcf,          optional:true
-    tuple val(meta), path("*high_and_low_confidence_somatic.vcf.gz")      , emit: somatic_all_vcf,           optional:true
-    path "versions.yml"                                                   , emit: versions
+    tuple val(meta), path("*.high_confidence_somatic.vcf.bgz")              , emit: somatic_high_vcf,          optional:true
+    tuple val(meta), path("*.high_and_low_confidence_somatic.vcf.bgz")      , emit: somatic_all_vcf,           optional:true
+    path "versions.yml"                                                     , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -24,8 +24,8 @@ process GRIDSS_SOMATIC {
     def args          = task.ext.args ?: ''
     def prefix        = task.ext.prefix ?: "${meta.id}"
     def VERSION       = '2.13.2' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
-    def output1       = "${meta.id}.high_confidence_somatic.vcf.gz"
-    def output2       = "${meta.id}.high_and_low_confidence_somatic.vcf.gz"
+    def output1       = "${meta.id}.high_confidence_somatic.vcf"
+    def output2       = "${meta.id}.high_and_low_confidence_somatic.vcf"
     //def pon           = pondir_gridss ? "cp -s ${pondir_gridss}/* ." : ""
     //def scriptDir     = "dirname \$(which gridss_somatic_filter)".execute().text.trim()
     """

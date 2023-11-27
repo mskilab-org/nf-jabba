@@ -10,7 +10,7 @@ process GRIDSS_GRIDSS {
 
 
     input:
-    tuple val(meta), path(normalbam), path(normalbai), path(tumorbam), path(tumorbai)         // required: [meta, normal_cram, normal_crai, tumor_cram, tumor_crai]
+    tuple val(meta), path(normalbam, stageAs: "normal.bam"), path(normalbai, stageAs: "normal.bam.bai"), path(tumorbam, stageAs: "tumor.bam"), path(tumorbai, stageAs: "tumor.bam.bai")         // required: [meta, normal_cram, normal_crai, tumor_cram, tumor_crai]
     path(fasta)                                                                               // required: reference fasta
     path(fasta_fai)
     path(bwa_index)                                                                           // required: bwa index folder
@@ -39,15 +39,15 @@ process GRIDSS_GRIDSS {
     """
     ${bwa}
 
-    gridss \\
+        gridss \\
         --output ${prefix}.vcf.gz \\
         --reference ${fasta} \\
         --threads ${task.cpus} \\
         $assembly_bam \\
         $blacklist \\
         --picardoptions VALIDATION_STRINGENCY=LENIENT \\
-        --jvmheap ${task.memory.toGiga() - 1}g \\
-        --otherjvmheap ${task.memory.toGiga() - 1}g \\
+        --jvmheap 31g \\
+        --otherjvmheap 31g \\
         ${normalbam} \\
         ${tumorbam}
 

@@ -10,7 +10,7 @@ process SVABA {
 
 
     input:
-    tuple val(meta), path(tumorbam), path(tumorbai), path(normalbam), path(normalbai)
+    tuple val(meta), path(tumorbam, stageAs: "tumor.bam"), path(tumorbai, stageAs: "tumor.bam.bai"), path(normalbam, stageAs: "normal.bam"), path(normalbai, stageAs: "normal.bam.bai")
     path fasta
     path fasta_fai
     path bwa_index
@@ -67,7 +67,7 @@ process SVABA {
         --id-string $meta.id \\
         --reference-genome $fasta \\
         --g-zip \\
-        $args
+        $args \\
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
