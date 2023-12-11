@@ -1,2 +1,11 @@
-Nov-20 17:46:16.940 [main] INFO  com.askimed.nf.test.App - nf-test 0.8.1
-Nov-20 17:46:16.960 [main] INFO  com.askimed.nf.test.App - Arguments: [init]
+Dec-11 15:56:58.092 [main] INFO  com.askimed.nf.test.App - nf-test 0.8.2
+Dec-11 15:56:58.100 [main] INFO  com.askimed.nf.test.App - Arguments: [test, tests/modules/local/svaba/main.nf.test, --profile, docker]
+Dec-11 15:56:58.101 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Load config from file /Users/diders01/projects/jabba_prod/nf-jabba/nf-test.config...
+Dec-11 15:56:58.273 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Detected 1 test files.
+Dec-11 15:56:58.345 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/8919725478746b09e8b6cdb079844fa9/meta/bin' --> '/Users/diders01/projects/jabba_prod/nf-jabba/bin'
+Dec-11 15:56:58.345 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/8919725478746b09e8b6cdb079844fa9/meta/lib' --> '/Users/diders01/projects/jabba_prod/nf-jabba/lib'
+Dec-11 15:56:58.345 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/8919725478746b09e8b6cdb079844fa9/meta/assets' --> '/Users/diders01/projects/jabba_prod/nf-jabba/assets'
+Dec-11 15:56:58.345 [main] DEBUG com.askimed.nf.test.core.AbstractTest - Stage 0 user provided files...
+Dec-11 15:56:58.347 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Started test plan
+Dec-11 15:56:58.347 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Running testsuite 'Test Process SVABA' from file '/Users/diders01/projects/jabba_prod/nf-jabba/tests/modules/local/svaba/main.nf.test'.
+Dec-11 15:56:58.347 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Run test '89197254: Should run Svaba without failures'. type: com.askimed.nf.test.lang.process.ProcessTest
