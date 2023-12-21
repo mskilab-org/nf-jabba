@@ -419,8 +419,8 @@ include { SAMTOOLS_CONVERT as BAM_TO_CRAM_MAPPING     } from '../modules/nf-core
 // Convert CRAM files (optional)
 include { SAMTOOLS_CONVERT as CRAM_TO_BAM             } from '../modules/nf-core/samtools/convert/main'
 include { SAMTOOLS_CONVERT as CRAM_TO_BAM_RECAL       } from '../modules/nf-core/samtools/convert/main'
-include { SAMTOOLS_CONVERT as CRAM_TO_BAM_NORMAL      } from '../modules/nf-core/samtools/convert/main'
-include { SAMTOOLS_CONVERT as CRAM_TO_BAM_TUMOR       } from '../modules/nf-core/samtools/convert/main'
+//include { SAMTOOLS_CONVERT as CRAM_TO_BAM_NORMAL      } from '../modules/nf-core/samtools/convert/main'
+include { SAMTOOLS_CONVERT as CRAM_TO_BAM_FINAL       } from '../modules/nf-core/samtools/convert/main'
 
 // Mark Duplicates (+QC)
 include { BAM_MARKDUPLICATES                          } from '../subworkflows/local/bam_markduplicates/main'
@@ -915,11 +915,11 @@ workflow NFJABBA {
         cram_sv_calling        = cram_variant_calling
 
         // Converting to BAM files to work downstream (SvABA has very low success rate with CRAMs)
-        CRAM_TO_BAM(cram_sv_calling, fasta, fasta_fai)
-        versions = versions.mix(CRAM_TO_BAM.out.versions)
+        CRAM_TO_BAM_FINAL(cram_sv_calling, fasta, fasta_fai)
+        versions = versions.mix(CRAM_TO_BAM_FINAL.out.versions)
 
         // Gets the BAM files in a channel (format: [meta, bam, bai]); confirms data type is correct
-        bam_sv_calling = Channel.empty().mix(CRAM_TO_BAM.out.alignment_index)
+        bam_sv_calling = Channel.empty().mix(CRAM_TO_BAM_FINAL.out.alignment_index)
                             .map{ meta, bam, bai -> [ meta + [data_type: "bam"], bam, bai ] }
 
         //cram_fragcounter_calling  = cram_variant_calling
@@ -1037,7 +1037,7 @@ workflow NFJABBA {
             //normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.fragcounter_cov)
             normal_frag_cov = Channel.empty().mix(NORMAL_FRAGCOUNTER.out.rebinned_raw_cov)
 
-            TUMOR_FRAGCOUNTER(bam_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, fasta, fasta_fai, paired_frag, exome_frag)
+            TUMOR_FRAGCOUNTER(bam_fragcounter_status.tumor, midpoint_frag, windowsize_frag, gcmapdir_frag, minmapq_frag, paired_frag, exome_frag)
             //tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.fragcounter_cov)
             tumor_frag_cov = Channel.empty().mix(TUMOR_FRAGCOUNTER.out.rebinned_raw_cov)
 
@@ -1101,6 +1101,7 @@ workflow NFJABBA {
             het_pileups_to_cross = sites_from_het_pileups_wgs.map { tuple ->
                                                             def (meta, hets) = tuple
                                                             [meta.patient, meta + [id: meta.sample], hets] }
+            het_pileups_to_cross.view()
             // Commenting out because not necessary for running from this step
             // CSV should be written for the file actually out out, either bam or BAM
             //csv_hetpileups = Channel.empty().mix(BAM_HETPILEUPS.out.het_pileups_wgs)
@@ -1155,18 +1156,7 @@ workflow NFJABBA {
                                                                 def (meta, cov) = tuple
                                                                 [meta.patient, meta + [id: meta.sample], cov] }
 
-            if (params.tools && (params.tools.split(',').contains('ascat') && params.tools.split(',').contains('hetpileups'))) {
-                
-                input_ascat = tumor_dryclean_cov_to_cross.cross(het_pileups_to_cross)
-                        .map { cov, hets ->
-                            def meta = [:]
-                                meta.id             = cov[1].sample
-                                meta.patient        = cov[0]
-                                meta.sex            = cov[1].sex
-
-                                [ meta, cov[2], hets[2] ]
-                        }
-            }                                                       
+                                                                   
         }
 
         // TODO: Add a subworkflow to write the output file paths into a csv
@@ -1186,6 +1176,7 @@ workflow NFJABBA {
                 .map { tumor, normal ->
                     def meta = [:]
                         meta.id             = "${tumor[1].sample}_vs_${normal[1].sample}".toString()
+                        meta.sample         = "${tumor[1].sample}".toString()
                         meta.normal_id      = normal[1].sample
                         meta.patient        = normal[0]
                         meta.sex            = normal[1].sex
@@ -1201,8 +1192,24 @@ workflow NFJABBA {
             cbs_seg_rds    = Channel.empty().mix(CBS.out.cbs_seg_rds)
             cbs_nseg_rds   = Channel.empty().mix(CBS.out.cbs_nseg_rds)
 
-            cbs_seg_rds_to_cross = cbs_seg_rds.map{ meta, seg -> [ meta.patient, meta, seg ] }
-            cbs_nseg_rds_to_cross = cbs_nseg_rds.map{ meta, nseg -> [ meta.patient, meta, nseg ] }
+            cbs_cov_rds_to_cross = cbs_cov_rds.map{ meta, cov -> [ meta.patient, meta + [id: meta.sample], cov ] }
+            cbs_cov_rds_to_cross.view()
+            cbs_seg_rds_to_cross = cbs_seg_rds.map{ meta, seg -> [ meta.patient, meta + [id: meta.sample], seg ] }
+            cbs_nseg_rds_to_cross = cbs_nseg_rds.map{ meta, nseg -> [ meta.patient, meta + [id: meta.sample], nseg ] }
+
+            if (params.tools && (params.tools.split(',').contains('ascat') && params.tools.split(',').contains('hetpileups'))) {
+                //het_pileups_to_cross.view()
+                input_ascat = tumor_dryclean_cov_to_cross.cross(het_pileups_to_cross)
+                                .map { cov, hets ->
+                                    def meta = [:]
+                                    meta.id             = "${cov[1].sample}".toString()
+                                    meta.patient        = cov[0]
+                                    meta.sex            = cov[1].sex
+
+                                    [ meta, cov[2], hets[2] ]
+                                }
+            }
+            //input_ascat.view()
 
             //Join all the inputs for jabba here into a single channel based on patient id that would accept it in downstream because nextflow doesn't know shit on whether the outputs are from same patient
             if (params.tools && params.tools.split(',').contains('svaba')) {
