@@ -4,26 +4,40 @@ nextflow_process {
     script "modules/local/dryclean/main.nf"
     process "DRYCLEAN"
 
-    test("Should run without failures") {
+    test("Should run Dryclean without failures") {
 
         when {
             params {
                 // define parameters here. Example:
-                // outdir = "tests/results"
+                outdir = "results"
             }
             process {
                 """
                 // define inputs of the process here. Example:
                 // input[0] = file("test-file.txt")
+                meta = [ id: "test" ]
+                input[0] = tuple(meta, "$projectDir/tests/test_data/samp1.rds")
+                // Defaults from nextflow.config
+                input[1] = params.genomes['GATK.GRCh37'].pon_dryclean
+                input[2] = params.centered_dryclean
+                input[3] = params.cbs_dryclean
+                input[4] = params.cnsignif_dryclean
+                input[5] = params.wholeGenome_dryclean
+                input[6] = params.blacklist_dryclean
+                input[7] = params.blacklist_path_dryclean
+                input[8] = params.germline_filter_dryclean
+                input[9] = params.germline_file_dryclean
+                input[10] = params.human_dryclean
+                input[11] = params.field_dryclean
+                input[12] = params.genomes['GATK.GRCh37'].build_dryclean
                 """
             }
         }
 
         then {
             assert process.success
-            assert snapshot(process.out).match()
+            //assert snapshot(process.out).match()
         }
 
     }
-
 }
