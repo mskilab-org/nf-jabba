@@ -21,6 +21,7 @@ process FRAGCOUNTER {
 
 
     output:
+    tuple val(meta), path("*cov.raw.rds")                   , emit: fragcounter_raw_cov, optional: true
     tuple val(meta), path("*cov.rds")                       , emit: fragcounter_cov, optional: true
     tuple val(meta), path("*cov.corrected.bw")              , emit: corrected_bw, optional: true
     path "versions.yml"                                     , emit: versions
@@ -71,5 +72,55 @@ process FRAGCOUNTER {
         fragcounter: ${VERSION}
     END_VERSIONS
     """    
+
+}
+
+process REBIN_RAW_FRAGCOUNTER {
+
+    tag "$meta.id"
+    label 'process_low'
+
+    // TODO add fragcounter container
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'docker://mskilab/fragcounter:0.1':
+        'mskilab/fragcounter:0.1' }"
+
+    input:
+    tuple val(meta), path(cov_raw)
+    val(field)
+    val(windowsize)
+
+    output:
+    tuple val(meta), path("1kb_*"), emit: raw_fragcounter_cov_1kb, optional:true
+
+    script:
+
+    """
+    #!/usr/bin/env Rscript
+
+    library(skitools)
+
+    filename = "${cov_raw}"
+    outputfn = "1kb_${cov_raw.name}"
+
+    raw_cov = readRDS(filename)
+    collapse.cov <- function(cov.gr, bin.size = 1e3, field = "reads.corrected") {
+        BINSIZE.ROUGH = bin.size
+        cov.gr = cov.gr[, field]
+        cov.gr = gr2dt(cov.gr)
+        setnames(cov.gr, field, "signal")
+        cov.gr = cov.gr[!is.infinite(signal), .(signal = median(signal, na.rm = TRUE)),
+                        by = .(seqnames, start = floor(start/BINSIZE.ROUGH)*BINSIZE.ROUGH+1)]
+        cov.gr[, end := (start + BINSIZE.ROUGH) - 1]
+        setnames(cov.gr, "signal", field)
+        cov.gr = dt2gr(cov.gr)
+        return(cov.gr)
+    }
+    rebinned_cov = collapse.cov(raw_cov, bin.size = ${windowsize}, field = "${field}")
+    ##rebinned_cov = rebinned_cov %Q% (!seqnames=="Y")
+    rebinned_cov = rebinned_cov %Q% (seqnames %in% c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X"))
+    saveRDS(rebinned_cov, outputfn)
+
+    """
 
 }

@@ -15,7 +15,7 @@ process CBS {
     val(name)
 
     output:
-    tuple val(meta), path("*cov.rds")         , emit: cbs_cov_rds
+    tuple val(meta), path("cov.rds")         , emit: cbs_cov_rds
     tuple val(meta), path("seg.rds")         , emit: cbs_seg_rds
     tuple val(meta), path("nseg.rds")        , emit: cbs_nseg_rds
     path "versions.yml"                       , emit: versions
