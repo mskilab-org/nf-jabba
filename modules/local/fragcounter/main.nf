@@ -118,7 +118,7 @@ process REBIN_RAW_FRAGCOUNTER {
     }
     rebinned_cov = collapse.cov(raw_cov, bin.size = ${windowsize}, field = "${field}")
     ##rebinned_cov = rebinned_cov %Q% (!seqnames=="Y")
-    rebinned_cov = rebinned_cov %Q% (seqnames %in% c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X"))
+    rebinned_cov = rebinned_cov %Q% (seqnames %in% c(seq(1:22),"X"))
     saveRDS(rebinned_cov, outputfn)
 
     """
