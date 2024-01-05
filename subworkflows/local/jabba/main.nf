@@ -3,7 +3,10 @@
 //
 
 include { JABBA } from '../../../modules/local/jabba/main.nf'
-include { COERCE_SEQNAMES } from '../../../modules/local/jabba/main.nf'
+include { COERCE_SEQNAMES as COERCE_SEQNAMES_COV } from '../../../modules/local/jabba/main.nf'
+include { COERCE_SEQNAMES as COERCE_SEQNAMES_SOM_SV } from '../../../modules/local/jabba/main.nf'
+include { COERCE_SEQNAMES as COERCE_SEQNAMES_UNFIL_SOM_SV } from '../../../modules/local/jabba/main.nf'
+include { COERCE_SEQNAMES as COERCE_SEQNAMES_HETS } from '../../../modules/local/jabba/main.nf'
 
 workflow COV_JUNC_JABBA {
 
@@ -54,22 +57,27 @@ workflow COV_JUNC_JABBA {
     karyograph          = Channel.empty()
 
     // Add channels for the outputs of COERCE_SEQNAMES
-    chr_coerced_cov_rds_jabba   = Channel.empty()
-    chr_coerced_junction_jabba  = Channel.empty()
+    chr_coerced_cov_rds_jabba          = Channel.empty()
+    chr_coerced_junction_jabba         = Channel.empty()
+    chr_coerced_j_supp_jabba           = Channel.empty()
     chr_coerced_het_pileups_wgs_jabba  = Channel.empty()
 
+
     // Run COERCE_SEQNAMES to force inputs to be in common
-    COERCE_SEQNAMES(cov_rds_jabba)
-    chr_coerced_cov_rds_jabba = COERCE_SEQNAMES.out
+    COERCE_SEQNAMES_COV(cov_rds_jabba)
+    chr_coerced_cov_rds_jabba = COERCE_SEQNAMES_COV.out.file
 
-    COERCE_SEQNAMES(junction_jabba)
-    chr_coerced_junction_jabba = COERCE_SEQNAMES.out
+    COERCE_SEQNAMES_SOM_SV(junction_jabba)
+    chr_coerced_junction_jabba = COERCE_SEQNAMES_SOM_SV.out.file
 
-    COERCE_SEQNAMES(het_pileups_wgs_jabba)
-    chr_coerced_het_pileups_wgs_jabba = COERCE_SEQNAMES.out
+    COERCE_SEQNAMES_UNFIL_SOM_SV(j_supp_jabba)
+    chr_coerced_j_supp_jabba = COERCE_SEQNAMES_UNFIL_SOM_SV.out.file
+
+    COERCE_SEQNAMES_HETS(het_pileups_wgs_jabba)
+    chr_coerced_het_pileups_wgs_jabba = COERCE_SEQNAMES_HETS.out.file
 
     JABBA(chr_coerced_cov_rds_jabba, chr_coerced_junction_jabba, ploidy_jabba, chr_coerced_het_pileups_wgs_jabba,
-    cbs_seg_rds_jabba, cbs_nseg_rds_jabba, j_supp_jabba, blacklist_junctions_jabba,
+    cbs_seg_rds_jabba, cbs_nseg_rds_jabba, chr_coerced_j_supp_jabba, blacklist_junctions_jabba,
     geno_jabba, indel_jabba, tfield_jabba,
     iter_jabba, rescue_window_jabba, rescue_all_jabba, nudgebalanced_jabba,
     edgenudge_jabba, strict_jabba, allin_jabba, field_jabba, maxna_jabba,

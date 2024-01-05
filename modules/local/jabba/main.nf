@@ -173,6 +173,13 @@ process JABBA {
 
 process COERCE_SEQNAMES {
 
+    tag "$meta.id"
+    label 'process_low'
+
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        '/gpfs/commons/home/tdey/lab/singularity_files/nextflow_singularity_cache/mskilab-jabba_cplex-latest.img':
+        'mskilab/jabba:latest' }"
+
     input:
     tuple val(meta), path(file)
 
@@ -191,15 +198,20 @@ process COERCE_SEQNAMES {
         data <- readRDS(fn)
         seqlevels(data, pruning.mode = "coarse") <- gsub("chr","",seqlevels(data))
         saveRDS(data, file = outputfn)
-    } else if (grepl('.vcf', "${file.name}")){
-	library(VariantAnnotation)
-	data <- readVcf(fn)
-	seqlevelsStyle(data) <- 'NCBI'
-	writeVcf(data, file = outputfn)
+    } else if (grepl('.vcf|.vcf.gz|.vcf.bgz', "${file.name}")) {
+        library(VariantAnnotation)
+        data <- readVcf(fn)
+        ##seqlevelsStyle(data) <- 'NCBI'
+        seqlevels(data) <- sub("^chr", "", seqlevels(data))
+        header = header(data)
+        rownames(header@header\$contig) = sub("^chr", "", rownames(header@header\$contig))
+        header(data) <- header
+        data@fixed\$ALT <- lapply(data@fixed\$ALT, function(x) gsub("chr", "", x))
+        writeVcf(data, file = outputfn)
     } else {
-      data <- read.table(fn, header=T)
-      data[[1]] <- gsub("chr","",data[[1]])
-      write.table(data, file = outputfn, sep = "\\t", row.names = F, quote = F)
+        data <- read.table(fn, header=T)
+        data[[1]] <- gsub("chr","",data[[1]])
+        write.table(data, file = outputfn, sep = "\\t", row.names = F, quote = F)
     }
     """
 }
