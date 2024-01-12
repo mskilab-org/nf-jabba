@@ -31,7 +31,7 @@ This pipeline uses code and infrastructure developed and maintained by the [nf-c
 > Choo, ZN., Behr, J.M., Deshpande, A. et al.
 >
 > _Nat Genet_ 2023 Nov 09. doi: [https://doi.org/10.1038/s41588-023-01540-6](https://doi.org/10.1038/s41588-023-01540-6)
->
+
 > **The nf-core framework for community-curated bioinformatics pipelines.**
 >
 > Philip Ewels, Alexander Peltzer, Sven Fillinger, Harshil Patel, Johannes Alneberg, Andreas Wilm, Maxime Ulysse Garcia, Paolo Di Tommaso & Sven Nahnsen.
