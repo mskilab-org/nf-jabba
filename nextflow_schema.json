@@ -573,7 +573,8 @@
                     "type": "string",
                     "default": "TRUE",
                     "hidden": true,
-                    "fa_icon": "fas fa-forward"
+                    "fa_icon": "fas fa-forward",
+                    "description": "whether to rescue all lower confidence junctions within the window, or just the best one."
                 },
                 "nudgebalanced_jabba": {
                     "type": "string",
@@ -666,7 +667,8 @@
                 "fix_thres_jabba": {
                     "type": "integer",
                     "default": -1,
-                    "fa_icon": "fas fa-wrench"
+                    "fa_icon": "fas fa-wrench",
+                    "description": "threshold for calling convergence"
                 },
                 "lp_jabba": {
                     "type": "string",
@@ -698,7 +700,8 @@
                 "nonintegral_jabba": {
                     "type": "string",
                     "default": "FALSE",
-                    "fa_icon": "fas fa-forward"
+                    "fa_icon": "fas fa-forward",
+                    "description": "whether to allow non-integral solutions"
                 },
                 "verbose_jabba": {
                     "type": "string",

@@ -14,7 +14,7 @@ process HETPILEUPS {
     path(hapmap_sites)
 
     output:
-    tuple val(meta), path("*sites.txt")                     , emit: het_pileups_wgs
+    tuple val(meta), path("*sites.txt")                     , emit: het_pileups_wgs, optional: true
     path "versions.yml"                                     , emit: versions
 
     when:
