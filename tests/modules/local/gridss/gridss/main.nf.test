@@ -22,7 +22,7 @@ nextflow_process {
                 input[1] =  params.genomes['GATK.GRCh37'].fasta
                 input[2] =  params.genomes['GATK.GRCh37'].fasta_fai
                 input[3] =  params.genomes['GATK.GRCh37'].bwa
-                input[4] =  params.genomes['GATK.GRCh37'].blacklist_gridss
+                input[4] =  ""
                 """
             }
         }

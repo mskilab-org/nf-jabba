@@ -1,48 +1,12 @@
-Dec-20 11:57:50.997 [main] INFO  com.askimed.nf.test.App - nf-test 0.8.2
-Dec-20 11:57:51.004 [main] INFO  com.askimed.nf.test.App - Arguments: [test, tests/modules/local/gridss/gridss/main.nf.test]
-Dec-20 11:57:51.004 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Load config from file /Users/diders01/projects/jabba_prod/nf-jabba/nf-test.config...
-Dec-20 11:57:51.171 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Detected 1 test files.
-Dec-20 11:57:51.241 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/bin' --> '/Users/diders01/projects/jabba_prod/nf-jabba/bin'
-Dec-20 11:57:51.241 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/lib' --> '/Users/diders01/projects/jabba_prod/nf-jabba/lib'
-Dec-20 11:57:51.241 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/assets' --> '/Users/diders01/projects/jabba_prod/nf-jabba/assets'
-Dec-20 11:57:51.242 [main] DEBUG com.askimed.nf.test.core.AbstractTest - Stage 1 user provided files...
-Dec-20 11:57:51.242 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/tests/test_data/' --> '/Users/diders01/projects/jabba_prod/nf-jabba/tests/test_data'
-Dec-20 11:57:51.243 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Started test plan
-Dec-20 11:57:51.243 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Running testsuite 'Test Process GRIDSS_GRIDSS' from file '/Users/diders01/projects/jabba_prod/nf-jabba/tests/modules/local/gridss/gridss/main.nf.test'.
-Dec-20 11:57:51.243 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Run test '1a4fc5dc: Should run GRIDSS without failures'. type: com.askimed.nf.test.lang.process.ProcessTest
-Dec-21 00:08:14.198 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Test '1a4fc5dc: Should run GRIDSS without failures' finished. status: FAILED
-org.codehaus.groovy.runtime.powerassert.PowerAssertionError: assert process.success
-       |       |
-       |       false
-       GRIDSS_GRIDSS
-	at org.codehaus.groovy.runtime.InvokerHelper.assertFailed(InvokerHelper.java:436)
-	at org.codehaus.groovy.runtime.ScriptBytecodeAdapter.assertFailed(ScriptBytecodeAdapter.java:670)
-	at main_nf$_run_closure1$_closure2$_closure4.doCall(main.nf.test:31)
-	at main_nf$_run_closure1$_closure2$_closure4.doCall(main.nf.test)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
-	at org.codehaus.groovy.reflection.CachedMethod.invoke(CachedMethod.java:107)
-	at groovy.lang.MetaMethod.doMethodInvoke(MetaMethod.java:323)
-	at org.codehaus.groovy.runtime.metaclass.ClosureMetaClass.invokeMethod(ClosureMetaClass.java:274)
-	at groovy.lang.MetaClassImpl.invokeMethod(MetaClassImpl.java:1035)
-	at groovy.lang.Closure.call(Closure.java:412)
-	at groovy.lang.Closure.call(Closure.java:406)
-	at com.askimed.nf.test.lang.TestCode.execute(TestCode.java:16)
-	at com.askimed.nf.test.lang.process.ProcessTest.execute(ProcessTest.java:169)
-	at com.askimed.nf.test.core.TestExecutionEngine.execute(TestExecutionEngine.java:214)
-	at com.askimed.nf.test.commands.RunTestsCommand.execute(RunTestsCommand.java:184)
-	at com.askimed.nf.test.commands.AbstractCommand.call(AbstractCommand.java:41)
-	at com.askimed.nf.test.commands.AbstractCommand.call(AbstractCommand.java:17)
-	at picocli.CommandLine.executeUserObject(CommandLine.java:1953)
-	at picocli.CommandLine.access$1300(CommandLine.java:145)
-	at picocli.CommandLine$RunLast.executeUserObjectOfLastSubcommandWithSameParent(CommandLine.java:2352)
-	at picocli.CommandLine$RunLast.handle(CommandLine.java:2346)
-	at picocli.CommandLine$RunLast.handle(CommandLine.java:2311)
-	at picocli.CommandLine$AbstractParseResultHandler.execute(CommandLine.java:2179)
-	at picocli.CommandLine.execute(CommandLine.java:2078)
-	at com.askimed.nf.test.App.run(App.java:44)
-	at com.askimed.nf.test.App.main(App.java:51)
-Dec-21 00:08:14.201 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Testsuite 'Test Process GRIDSS_GRIDSS' finished. snapshot file: false, skipped tests: false, failed tests: true
-Dec-21 00:08:14.201 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Executed 1 tests. 1 tests failed. Done!
+Jan-16 10:10:49.572 [main] INFO  com.askimed.nf.test.App - nf-test 0.8.2
+Jan-16 10:10:49.580 [main] INFO  com.askimed.nf.test.App - Arguments: [test, tests/modules/local/gridss/gridss/main.nf.test]
+Jan-16 10:10:49.580 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Load config from file /Users/diders01/projects/jabba_prod/nf-jabba/nf-test.config...
+Jan-16 10:10:49.758 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Detected 1 test files.
+Jan-16 10:10:49.827 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/bin' --> '/Users/diders01/projects/jabba_prod/nf-jabba/bin'
+Jan-16 10:10:49.828 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/lib' --> '/Users/diders01/projects/jabba_prod/nf-jabba/lib'
+Jan-16 10:10:49.828 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/assets' --> '/Users/diders01/projects/jabba_prod/nf-jabba/assets'
+Jan-16 10:10:49.828 [main] DEBUG com.askimed.nf.test.core.AbstractTest - Stage 1 user provided files...
+Jan-16 10:10:49.828 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/tests/test_data/' --> '/Users/diders01/projects/jabba_prod/nf-jabba/tests/test_data'
+Jan-16 10:10:49.830 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Started test plan
+Jan-16 10:10:49.830 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Running testsuite 'Test Process GRIDSS_GRIDSS' from file '/Users/diders01/projects/jabba_prod/nf-jabba/tests/modules/local/gridss/gridss/main.nf.test'.
+Jan-16 10:10:49.830 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Run test '1a4fc5dc: Should run GRIDSS without failures'. type: com.askimed.nf.test.lang.process.ProcessTest
