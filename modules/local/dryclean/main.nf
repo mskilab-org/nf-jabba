@@ -70,7 +70,7 @@ process DRYCLEAN {
     CMD="Rscript \$drycln \\
         --input             ${input} \\
         --pon               ${pon} \\
-        --centered          ${centered} \\
+        --center            ${centered} \\
         --cbs               ${cbs} \\
         --cnsignif          ${cnsignif} \\
         --cores             ${task.cpus} \\
