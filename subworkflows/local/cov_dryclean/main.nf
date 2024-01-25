@@ -9,7 +9,7 @@ workflow COV_DRYCLEAN {
     take:
     input_dryclean   // channel: [mandatory] [ meta, cov(.rds file) ]
     pon_dryclean
-    centered_dryclean
+    center_dryclean
     cbs_dryclean
     cnsignif_dryclean
     wholeGenome_dryclean
@@ -17,7 +17,6 @@ workflow COV_DRYCLEAN {
     blacklist_path_dryclean
     germline_filter_dryclean
     germline_file_dryclean
-    human_dryclean
     field_dryclean
     build_dryclean
 
@@ -26,10 +25,10 @@ workflow COV_DRYCLEAN {
     dryclean_cov      = Channel.empty()
     //dryclean_obj      = Channel.empty()
 
-    DRYCLEAN(input_dryclean, pon_dryclean, centered_dryclean, cbs_dryclean,
+    DRYCLEAN(input_dryclean, pon_dryclean, center_dryclean, cbs_dryclean,
     cnsignif_dryclean, wholeGenome_dryclean, blacklist_dryclean,
     blacklist_path_dryclean, germline_filter_dryclean, germline_file_dryclean,
-    human_dryclean, field_dryclean, build_dryclean)
+    field_dryclean, build_dryclean)
 
     dryclean_cov      = DRYCLEAN.out.decomposed_cov
     //dryclean_obj      = DRYCLEAN.out.dryclean_object

@@ -3,14 +3,14 @@ process DRYCLEAN {
     label 'process_medium'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://mskilab/dryclean:0.0.2':
-        'mskilab/dryclean:0.0.2' }"
+        'docker://mskilab/dryclean:0.0.3':
+        'mskilab/dryclean:0.0.3' }"
 
 
     input:
     tuple val(meta), path(input)
     path(pon)
-    val(centered)
+    val(center)
     val(cbs)
     val(cnsignif)
     val(wholeGenome)
@@ -18,7 +18,6 @@ process DRYCLEAN {
     val(blacklist_path)
     val(germline_filter)
     val(germline_file)
-    val(human)
     val(field)
     val(build)
 
@@ -33,7 +32,7 @@ process DRYCLEAN {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def VERSION = '0.0.2'
+    def VERSION = '0.0.3'
     """
     #!/bin/bash
     set -o allexport
@@ -70,7 +69,7 @@ process DRYCLEAN {
     CMD="Rscript \$drycln \\
         --input             ${input} \\
         --pon               ${pon} \\
-        --centered          ${centered} \\
+        --center            ${center} \\
         --cbs               ${cbs} \\
         --cnsignif          ${cnsignif} \\
         --cores             ${task.cpus} \\
@@ -79,7 +78,6 @@ process DRYCLEAN {
         --blacklist_path    ${blacklist_path} \\
         --germline.filter   ${germline_filter} \\
         --germline.file     ${germline_file} \\
-        --human             ${human} \\
         --field             ${field} \\
         --build             ${build} \\
     "

@@ -289,13 +289,13 @@ paired_frag        = params.paired_frag        ?: Channel.empty()               
 exome_frag         = params.exome_frag         ?: Channel.empty()                                                         // For fragCounter
 
 // Dryclean
-centered_dryclean           = params.centered_dryclean          ?: Channel.empty()
+center_dryclean             = params.center_dryclean          ?: Channel.empty()
 cbs_dryclean                = params.cbs_dryclean               ?: Channel.empty()
 cnsignif_dryclean           = params.cnsignif_dryclean          ?: Channel.empty()
 wholeGenome_dryclean        = params.wholeGenome_dryclean       ?: Channel.empty()
 blacklist_dryclean          = params.blacklist_dryclean         ?: Channel.empty()
 germline_filter_dryclean    = params.germline_filter_dryclean   ?: Channel.empty()
-human_dryclean              = params.human_dryclean             ?: Channel.empty()
+//human_dryclean              = params.human_dryclean             ?: Channel.empty()
 field_dryclean              = params.field_dryclean             ?: Channel.empty()
 build_dryclean              = params.build_dryclean             ?: Channel.empty()
 
@@ -1129,18 +1129,18 @@ workflow NFJABBA {
         }
         if (params.tools && params.tools.split(',').contains('dryclean')) {
             // Dryclean for both tumor & normal
-            TUMOR_DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
+            TUMOR_DRYCLEAN(tumor_frag_cov, pon_dryclean, center_dryclean,
                     cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
                     blacklist_dryclean, blacklist_path_dryclean,
-                    germline_filter_dryclean, germline_file_dryclean, human_dryclean,
+                    germline_filter_dryclean, germline_file_dryclean, 
                     field_dryclean, build_dryclean)
 
             tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
 
-            NORMAL_DRYCLEAN(normal_frag_cov, pon_dryclean, centered_dryclean,
+            NORMAL_DRYCLEAN(normal_frag_cov, pon_dryclean, center_dryclean,
                     cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
                     blacklist_dryclean, blacklist_path_dryclean,
-                    germline_filter_dryclean, germline_file_dryclean, human_dryclean,
+                    germline_filter_dryclean, germline_file_dryclean,
                     field_dryclean, build_dryclean)
 
             normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
