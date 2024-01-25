@@ -52,26 +52,25 @@ def checkPathParamList = [
     params.pon_dryclean,
     params.blacklist_coverage_jabba
 ]
-// only check if we are using the tools
-if (params.tools && params.tools.contains("snpeff")) checkPathParamList.add(params.snpeff_cache)
-if (params.tools && params.tools.contains("vep"))    checkPathParamList.add(params.vep_cache)
 
-// checking inputs if using SVABA
-if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.indel_mask)
-if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.germ_sv_db)
-if (params.tools && params.tools.contains("svaba"))  checkPathParamList.add(params.simple_seq_db)
+def toolParamMap = [
+    "snpeff"     : [params.snpeff_cache],
+    "vep"        : [params.vep_cache],
+    "svaba"      : [params.indel_mask, params.germ_sv_db, params.simple_seq_db],
+    "gridss"     : [params.blacklist_gridss, params.pon_gridss],
+    "hetpileups" : [params.hapmap_sites]
+]
 
-// checking inputs if using GRIDSS
-if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.blacklist_gridss)
-if (params.tools && params.tools.contains("gridss"))  checkPathParamList.add(params.pon_gridss)
+// Check if running tools and add their params to the checkPathParamList
+if (params.tools) {
+    toolParamMap.each { tool, toolParams ->
+        if (params.tools.contains(tool)) {
+            checkPathParamList.addAll(toolParams)
+        }
+    }
+}
 
-if (params.tools && params.tools.contains("hetpileups"))  checkPathParamList.add(params.hapmap_sites)
-
-
-// Checking inputs if running fragCounter
-//if (params.tools && params.tools.contains("fragcounter"))  checkPathParamList.add(params.gcmapdir_frag)
-
-// Validate input parameters
+// Initialise the workflow
 WorkflowNfjabba.initialise(params, log)
 
 /*
@@ -80,14 +79,18 @@ WorkflowNfjabba.initialise(params, log)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-for (param in checkPathParamList) if (param) file(param, checkIfExists: true)
+// Check if the path parameters exist
+checkPathParamList.each { param ->
+    if (param) file(param, checkIfExists: true)
+}
 
 // Set input, can either be from --input or from automatic retrieval in WorkflowSarek.groovy
+def inputType = params.input ? "input" : "input_restart"
+def ch_from_samplesheet = params.build_only_index ? Channel.empty() : Channel.fromSamplesheet(inputType)
 
-if (params.input) {
-    ch_from_samplesheet = params.build_only_index ? Channel.empty() : Channel.fromSamplesheet("input")
-} else {
-    ch_from_samplesheet = params.build_only_index ? Channel.empty() : Channel.fromSamplesheet("input_restart")
+// Function to handle errors based on step and data type
+def handleError(step, dataType) {
+    error("Your samplesheet contains ${dataType} files but step is `${step}`. Please check your samplesheet or adjust the step parameter.")
 }
 
 input_sample = ch_from_samplesheet
@@ -117,7 +120,7 @@ input_sample = ch_from_samplesheet
 
                 if (params.step == 'alignment') return [ meta, [ fastq_1, fastq_2 ] ]
                 else {
-                    error("Samplesheet contains fastq files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.\nhttps://nf-co.re/sarek/usage#input-samplesheet-configurations")
+                    handleError(params.step, 'fastq')
                 }
 
             // start from BAM
@@ -133,7 +136,7 @@ input_sample = ch_from_samplesheet
 
                 if (params.step != 'annotate') return [ meta - meta.subMap('lane'), bam, bai ]
                 else {
-                    error("Samplesheet contains bam files but step is `annotate`. The pipeline is expecting vcf files for the annotation. Please check your samplesheet or adjust the step parameter.")
+                    handleError(params.step, 'bam')
                 }
 
             // recalibration
@@ -142,7 +145,7 @@ input_sample = ch_from_samplesheet
 
                 if (!(params.step == 'alignment' || params.step == 'annotate')) return [ meta - meta.subMap('lane'), cram, crai, table ]
                 else {
-                    error("Samplesheet contains cram files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                    handleError(params.step, 'cram')
                 }
 
             // recalibration when skipping MarkDuplicates
@@ -151,7 +154,7 @@ input_sample = ch_from_samplesheet
 
                 if (!(params.step == 'alignment' || params.step == 'annotate')) return [ meta - meta.subMap('lane'), bam, bai, table ]
                 else {
-                    error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                    handleError(params.step, 'bam')
                 }
 
             // prepare_recalibration or variant_calling
@@ -160,7 +163,7 @@ input_sample = ch_from_samplesheet
 
                 if (!(params.step == 'alignment' || params.step == 'annotate')) return [ meta - meta.subMap('lane'), cram, crai ]
                 else {
-                    error("Samplesheet contains cram files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                    handleError(params.step, 'cram')
                 }
 
             // prepare_recalibration when skipping MarkDuplicates or `--step markduplicates`
@@ -169,7 +172,7 @@ input_sample = ch_from_samplesheet
 
                 if (!(params.step == 'alignment' || params.step == 'annotate')) return [ meta - meta.subMap('lane'), bam, bai ]
                 else {
-                    error("Samplesheet contains bam files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                    handleError(params.step, 'bam')
                 }
             // hetpileups
             } else if (cov && hets && vcf && vcf2 && seg && nseg) {
@@ -177,7 +180,7 @@ input_sample = ch_from_samplesheet
 
                 if (params.step == 'jabba') return [ meta - meta.subMap('lane'), cov, hets, vcf, vcf2, seg, nseg ]
                 else {
-                    error("Samplesheet contains cov .rds and vcf files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                    handleError(params.step, 'coverage .rds and vcf')
                 }
                 // dryclean
             } else if (cov && hets) {
@@ -185,7 +188,7 @@ input_sample = ch_from_samplesheet
 
                 if (params.step == 'ascat') return [ meta - meta.subMap('lane'), cov, hets ]
                 else {
-                    error("Samplesheet contains cov .rds and hets .txt files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                    handleError(params.step, 'coverage .rds and hetpileups .txt')
                 }
                 // jabba
             } else if (cov) {
@@ -193,7 +196,7 @@ input_sample = ch_from_samplesheet
 
                 if (params.step == 'dryclean') return [ meta - meta.subMap('lane'), cov ]
                 else {
-                    error("Samplesheet contains cov .rds files but step is `$params.step`. Please check your samplesheet or adjust the step parameter.")
+                    handleError(params.step, 'coverage .rds')
                 }
         } else {
                 error("Missing or unknown field in csv file header. Please check your samplesheet")
@@ -419,7 +422,6 @@ include { SAMTOOLS_CONVERT as BAM_TO_CRAM_MAPPING     } from '../modules/nf-core
 // Convert CRAM files (optional)
 include { SAMTOOLS_CONVERT as CRAM_TO_BAM             } from '../modules/nf-core/samtools/convert/main'
 include { SAMTOOLS_CONVERT as CRAM_TO_BAM_RECAL       } from '../modules/nf-core/samtools/convert/main'
-//include { SAMTOOLS_CONVERT as CRAM_TO_BAM_NORMAL      } from '../modules/nf-core/samtools/convert/main'
 include { SAMTOOLS_CONVERT as CRAM_TO_BAM_FINAL       } from '../modules/nf-core/samtools/convert/main'
 
 // Mark Duplicates (+QC)
@@ -578,7 +580,55 @@ workflow NFJABBA {
     versions = versions.mix(PREPARE_GENOME.out.versions)
     versions = versions.mix(PREPARE_INTERVALS.out.versions)
 
-    if (params.step == 'alignment') {
+    // Initialize all flags to false
+    boolean runAlignment = false
+    boolean runMarkDuplicates = false
+    boolean runPrepareRecalibration = false
+    boolean runRecalibrate = false
+    boolean runSvCalling = false
+    boolean runFragCounter = false
+    boolean runHetPileups = false
+    boolean runDryClean = false
+    boolean runAscat = false
+    boolean runJabba = false
+
+    // Set flags based on params.step using a cascading approach
+    switch (params.step) {
+        case 'alignment':
+            runAlignment = true
+            // Fall through to the next case
+        case 'markduplicates':
+            runMarkDuplicates = true
+            // Fall through to the next case
+        case 'prepare_recalibration':
+            runPrepareRecalibration = true
+            // Fall through to the next case
+        case 'recalibrate':
+            runRecalibrate = true
+            // Fall through to the next case
+        case 'sv_calling':
+            runSvCalling = true
+            // Fall through to the next case
+        case 'fragcounter':
+            runFragCounter = true
+            // Fall through to the next case
+        case 'hetpileups':
+            runHetPileups = true
+            // Fall through to the next case
+        case 'dryclean':
+            runDryClean = true
+            // Fall through to the next case
+        case 'ascat':
+            runAscat = true
+            // Fall through to the next case
+        case 'jabba':
+            runJabba = true
+            break
+        default:
+            error "Invalid step: ${params.step}"
+    }
+
+    if (runAlignment) {
 
         // Figure out if input is bam or fastq
         input_sample_type = input_sample.branch{
@@ -702,7 +752,7 @@ workflow NFJABBA {
         versions = versions.mix(FASTQ_ALIGN_BWAMEM_MEM2.out.versions)
     }
 
-    if (params.step in ['alignment', 'markduplicates']) {
+    if (runMarkDuplicates) {
 
         // ch_cram_no_markduplicates_restart = Channel.empty()
         cram_markduplicates_no_spark = Channel.empty()
@@ -777,7 +827,7 @@ workflow NFJABBA {
         params.save_output_as_bam ? CHANNEL_MARKDUPLICATES_CREATE_CSV(CRAM_TO_BAM.out.alignment_index, csv_subfolder, params.outdir, params.save_output_as_bam) : CHANNEL_MARKDUPLICATES_CREATE_CSV(ch_md_cram_for_restart, csv_subfolder, params.outdir, params.save_output_as_bam)
     }
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration']) {
+    if (runPrepareRecalibration) {
         // Run if starting from step "prepare_recalibration"
         if (params.step == 'prepare_recalibration') {
                         // Support if starting from BAM or CRAM files
@@ -835,7 +885,7 @@ workflow NFJABBA {
     }
 
     // STEP 4: RECALIBRATING
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate']) {
+    if (runRecalibrate) {
         // Run if starting from step "prepare_recalibration"
         if (params.step == 'recalibrate') {
             // Support if starting from BAM or CRAM files
@@ -927,7 +977,7 @@ workflow NFJABBA {
 
 
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling']) {
+    if (runSvCalling) {
         //when starting from sv_calling
         if (params.step == 'sv_calling') {
             input_sv_calling_convert = input_sample.branch{
@@ -1010,7 +1060,7 @@ workflow NFJABBA {
         bam_fragcounter_calling = bam_sv_calling
     }
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter']) {
+    if (runFragCounter) {
 
         if (params.step == 'fragcounter') {
             input_fragcounter_convert = input_sample.branch{
@@ -1049,7 +1099,7 @@ workflow NFJABBA {
             // TODO: Add a subworkflow to write the output file paths into a csv
     }
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups']) {
+    if (runHetPileups) {
 
 
         if (params.step == 'hetpileups') {
@@ -1096,7 +1146,7 @@ workflow NFJABBA {
             versions = versions.mix(BAM_HETPILEUPS.out.versions)
 
             sites_from_het_pileups_wgs = Channel.empty().mix(BAM_HETPILEUPS.out.het_pileups_wgs)
-            
+
             //Getting the meta.patient id out to aid in crossing JaBbA and ASCAT inputs
             het_pileups_to_cross = sites_from_het_pileups_wgs.map { tuple ->
                                                             def (meta, hets) = tuple
@@ -1112,7 +1162,7 @@ workflow NFJABBA {
 
     }
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean']) {
+    if (runDryClean) {
 
         if (params.step == 'dryclean') {
             input_dryclean = input_sample
@@ -1151,12 +1201,12 @@ workflow NFJABBA {
             normal_dryclean_cov_to_cross = normal_dryclean_cov.map { tuple ->
                                                                 def (meta, cov) = tuple
                                                                 [meta.patient, meta + [id: meta.sample], cov] }
-                                                                
+
             tumor_dryclean_cov_to_cross = tumor_dryclean_cov.map { tuple ->
                                                                 def (meta, cov) = tuple
                                                                 [meta.patient, meta + [id: meta.sample], cov] }
 
-                                                                   
+
         }
 
         // TODO: Add a subworkflow to write the output file paths into a csv
@@ -1211,7 +1261,7 @@ workflow NFJABBA {
             }
             //input_ascat.view()
 
-            //Join all the inputs for jabba here into a single channel based on patient id that would accept it in downstream because nextflow doesn't know shit on whether the outputs are from same patient
+            //Join all the inputs for jabba here into a single channel based on patient id
             if (params.tools && params.tools.split(',').contains('svaba')) {
                 input_jabba1 = tumor_dryclean_cov_to_cross.join(het_pileups_to_cross)
                                                         .join(vcf_from_sv_calling_to_cross)
@@ -1237,7 +1287,7 @@ workflow NFJABBA {
 
     }
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'ascat']) {
+    if (runAscat) {
 
         if (params.step == 'ascat') {
             input_ascat = input_sample
@@ -1272,12 +1322,12 @@ workflow NFJABBA {
             purity = Channel.empty().mix(COV_ASCAT.out.purity)
             ploidy = Channel.empty().mix(COV_ASCAT.out.ploidy)
             ploidy_to_cross = ploidy.map{ meta, ploidy -> [ meta.patient, meta, ploidy ] }
-            
+
         }
         // TODO: Add a subworkflow to write the output file paths into a csv
     }
 
-    if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate', 'sv_calling', 'fragcounter', 'hetpileups', 'dryclean', 'ascat', 'jabba']) {
+    if (runJabba) {
 
         if (params.step == 'jabba') {
             input_jabba = input_sample
@@ -1288,7 +1338,7 @@ workflow NFJABBA {
         if (params.tools && params.tools.split(',').contains('jabba')) {
 
             ploidy_jabba = input_sample.map{ tuple -> [ tuple[0], ploidy_jab ] }
-            
+
             if (params.tools && params.tools.split(',').contains('svaba')) {
 
                 if (params.tools && params.tools.split(',').contains('ascat')) {
@@ -1305,7 +1355,7 @@ workflow NFJABBA {
 
                     //input_jabba1_final = input_jabba1.cross(ploidy_jabba).map{ tuples ->
                     //                                        [tuples[1]] + [tuples[2]] + [tuples[3]] + [tuples[4]] + [tuples[5]] + [tuples[6]] + [tuples[7]] + [tuples[9]]
-                    //                                    } 
+                    //                                    }
 
                     input_jabba1_final = input_jabba1.cross(ploidy_jabba).map{ tuples ->
                                                             [tuples[0][0]] + [tuples[0][1]] + [tuples[0][2]] + [tuples[0][3]] + [tuples[0][4]] + [tuples[0][5]] + [tuples[0][6]] + [tuples[1][1]]
@@ -1314,7 +1364,7 @@ workflow NFJABBA {
                 }
 
                 input_cov_jabba = input_jabba1_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, cov ] }
-                
+
                 input_hets_jabba = input_jabba1_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, hets ] }
 
                 input_vcf_jabba  = input_jabba1_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, vcf ] }
@@ -1324,8 +1374,8 @@ workflow NFJABBA {
                 input_seg_jabba  = input_jabba1_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, seg ] }
 
                 input_nseg_jabba = input_jabba1_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, nseg ] }
-                
-                
+
+
 
                 JABBA_WITH_SVABA(input_cov_jabba, input_vcf_jabba, input_ploidy_jabba,
                 input_hets_jabba, input_seg_jabba, input_nseg_jabba,
@@ -1369,7 +1419,7 @@ workflow NFJABBA {
                 }
 
                 input_cov_jabba = input_jabba2_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, cov ] }
-                
+
                 input_hets_jabba = input_jabba2_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, hets ] }
 
                 input_vcf_jabba  = input_jabba2_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, vcf ] }
@@ -1422,7 +1472,7 @@ workflow NFJABBA {
                                     .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, seg ] }
 
                 input_nseg_jabba = input_jabba
-                                    .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, nseg ] }            
+                                    .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta, nseg ] }
 
                 tumor_dryclean_cov          = Channel.empty().mix(input_cov_jabba)
                 sites_from_het_pileups_wgs  = Channel.empty().mix(input_hets_jabba)
@@ -1431,17 +1481,42 @@ workflow NFJABBA {
                 cbs_seg_rds                 = Channel.empty().mix(input_seg_jabba)
                 cbs_nseg_rds                = Channel.empty().mix(input_nseg_jabba)
 
-                JABBA(tumor_dryclean_cov, vcf_from_sv_calling, ploidy_jabba,
-                sites_from_het_pileups_wgs, cbs_seg_rds, cbs_nseg_rds,
-                unfiltered_som_sv, blacklist_junctions_jabba, geno_jabba,
-                indel_jabba, tfield_jabba, iter_jabba, rescue_window_jabba,
-                rescue_all_jabba, nudgebalanced_jabba, edgenudge_jabba,
-                strict_jabba, allin_jabba, field_jabba, maxna_jabba,
-                blacklist_coverage_jabba, purity_jabba, pp_method_jabba,
-                cnsignif_jabba, slack_jabba, linear_jabba, tilim_jabba,
-                epgap_jabba, fix_thres_jabba, lp_jabba,
-                ism_jabba, filter_loose_jabba, gurobi_jabba,
-                verbose_jabba)
+                JABBA(
+                    tumor_dryclean_cov,
+                    vcf_from_sv_calling,
+                    ploidy_jabba,
+                    sites_from_het_pileups_wgs,
+                    cbs_seg_rds,
+                    cbs_nseg_rds,
+                    unfiltered_som_sv,
+                    blacklist_junctions_jabba,
+                    geno_jabba,
+                    indel_jabba,
+                    tfield_jabba,
+                    iter_jabba,
+                    rescue_window_jabba,
+                    rescue_all_jabba,
+                    nudgebalanced_jabba,
+                    edgenudge_jabba,
+                    strict_jabba,
+                    allin_jabba,
+                    field_jabba,
+                    maxna_jabba,
+                    blacklist_coverage_jabba,
+                    purity_jabba,
+                    pp_method_jabba,
+                    cnsignif_jabba,
+                    slack_jabba,
+                    linear_jabba,
+                    tilim_jabba,
+                    epgap_jabba,
+                    fix_thres_jabba,
+                    lp_jabba,
+                    ism_jabba,
+                    filter_loose_jabba,
+                    gurobi_jabba,
+                    verbose_jabba
+                )
 
                 jabba_rds           = Channel.empty().mix(JABBA.out.jabba_rds)
                 jabba_gg            = Channel.empty().mix(JABBA.out.jabba_gg)
