@@ -152,6 +152,13 @@
                             "modules"
                         ]
                     },
+                    "qualimap/bamqc": {
+                        "branch": "master",
+                        "git_sha": "260677adfe5eecf5f64d3db726f6854d4497b49b",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
                     "samtools/collatefastq": {
                         "branch": "master",
                         "git_sha": "911696ea0b62df80e900ef244d7867d177971f73",

@@ -428,6 +428,7 @@ include { BAM_MARKDUPLICATES                          } from '../subworkflows/lo
 // QC on CRAM
 include { CRAM_QC_MOSDEPTH_SAMTOOLS as CRAM_QC_NO_MD  } from '../subworkflows/local/cram_qc_mosdepth_samtools/main'
 include { CRAM_QC_MOSDEPTH_SAMTOOLS as CRAM_QC_RECAL  } from '../subworkflows/local/cram_qc_mosdepth_samtools/main'
+include { BAM_QC_QUALIMAP_MOSDEPTH_SAMTOOLS           } from '../subworkflows/local/bam_qc/main'
 
 // Create recalibration tables
 include { BAM_BASERECALIBRATOR                        } from '../subworkflows/local/bam_baserecalibrator/main'
@@ -943,6 +944,8 @@ workflow NFJABBA {
 
         }
 
+        //Adds QC
+        BAM_QC_QUALIMAP_MOSDEPTH_SAMTOOLS(bam_sv_calling, fasta, intervals_for_preprocessing)
         // getting the tumor and normal cram files separated
         bam_sv_calling_status = bam_sv_calling.branch{
             normal: it[0].status == 0
