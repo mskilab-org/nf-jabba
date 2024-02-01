@@ -2,17 +2,21 @@ include { EVENTS } from '../../../modules/local/events/main.nf'
 
 workflow EVENTS {
     take:
+    input           // required: format [val(meta), path(gGraph)]
+    ref
+    id
 
     main:
+    versions            = Channel.empty()
+    events_output       = Channel.empty()
 
-    // define channels here for inputs
-    // x = Channel.empty()
-    EVENTS()
+    EVENTS(input, ref, id)
 
-
-    // gather outputs
-    // x = EVENTS.out.x
+    events_output = EVENTS.out.events_output
+    versions = EVENTS.out.versions
 
     emit:
-    // x
+    events_output
+
+    versions
 }

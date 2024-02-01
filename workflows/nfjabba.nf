@@ -94,9 +94,9 @@ def handleError(step, dataType) {
 }
 
 input_sample = ch_from_samplesheet
-        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, vcf2, seg, nseg, variantcaller ->
+        .map{ meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, ggraph, vcf, vcf2, seg, nseg, variantcaller ->
             // generate patient_sample key to group lanes together
-            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, vcf2, seg, nseg, variantcaller] ]
+            [ meta.patient + meta.sample, [meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, ggraph, vcf, vcf2, seg, nseg, variantcaller] ]
         }
         .tap{ ch_with_patient_sample } // save the channel
         .groupTuple() //group by patient_sample to get all lanes
@@ -107,7 +107,7 @@ input_sample = ch_from_samplesheet
         .combine(ch_with_patient_sample, by: 0) // for each entry add numLanes
         .map { patient_sample, num_lanes, ch_items ->
 
-            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, vcf, vcf2, seg, nseg, variantcaller) = ch_items
+            (meta, fastq_1, fastq_2, table, cram, crai, bam, bai, cov, hets, ggraph, vcf, vcf2, seg, nseg, variantcaller) = ch_items
             if (meta.lane && fastq_2) {
                 meta           = meta + [id: "${meta.sample}-${meta.lane}".toString()]
                 def CN         = params.seq_center ? "CN:${params.seq_center}\\t" : ''
@@ -174,7 +174,7 @@ input_sample = ch_from_samplesheet
                 else {
                     handleError(params.step, 'bam')
                 }
-            // hetpileups
+            // jabba
             } else if (cov && hets && vcf && vcf2 && seg && nseg) {
                 meta = meta + [id: meta.sample, data_type: ['cov', 'vcf', 'hets', 'seg']]
 
@@ -182,7 +182,7 @@ input_sample = ch_from_samplesheet
                 else {
                     handleError(params.step, 'coverage .rds and vcf')
                 }
-                // dryclean
+                // ascat
             } else if (cov && hets) {
                 meta = meta + [id: meta.sample, data_type: ['cov', 'hets']]
 
@@ -190,13 +190,21 @@ input_sample = ch_from_samplesheet
                 else {
                     handleError(params.step, 'coverage .rds and hetpileups .txt')
                 }
-                // jabba
+                // dryclean
             } else if (cov) {
                 meta = meta + [id: meta.sample, data_type: 'cov']
 
                 if (params.step == 'dryclean') return [ meta - meta.subMap('lane'), cov ]
                 else {
                     handleError(params.step, 'coverage .rds')
+                }
+                // events
+            } else if (ggraph) {
+                meta = meta + [id: meta.sample, data_type: 'ggraph']
+
+                if (params.step == 'events') return [ meta - meta.subMap('lane'), ggraph ]
+                else {
+                    handleError(params.step, 'ggraph .rds')
                 }
         } else {
                 error("Missing or unknown field in csv file header. Please check your samplesheet")
@@ -458,11 +466,18 @@ include { COV_DRYCLEAN as NORMAL_DRYCLEAN              } from '../subworkflows/l
 //ASCAT
 include { COV_ASCAT                                   } from '../subworkflows/local/cov_ascat/main'
 
+// CBS
 include { COV_CBS as CBS                              } from '../subworkflows/local/cov_cbs/main'
 
+// JaBbA
 include { COV_JUNC_JABBA as JABBA                     } from '../subworkflows/local/jabba/main'
 include { COV_JUNC_JABBA as JABBA_WITH_SVABA          } from '../subworkflows/local/jabba/main'
 include { COV_JUNC_JABBA as JABBA_WITH_GRIDSS         } from '../subworkflows/local/jabba/main'
+
+// Events
+include { EVENTS                                      } from '../subworkflows/local/events/main'
+include { EVENTS as EVENTS_WITH_GRIDSS                } from '../subworkflows/local/events/main'
+include { EVENTS as EVENTS_WITH_SVABA                 } from '../subworkflows/local/events/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -591,6 +606,7 @@ workflow NFJABBA {
     boolean runDryClean = false
     boolean runAscat = false
     boolean runJabba = false
+    boolean runEvents = false
 
     // Set flags based on params.step using a cascading approach
     switch (params.step) {
@@ -623,6 +639,9 @@ workflow NFJABBA {
             // Fall through to the next case
         case 'jabba':
             runJabba = true
+            // Fall through to the next case
+        case 'events':
+            runEvents = true
             break
         default:
             error "Invalid step: ${params.step}"
@@ -1531,6 +1550,34 @@ workflow NFJABBA {
 
 
 
+        }
+
+    }
+
+    if (runEvents) {
+        id = input_sample['meta']['sample']
+        if (params.tools && params.tools.split(',').contains('events')) {
+            if (params.step == 'events') {
+                input_events = input_sample
+                                    .map{ meta, ggraph -> [ meta + [data_type: 'ggraph'], ggraph ] }
+                EVENTS(input_events, fasta, id)
+                versions = versions.mix(EVENTS.out.versions)
+
+                events_output = Channel.empty().mix(EVENTS.out.events_output)
+            } else {
+                if (params.tools && params.tools.split(',').contains('gridss')) {
+                    EVENTS_WITH_GRIDSS(jabba_rds_with_gridss, fasta, id)
+                    versions = versions.mix(EVENTS.out.versions)
+
+                    events_output = Channel.empty().mix(EVENTS.out.events_output)
+                }
+                if (params.tools && params.tools.split(',').contains('svaba')) {
+                    EVENTS_WITH_SVABA(jabba_rds_with_svaba, fasta, id)
+                    versions = versions.mix(EVENTS.out.versions)
+
+                    events_output = Channel.empty().mix(EVENTS.out.events_output)
+                }
+            }
         }
 
     }

@@ -8,13 +8,12 @@ process EVENTS {
         'mskilab/events:latest' }"
 
     input:
-    tuple val(meta), path(gGraph), path(ref)
-    val(libdir)
+    tuple val(meta), path(gGraph)
+    path(ref)
     val(id)
-    val(outdir)
 
     output:
-    tuple val(meta), path("${outdir}/*") , emit: events_output
+    tuple val(meta), path("*complex.rds") , emit: events_output
     path "versions.yml"                   , emit: versions
 
     when:
@@ -30,11 +29,9 @@ process EVENTS {
     export RSCRIPT_PATH=\$(echo "${baseDir}/bin/Events.R")
 
     Rscript \$RSCRIPT_PATH \\
-	--libdir $libdir \\
 	--id $id \\
 	--gGraph $gGraph \\
 	--ref $ref \\
-	--outdir $outdir
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -46,8 +43,7 @@ process EVENTS {
     prefix = task.ext.prefix ?: "${meta.id}"
     def VERSION = '0.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
     """
-    mkdir -p ${outdir}
-    touch ${outdir}/dummy_output.txt
+    touch dummy_output.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

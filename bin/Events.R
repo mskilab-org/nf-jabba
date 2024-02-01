@@ -7,7 +7,6 @@ withAutoprint(
     if (!exists('opt'))
     {
         option_list = list(
-            make_option(c("-l", "--libdir"), type = "character", help = "libdir"),
             make_option(c("-i", "--id"), type = "character", help = "sample id"),
             make_option(c("-g", "--gGraph"), type = "character", help = "an RDS file contains a gGraph or JaBbA graph with cn annotation on nodes and edges"),
             make_option(c("-r", "--ref"), type = "character", help = "path to reference file"),
@@ -19,11 +18,10 @@ withAutoprint(
     }
 
 
-    ## source("~/lab/home/khadi/git/khscripts/.Rprofile")
     library(gGnome)
     library(gUtils)
     library(skitools)
-    library(khtools)
+    # library(khtools)
     reduce = GenomicRanges::reduce
 
     print(.libPaths())
@@ -47,11 +45,11 @@ withAutoprint(
     ## call complex events
     ## source(paste0(opt$libdir, "/fix.R")); relib3(gGnome); source(paste0(opt$libdir, "/fix.R")) # gUtils gr.val bug?
     gg = gG(jab = opt$gGraph) %>% events(QRP = TRUE)
-    
+
     ## gg = recip_caller(gg)
     ## ev = rbind(gg$meta$events, gg$meta$qrdup, gg$meta$qrdel, fill = T)[
     ##    ,`:=`(ev.id, seq_len(.N))]
-    ## gg$set(events = ev)                                  
+    ## gg$set(events = ev)
 
     ## tryCatch since sometimes get goofy reference mismatch
     gg = tryCatch(microhomology(gg, hg = opt$ref),
@@ -62,6 +60,6 @@ withAutoprint(
     gg$set(events = ev)
 
     saveRDS(gg, paste0(opt$outdir, '/', 'complex.rds'))
-    
+
     quit("no", status = 0)
 }, echo = FALSE)
