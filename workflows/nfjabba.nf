@@ -198,11 +198,11 @@ input_sample = ch_from_samplesheet
                 else {
                     handleError(params.step, 'coverage .rds')
                 }
-                // events
+                // events and fusions
             } else if (ggraph) {
                 meta = meta + [id: meta.sample, data_type: 'ggraph']
 
-                if (params.step == 'events') return [ meta - meta.subMap('lane'), ggraph ]
+                if (params.step == 'events' || params.step == 'fusions') return [ meta - meta.subMap('lane'), ggraph ]
                 else {
                     handleError(params.step, 'ggraph .rds')
                 }
@@ -276,6 +276,9 @@ germline_file_dryclean      = params.germline_file_dryclean      ? Channel.fromP
 
 // JaBbA
 blacklist_coverage_jabba		= params.blacklist_coverage_jabba		  ? Channel.fromPath(params.blacklist_coverage_jabba).collect() : Channel.empty()
+
+// Fusions
+gencode_fusions             = params.gencode_fusions        ? Channel.fromPath(params.gencode_fusions).collect() : Channel.empty()
 
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
 ascat_genome       = params.ascat_genome       ?: Channel.empty()
@@ -479,6 +482,11 @@ include { EVENTS                                      } from '../subworkflows/lo
 include { EVENTS as EVENTS_WITH_GRIDSS                } from '../subworkflows/local/events/main'
 include { EVENTS as EVENTS_WITH_SVABA                 } from '../subworkflows/local/events/main'
 
+// Fusions
+include { FUSIONS                                       } from '../subworkflows/local/fusions/main'
+include { FUSIONS as FUSIONS_WITH_GRIDSS                } from '../subworkflows/local/fusions/main'
+include { FUSIONS as FUSIONS_WITH_SVABA                 } from '../subworkflows/local/fusions/main'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -607,6 +615,7 @@ workflow NFJABBA {
     boolean runAscat = false
     boolean runJabba = false
     boolean runEvents = false
+    boolean runFusions = false
 
     // Set flags based on params.step using a cascading approach
     switch (params.step) {
@@ -642,6 +651,8 @@ workflow NFJABBA {
             // Fall through to the next case
         case 'events':
             runEvents = true
+        case 'fusions':
+            runFusions = true
             break
         default:
             error "Invalid step: ${params.step}"
@@ -1580,6 +1591,33 @@ workflow NFJABBA {
             }
         }
 
+    }
+
+    if (runFusions) {
+        id = input_sample['meta']['sample']
+        if (params.tools && params.tools.split(',').contains('fusions')) {
+            if (params.step == 'fusions') {
+                input_fusions = input_sample
+                                    .map{ meta, ggraph -> [ meta + [data_type: 'ggraph'], ggraph ] }
+                FUSIONS(input_fusions, gencode_fusions, id)
+                versions = versions.mix(FUSIONS.out.versions)
+
+                fusions_output = Channel.empty().mix(FUSIONS.out.fusions_output)
+            } else {
+                if (params.tools && params.tools.split(',').contains('gridss')) {
+                    FUSIONS_WITH_GRIDSS(jabba_rds_with_gridss, gencode_fusions, id)
+                    versions = versions.mix(FUSIONS.out.versions)
+
+                    fusions_output = Channel.empty().mix(FUSIONS.out.fusions_output)
+                }
+                if (params.tools && params.tools.split(',').contains('svaba')) {
+                    FUSIONS_WITH_SVABA(jabba_rds_with_svaba, gencode_fusions, id)
+                    versions = versions.mix(FUSIONS.out.versions)
+
+                    fusions_output = Channel.empty().mix(FUSIONS.out.fusions_output)
+                }
+            }
+        }
     }
 }
 
