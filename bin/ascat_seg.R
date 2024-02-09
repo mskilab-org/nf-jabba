@@ -625,6 +625,7 @@
 
     if (grepl(pattern = "txt$", x = opt$variants)) {
         variants.dt = fread(opt$variants)
+    	variants.dt[[1]] <- gsub("chr","",variants.dt[[1]])
         variants.dt[, ":="(alt.count.n = as.numeric(as.character(alt.count.n)),
                            ref.count.n = as.numeric(as.character(ref.count.n)),
                            alt.count.t = as.numeric(as.character(alt.count.t)),
