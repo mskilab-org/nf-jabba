@@ -177,8 +177,8 @@ process COERCE_SEQNAMES {
     label 'process_low'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        '/gpfs/commons/home/tdey/lab/singularity_files/nextflow_singularity_cache/mskilab-jabba_cplex-latest.img':
-        'mskilab/jabba:latest' }"
+        'docker://mskilab/jabba_cplex:latest':
+        'mskilab/jabba_cplex:latest' }"
 
     input:
     tuple val(meta), path(file)

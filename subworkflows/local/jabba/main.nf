@@ -66,18 +66,40 @@ workflow COV_JUNC_JABBA {
     // Run COERCE_SEQNAMES to force inputs to be in common
     COERCE_SEQNAMES_COV(cov_rds_jabba)
     chr_coerced_cov_rds_jabba = COERCE_SEQNAMES_COV.out.file
-
+    chr_coerced_cov_rds_jabba_to_cross = chr_coerced_cov_rds_jabba.map { tuple ->
+                                                            def (meta, cov) = tuple
+                                                            [meta.patient, meta, cov] }
     COERCE_SEQNAMES_SOM_SV(junction_jabba)
     chr_coerced_junction_jabba = COERCE_SEQNAMES_SOM_SV.out.file
+    chr_coerced_junction_jabba_to_cross = chr_coerced_junction_jabba.map { tuple ->
+                                                            def (meta, vcf) = tuple
+                                                            [meta.patient, meta, vcf] }
 
     COERCE_SEQNAMES_UNFIL_SOM_SV(j_supp_jabba)
     chr_coerced_j_supp_jabba = COERCE_SEQNAMES_UNFIL_SOM_SV.out.file
+    chr_coerced_j_supp_jabba_to_cross = chr_coerced_j_supp_jabba.map { tuple ->
+                                                            def (meta, vcf2) = tuple
+                                                            [meta.patient, meta, vcf2] }
 
     COERCE_SEQNAMES_HETS(het_pileups_wgs_jabba)
     chr_coerced_het_pileups_wgs_jabba = COERCE_SEQNAMES_HETS.out.file
+    chr_coerced_het_pileups_wgs_jabba_to_cross = chr_coerced_het_pileups_wgs_jabba.map { tuple ->
+                                                                       def (meta, hets) = tuple
+                                                                       [meta.patient, meta, hets] }
 
-    JABBA(chr_coerced_cov_rds_jabba, chr_coerced_junction_jabba, ploidy_jabba, chr_coerced_het_pileups_wgs_jabba,
-    cbs_seg_rds_jabba, cbs_nseg_rds_jabba, chr_coerced_j_supp_jabba, blacklist_junctions_jabba,
+    input_jab = chr_coerced_cov_rds_jabba_to_cross.join(chr_coerced_het_pileups_wgs_jabba_to_cross)
+                                                  .join(chr_coerced_junction_jabba_to_cross)
+                                                  .join(chr_coerced_j_supp_jabba_to_cross)
+                                                  .map{ tuples ->
+                                                            [tuples[1]] + [tuples[2]] + [tuples[4]] + [tuples[6]] + [tuples[8]]
+                                                        }
+    input_coerced_cov = input_jab.map{ meta, cov, hets, vcf, vcf2 -> [ meta, cov ] }     //chr stripped cov
+    input_coerced_hets = input_jab.map{ meta, cov, hets, vcf, vcf2 -> [ meta, hets ] }   //chr stripped hetpileups
+    input_coerced_vcf = input_jab.map{ meta, cov, hets, vcf, vcf2 -> [ meta, vcf ] }     //chr stripped somatic sv
+    input_coerced_vcf2 = input_jab.map{ meta, cov, hets, vcf, vcf2 -> [ meta, vcf2 ] }   //chr stripped unfiltered somatic sv
+
+    JABBA(input_coerced_cov, input_coerced_vcf, ploidy_jabba, input_coerced_hets,
+    cbs_seg_rds_jabba, cbs_nseg_rds_jabba, input_coerced_vcf2, blacklist_junctions_jabba,
     geno_jabba, indel_jabba, tfield_jabba,
     iter_jabba, rescue_window_jabba, rescue_all_jabba, nudgebalanced_jabba,
     edgenudge_jabba, strict_jabba, allin_jabba, field_jabba, maxna_jabba,
