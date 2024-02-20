@@ -58,7 +58,9 @@ def toolParamMap = [
     "vep"        : [params.vep_cache],
     "svaba"      : [params.indel_mask, params.germ_sv_db, params.simple_seq_db],
     "gridss"     : [params.blacklist_gridss, params.pon_gridss],
-    "hetpileups" : [params.hapmap_sites]
+    "hetpileups" : [params.hapmap_sites],
+    "fusions"    : [params.gencode_fusions],
+    "allelic_cn" : [params.mask_non_integer_balance]
 ]
 
 // Check if running tools and add their params to the checkPathParamList
@@ -174,13 +176,21 @@ input_sample = ch_from_samplesheet
                 else {
                     handleError(params.step, 'bam')
                 }
-            // jabba
+            // allelic_cn
+            } else if (cov && hets && ggraph) {
+                meta = meta + [id: meta.sample, data_type: ['cov', 'hets', 'ggraph']]
+
+                if (params.step == 'allelic_cn') return [ meta - meta.subMap('lane'), cov, hets, ggraph]
+                else {
+                    handleError(params.step, 'coverage .rds, hets .txt and JaBbA ggraph .rds')
+                }
+                //jabba
             } else if (cov && hets && vcf && vcf2 && seg && nseg) {
                 meta = meta + [id: meta.sample, data_type: ['cov', 'vcf', 'hets', 'seg']]
 
                 if (params.step == 'jabba') return [ meta - meta.subMap('lane'), cov, hets, vcf, vcf2, seg, nseg ]
                 else {
-                    handleError(params.step, 'coverage .rds and vcf')
+                    handleError(params.step, 'coverage .rds, hets .txt, SV .vcf and segs .rds')
                 }
                 // ascat
             } else if (cov && hets) {
@@ -280,6 +290,9 @@ blacklist_coverage_jabba		= params.blacklist_coverage_jabba		  ? Channel.fromPat
 // Fusions
 gencode_fusions             = params.gencode_fusions        ? Channel.fromPath(params.gencode_fusions).collect() : Channel.empty()
 
+// Allelic CN
+mask_non_integer_balance    = params.mask_non_integer_balance   ? Channel.fromPath(params.mask_non_integer_balance).collect() : Channel.empty()
+
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
 ascat_genome       = params.ascat_genome       ?: Channel.empty()
 dbsnp_vqsr         = params.dbsnp_vqsr         ? Channel.value(params.dbsnp_vqsr) : Channel.empty()
@@ -356,6 +369,22 @@ gurobi_jabba					= params.gurobi_jabba			        ?: Channel.empty()
 nonintegral_jabba				= params.nonintegral_jabba			    ?: Channel.empty()
 verbose_jabba					= params.verbose_jabba			        ?: Channel.empty()
 help_jabba					    = params.help_jabba			            ?: Channel.empty()
+
+//Alleic CN
+field_non_integer_balance = params.field_non_integer_balance ?: Channel.empty()
+hets_thresh_non_integer_balance = params.hets_thresh_non_integer_balance ?: Channel.empty()
+overwrite_non_integer_balance = params.overwrite_non_integer_balance ?: Channel.empty()
+lambda_non_integer_balance = params.lambda_non_integer_balance ?: Channel.empty()
+allin_non_integer_balance = params.allin_non_integer_balance ?: Channel.empty()
+fix_thresh_non_integer_balance = params.fix_thresh_non_integer_balance ?: Channel.empty()
+nodebounds_non_integer_balance = params.nodebounds_non_integer_balance ?: Channel.empty()
+ism_non_integer_balance = params.ism_non_integer_balance ?: Channel.empty()
+build_non_integer_balance = params.build_non_integer_balance ?: Channel.empty()
+epgap_non_integer_balance = params.epgap_non_integer_balance ?: Channel.empty()
+tilim_non_integer_balance = params.tilim_non_integer_balance ?: Channel.empty()
+gurobi_non_integer_balance = params.gurobi_non_integer_balance ?: Channel.empty()
+pad_non_integer_balance = params.pad_non_integer_balance ?: Channel.empty()
+
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
 if (params.snpeff_cache && params.tools && params.tools.contains("snpeff")) {
@@ -487,6 +516,11 @@ include { FUSIONS                                       } from '../subworkflows/
 include { FUSIONS as FUSIONS_WITH_GRIDSS                } from '../subworkflows/local/fusions/main'
 include { FUSIONS as FUSIONS_WITH_SVABA                 } from '../subworkflows/local/fusions/main'
 
+// Alleic CN
+include { NON_INTEGER_BALANCE                                       } from '../subworkflows/local/allelic_cn/main'
+include { NON_INTEGER_BALANCE as NON_INTEGER_BALANCE_WITH_GRIDSS                } from '../subworkflows/local/allelic_cn/main'
+include { NON_INTEGER_BALANCE as NON_INTEGER_BALANCE_WITH_SVABA                 } from '../subworkflows/local/allelic_cn/main'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -616,6 +650,7 @@ workflow NFJABBA {
     boolean runJabba = false
     boolean runEvents = false
     boolean runFusions = false
+    boolean runAlleicCN = false
 
     // Set flags based on params.step using a cascading approach
     switch (params.step) {
@@ -653,6 +688,8 @@ workflow NFJABBA {
             runEvents = true
         case 'fusions':
             runFusions = true
+        case 'alleic_cn':
+            runAlleicCN = true
             break
         default:
             error "Invalid step: ${params.step}"
@@ -1475,9 +1512,6 @@ workflow NFJABBA {
 
                 jabba_rds_with_gridss           = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_rds)
                 jabba_gg_with_gridss            = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_gg)
-                jabba_vcf_with_gridss           = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_vcf)
-                jabba_raw_rds_with_gridss       = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_raw_rds)
-                opti_with_gridss                = Channel.empty().mix(JABBA_WITH_GRIDSS.out.opti)
                 jabba_seg_with_gridss           = Channel.empty().mix(JABBA_WITH_GRIDSS.out.jabba_seg)
                 karyograph_with_gridss          = Channel.empty().mix(JABBA_WITH_GRIDSS.out.karyograph)
                 versions_with_gridss            = versions.mix(JABBA_WITH_GRIDSS.out.versions)
@@ -1615,6 +1649,99 @@ workflow NFJABBA {
                     versions = versions.mix(FUSIONS.out.versions)
 
                     fusions_output = Channel.empty().mix(FUSIONS.out.fusions_output)
+                }
+            }
+        }
+    }
+
+    if (runAlleicCN) {
+        id_non_integer_balance = input_sample['meta']['sample']
+        if (params.tools && params.tools.split(',').contains('alleic_cn')) {
+            if (params.step == 'alleic_cn') {
+                input_cov_non_integer_balance = input_sample
+                                    .map{ meta, cov, -> [ meta + [data_type: ['cov']], cov ] }
+                input_hets_non_integer_balance = input_sample
+                                    .map{ meta, hets, -> [ meta + [data_type: ['hets']], hets ] }
+                input_ggraph_non_integer_balance = input_sample
+                                    .map{ meta, ggraph, -> [ meta + [data_type: ['ggraph']], ggraph ] }
+                NON_INTEGER_BALANCE(
+                    input_cov_non_integer_balance,
+                    input_hets_non_integer_balance,
+                    input_ggraph_non_integer_balance,
+					id_non_integer_balance,
+					field_non_integer_balance,
+					hets_thresh_non_integer_balance,
+                    mask_non_integer_balance,
+					overwrite_non_integer_balance,
+					lambda_non_integer_balance,
+					allin_non_integer_balance,
+					fix_thresh_non_integer_balance,
+					nodebounds_non_integer_balance,
+					ism_non_integer_balance,
+					build_non_integer_balance,
+					epgap_non_integer_balance,
+					tilim_non_integer_balance,
+					gurobi_non_integer_balance,
+                    fasta,
+					pad_non_integer_balance,
+                )
+                versions = versions.mix(NON_INTEGER_BALANCE.out.versions)
+
+                non_integer_balance_balanced_gg = Channel.empty().mix(NON_INTEGER_BALANCE.out.non_integer_balance_balanced_gg)
+                non_integer_balance_hets_gg = Channel.empty().mix(NON_INTEGER_BALANCE.out.non_integer_balance_hets_gg)
+            } else {
+                if (params.tools && params.tools.split(',').contains('gridss')) {
+                    NON_INTEGER_BALANCE_WITH_GRIDSS(
+                        jabba_rds_with_gridss,
+                        tumor_dryclean_cov,
+                        sites_from_het_pileups_wgs,
+                        id_non_integer_balance,
+                        field_non_integer_balance,
+                        hets_thresh_non_integer_balance,
+                        mask_non_integer_balance,
+                        overwrite_non_integer_balance,
+                        lambda_non_integer_balance,
+                        allin_non_integer_balance,
+                        fix_thresh_non_integer_balance,
+                        nodebounds_non_integer_balance,
+                        ism_non_integer_balance,
+                        build_non_integer_balance,
+                        epgap_non_integer_balance,
+                        tilim_non_integer_balance,
+                        gurobi_non_integer_balance,
+                        fasta,
+                        pad_non_integer_balance,
+                    )
+                    versions = versions.mix(NON_INTEGER_BALANCE_WITH_GRIDSS.out.versions)
+
+                    non_integer_balance_balanced_gg = Channel.empty().mix(NON_INTEGER_BALANCE_WITH_GRIDSS.out.non_integer_balance_balanced_gg)
+                    non_integer_balance_hets_gg = Channel.empty().mix(NON_INTEGER_BALANCE_WITH_GRIDSS.out.non_integer_balance_hets_gg)
+                }
+                if (params.tools && params.tools.split(',').contains('svaba')) {
+                    NON_INTEGER_BALANCE_WITH_SVABA(
+                        jabba_rds_with_svaba,
+                        tumor_dryclean_cov,
+                        sites_from_het_pileups_wgs,
+                        id_non_integer_balance,
+                        hets_thresh_non_integer_balance,
+                        mask_non_integer_balance,
+                        overwrite_non_integer_balance,
+                        lambda_non_integer_balance,
+                        allin_non_integer_balance,
+                        fix_thresh_non_integer_balance,
+                        nodebounds_non_integer_balance,
+                        ism_non_integer_balance,
+                        build_non_integer_balance,
+                        epgap_non_integer_balance,
+                        tilim_non_integer_balance,
+                        gurobi_non_integer_balance,
+                        fasta,
+                        pad_non_integer_balance,
+                    )
+                    versions = versions.mix(NON_INTEGER_BALANCE_WITH_SVABA.out.versions)
+
+                    non_integer_balance_balanced_gg = Channel.empty().mix(NON_INTEGER_BALANCE_WITH_SVABA.out.non_integer_balance_balanced_gg)
+                    non_integer_balance_hets_gg = Channel.empty().mix(NON_INTEGER_BALANCE_WITH_SVABA.out.non_integer_balance_hets_gg)
                 }
             }
         }

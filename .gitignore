@@ -8,4 +8,5 @@ testing*
 *.pyc
 .nf-test/
 tests/test_data/
+tests/test_runs/
 .nf-test.log
