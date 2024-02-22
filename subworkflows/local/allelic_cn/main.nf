@@ -59,3 +59,66 @@ workflow NON_INTEGER_BALANCE {
 
     versions
 }
+
+workflow LP_PHASED_BALANCE {
+    take:
+	hets_gg_lp_phased_balance             // [meta, ggraph]
+	het_pileups_wgs_lp_phased_balance     // [meta, hets]
+    id_lp_phased_balance
+    lambda_lp_phased_balance
+    cnloh_lp_phased_balance
+    major_lp_phased_balance
+    allin_lp_phased_balance
+    marginal_lp_phased_balance
+    from_maf_lp_phased_balance
+    mask_lp_phased_balance
+    ism_lp_phased_balance
+    epgap_lp_phased_balance
+    hets_thresh_lp_phased_balance
+    min_bins_lp_phased_balance
+    min_width_lp_phased_balance
+    trelim_lp_phased_balance
+    reward_lp_phased_balance
+    nodefileind_lp_phased_balance
+    tilim_lp_phased_balance
+
+    main:
+    versions            = Channel.empty()
+    lp_phased_balance_balanced_gg = Channel.empty()
+    lp_phased_balance_binstats_gg = Channel.empty()
+    lp_phased_balance_unphased_allelic_gg = Channel.empty()
+
+    LP_PHASED_BALANCE_WITH_GRIDSS(
+        hets_gg_lp_phased_balance,             // [meta, ggraph]
+        het_pileups_wgs_lp_phased_balance,     // [meta, hets]
+        id_lp_phased_balance,
+        lambda_lp_phased_balance,
+        cnloh_lp_phased_balance,
+        major_lp_phased_balance,
+        allin_lp_phased_balance,
+        marginal_lp_phased_balance,
+        from_maf_lp_phased_balance,
+        mask_lp_phased_balance,
+        ism_lp_phased_balance,
+        epgap_lp_phased_balance,
+        hets_thresh_lp_phased_balance,
+        min_bins_lp_phased_balance,
+        min_width_lp_phased_balance,
+        trelim_lp_phased_balance,
+        reward_lp_phased_balance,
+        nodefileind_lp_phased_balance,
+        tilim_lp_phased_balance,
+    )
+
+    lp_phased_balance_balanced_gg = LP_PHASED_BALANCE.out.lp_phased_balance_balanced_gg
+    lp_phased_balance_binstats_gg = LP_PHASED_BALANCE.out.lp_phased_balance_binstats_gg
+    lp_phased_balance_unphased_allelic_gg = LP_PHASED_BALANCE.out.lp_phased_balance_unphased_allelic_gg
+    versions = LP_PHASED_BALANCE.out.versions
+
+    emit:
+    lp_phased_balance_balanced_gg
+    lp_phased_balance_binstats_gg
+    lp_phased_balance_unphased_allelic_gg
+
+    versions
+}

@@ -60,7 +60,7 @@ def toolParamMap = [
     "gridss"     : [params.blacklist_gridss, params.pon_gridss],
     "hetpileups" : [params.hapmap_sites],
     "fusions"    : [params.gencode_fusions],
-    "allelic_cn" : [params.mask_non_integer_balance]
+    "allelic_cn" : [params.mask_non_integer_balance, params.mask_lp_phased_balance]
 ]
 
 // Check if running tools and add their params to the checkPathParamList
@@ -292,6 +292,7 @@ gencode_fusions             = params.gencode_fusions        ? Channel.fromPath(p
 
 // Allelic CN
 mask_non_integer_balance    = params.mask_non_integer_balance   ? Channel.fromPath(params.mask_non_integer_balance).collect() : Channel.empty()
+mask_lp_phased_balance    = params.mask_lp_phased_balance   ? Channel.fromPath(params.mask_lp_phased_balance).collect() : Channel.empty()
 
 // Initialize value channels based on params, defined in the params.genomes[params.genome] scope
 ascat_genome       = params.ascat_genome       ?: Channel.empty()
@@ -370,7 +371,7 @@ nonintegral_jabba				= params.nonintegral_jabba			    ?: Channel.empty()
 verbose_jabba					= params.verbose_jabba			        ?: Channel.empty()
 help_jabba					    = params.help_jabba			            ?: Channel.empty()
 
-//Alleic CN
+//Alleic CN (Non-integer balance)
 field_non_integer_balance = params.field_non_integer_balance ?: Channel.empty()
 hets_thresh_non_integer_balance = params.hets_thresh_non_integer_balance ?: Channel.empty()
 overwrite_non_integer_balance = params.overwrite_non_integer_balance ?: Channel.empty()
@@ -385,6 +386,22 @@ tilim_non_integer_balance = params.tilim_non_integer_balance ?: Channel.empty()
 gurobi_non_integer_balance = params.gurobi_non_integer_balance ?: Channel.empty()
 pad_non_integer_balance = params.pad_non_integer_balance ?: Channel.empty()
 
+// ...(LP Phased balance)
+lambda_lp_phased_balance = params.lambda_lp_phased_balance ?: Channel.empty()
+cnloh_lp_phased_balance = params.cnloh_lp_phased_balance ?: Channel.empty()
+major_lp_phased_balance = params.major_lp_phased_balance ?: Channel.empty()
+allin_lp_phased_balance = params.allin_lp_phased_balance ?: Channel.empty()
+marginal_lp_phased_balance = params.marginal_lp_phased_balance ?: Channel.empty()
+from_maf_lp_phased_balance = params.from_maf_lp_phased_balance ?: Channel.empty()
+ism_lp_phased_balance = params.ism_lp_phased_balance ?: Channel.empty()
+epgap_lp_phased_balance = params.epgap_lp_phased_balance ?: Channel.empty()
+hets_thresh_lp_phased_balance = params.hets_thresh_lp_phased_balance ?: Channel.empty()
+min_bins_lp_phased_balance = params.min_bins_lp_phased_balance ?: Channel.empty()
+min_width_lp_phased_balance = params.min_width_lp_phased_balance ?: Channel.empty()
+trelim_lp_phased_balance = params.trelim_lp_phased_balance ?: Channel.empty()
+reward_lp_phased_balance = params.reward_lp_phased_balance ?: Channel.empty()
+nodefileind_lp_phased_balance = params.nodefileind_lp_phased_balance ?: Channel.empty()
+tilim_lp_phased_balance = params.tilim_lp_phased_balance ?: Channel.empty()
 
 // Initialize files channels based on params, not defined within the params.genomes[params.genome] scope
 if (params.snpeff_cache && params.tools && params.tools.contains("snpeff")) {
@@ -520,6 +537,11 @@ include { FUSIONS as FUSIONS_WITH_SVABA                 } from '../subworkflows/
 include { NON_INTEGER_BALANCE                                       } from '../subworkflows/local/allelic_cn/main'
 include { NON_INTEGER_BALANCE as NON_INTEGER_BALANCE_WITH_GRIDSS                } from '../subworkflows/local/allelic_cn/main'
 include { NON_INTEGER_BALANCE as NON_INTEGER_BALANCE_WITH_SVABA                 } from '../subworkflows/local/allelic_cn/main'
+
+include { LP_PHASED_BALANCE                                       } from '../subworkflows/local/allelic_cn/main'
+include { LP_PHASED_BALANCE as LP_PHASED_BALANCE_WITH_GRIDSS                } from '../subworkflows/local/allelic_cn/main'
+include { LP_PHASED_BALANCE as LP_PHASED_BALANCE_WITH_SVABA                 } from '../subworkflows/local/allelic_cn/main'
+
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1655,20 +1677,21 @@ workflow NFJABBA {
     }
 
     if (runAlleicCN) {
-        id_non_integer_balance = input_sample['meta']['sample']
+        id_allelic_cn = input_sample['meta']['sample']
         if (params.tools && params.tools.split(',').contains('alleic_cn')) {
             if (params.step == 'alleic_cn') {
                 input_cov_non_integer_balance = input_sample
                                     .map{ meta, cov, -> [ meta + [data_type: ['cov']], cov ] }
-                input_hets_non_integer_balance = input_sample
+                input_hets_allelic_cn = input_sample
                                     .map{ meta, hets, -> [ meta + [data_type: ['hets']], hets ] }
                 input_ggraph_non_integer_balance = input_sample
                                     .map{ meta, ggraph, -> [ meta + [data_type: ['ggraph']], ggraph ] }
+
                 NON_INTEGER_BALANCE(
                     input_cov_non_integer_balance,
-                    input_hets_non_integer_balance,
+                    input_hets_allelic_cn,
                     input_ggraph_non_integer_balance,
-					id_non_integer_balance,
+					id_allelic_cn,
 					field_non_integer_balance,
 					hets_thresh_non_integer_balance,
                     mask_non_integer_balance,
@@ -1689,13 +1712,39 @@ workflow NFJABBA {
 
                 non_integer_balance_balanced_gg = Channel.empty().mix(NON_INTEGER_BALANCE.out.non_integer_balance_balanced_gg)
                 non_integer_balance_hets_gg = Channel.empty().mix(NON_INTEGER_BALANCE.out.non_integer_balance_hets_gg)
+
+                LP_PHASED_BALANCE(
+                    non_integer_balance_hets_gg,
+                    input_hets_allelic_cn,
+					id_allelic_cn,
+                    lambda_lp_phased_balance,
+                    cnloh_lp_phased_balance,
+                    major_lp_phased_balance,
+                    allin_lp_phased_balance,
+                    marginal_lp_phased_balance,
+                    from_maf_lp_phased_balance,
+                    mask_lp_phased_balance,
+                    ism_lp_phased_balance,
+                    epgap_lp_phased_balance,
+                    hets_thresh_lp_phased_balance,
+                    min_bins_lp_phased_balance,
+                    min_width_lp_phased_balance,
+                    trelim_lp_phased_balance,
+                    reward_lp_phased_balance,
+                    nodefileind_lp_phased_balance,
+                    tilim_lp_phased_balance,
+                )
+
+                lp_phased_balance_balanced_gg = Channel.empty().mix(LP_PHASED_BALANCE.out.lp_phased_balance_balanced_gg)
+                lp_phased_balance_binstats_gg = Channel.empty().mix(LP_PHASED_BALANCE.out.lp_phased_balance_binstats_gg)
+                lp_phased_balance_unphased_allelic_gg = Channel.empty().mix(LP_PHASED_BALANCE.out.lp_phased_balance_unphased_allelic_gg)
             } else {
                 if (params.tools && params.tools.split(',').contains('gridss')) {
                     NON_INTEGER_BALANCE_WITH_GRIDSS(
                         jabba_rds_with_gridss,
                         tumor_dryclean_cov,
                         sites_from_het_pileups_wgs,
-                        id_non_integer_balance,
+                        id_allelic_cn,
                         field_non_integer_balance,
                         hets_thresh_non_integer_balance,
                         mask_non_integer_balance,
@@ -1716,13 +1765,39 @@ workflow NFJABBA {
 
                     non_integer_balance_balanced_gg = Channel.empty().mix(NON_INTEGER_BALANCE_WITH_GRIDSS.out.non_integer_balance_balanced_gg)
                     non_integer_balance_hets_gg = Channel.empty().mix(NON_INTEGER_BALANCE_WITH_GRIDSS.out.non_integer_balance_hets_gg)
+
+                    LP_PHASED_BALANCE_WITH_GRIDSS(
+                        non_integer_balance_hets_gg,
+                        sites_from_het_pileups_wgs,
+                        id_allelic_cn,
+                        lambda_lp_phased_balance,
+                        cnloh_lp_phased_balance,
+                        major_lp_phased_balance,
+                        allin_lp_phased_balance,
+                        marginal_lp_phased_balance,
+                        from_maf_lp_phased_balance,
+                        mask_lp_phased_balance,
+                        ism_lp_phased_balance,
+                        epgap_lp_phased_balance,
+                        hets_thresh_lp_phased_balance,
+                        min_bins_lp_phased_balance,
+                        min_width_lp_phased_balance,
+                        trelim_lp_phased_balance,
+                        reward_lp_phased_balance,
+                        nodefileind_lp_phased_balance,
+                        tilim_lp_phased_balance,
+                    )
+
+                    lp_phased_balance_balanced_gg = Channel.empty().mix(LP_PHASED_BALANCE_WITH_GRIDSS.out.lp_phased_balance_balanced_gg)
+                    lp_phased_balance_binstats_gg = Channel.empty().mix(LP_PHASED_BALANCE_WITH_GRIDSS.out.lp_phased_balance_binstats_gg)
+                    lp_phased_balance_unphased_allelic_gg = Channel.empty().mix(LP_PHASED_BALANCE_WITH_GRIDSS.out.lp_phased_balance_unphased_allelic_gg)
                 }
                 if (params.tools && params.tools.split(',').contains('svaba')) {
                     NON_INTEGER_BALANCE_WITH_SVABA(
                         jabba_rds_with_svaba,
                         tumor_dryclean_cov,
                         sites_from_het_pileups_wgs,
-                        id_non_integer_balance,
+                        id_allelic_cn,
                         hets_thresh_non_integer_balance,
                         mask_non_integer_balance,
                         overwrite_non_integer_balance,
@@ -1742,6 +1817,32 @@ workflow NFJABBA {
 
                     non_integer_balance_balanced_gg = Channel.empty().mix(NON_INTEGER_BALANCE_WITH_SVABA.out.non_integer_balance_balanced_gg)
                     non_integer_balance_hets_gg = Channel.empty().mix(NON_INTEGER_BALANCE_WITH_SVABA.out.non_integer_balance_hets_gg)
+
+                    LP_PHASED_BALANCE(
+                        non_integer_balance_hets_gg,
+                        sites_from_het_pileups_wgs,
+                        id_allelic_cn,
+                        lambda_lp_phased_balance,
+                        cnloh_lp_phased_balance,
+                        major_lp_phased_balance,
+                        allin_lp_phased_balance,
+                        marginal_lp_phased_balance,
+                        from_maf_lp_phased_balance,
+                        mask_lp_phased_balance,
+                        ism_lp_phased_balance,
+                        epgap_lp_phased_balance,
+                        hets_thresh_lp_phased_balance,
+                        min_bins_lp_phased_balance,
+                        min_width_lp_phased_balance,
+                        trelim_lp_phased_balance,
+                        reward_lp_phased_balance,
+                        nodefileind_lp_phased_balance,
+                        tilim_lp_phased_balance,
+                    )
+
+                    lp_phased_balance_balanced_gg = Channel.empty().mix(LP_PHASED_BALANCE.out.lp_phased_balance_balanced_gg)
+                    lp_phased_balance_binstats_gg = Channel.empty().mix(LP_PHASED_BALANCE.out.lp_phased_balance_binstats_gg)
+                    lp_phased_balance_unphased_allelic_gg = Channel.empty().mix(LP_PHASED_BALANCE.out.lp_phased_balance_unphased_allelic_gg)
                 }
             }
         }
