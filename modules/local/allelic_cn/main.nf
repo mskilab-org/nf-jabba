@@ -126,7 +126,7 @@ process LP_PHASED_BALANCE {
     def VERSION = '0.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """
-    Rscript \${baseDir}/bin/non_integer_balance.R \\
+    Rscript \${baseDir}/bin/lp_phased_balance.R \\
         --id $id \\
         --jab $hets_gg \\
         --hets $hets \\
