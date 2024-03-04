@@ -1,2 +1,12 @@
-Nov-20 17:46:16.940 [main] INFO  com.askimed.nf.test.App - nf-test 0.8.1
-Nov-20 17:46:16.960 [main] INFO  com.askimed.nf.test.App - Arguments: [init]
+Jan-16 10:10:49.572 [main] INFO  com.askimed.nf.test.App - nf-test 0.8.2
+Jan-16 10:10:49.580 [main] INFO  com.askimed.nf.test.App - Arguments: [test, tests/modules/local/gridss/gridss/main.nf.test]
+Jan-16 10:10:49.580 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Load config from file /Users/diders01/projects/jabba_prod/nf-jabba/nf-test.config...
+Jan-16 10:10:49.758 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Detected 1 test files.
+Jan-16 10:10:49.827 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/bin' --> '/Users/diders01/projects/jabba_prod/nf-jabba/bin'
+Jan-16 10:10:49.828 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/lib' --> '/Users/diders01/projects/jabba_prod/nf-jabba/lib'
+Jan-16 10:10:49.828 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/assets' --> '/Users/diders01/projects/jabba_prod/nf-jabba/assets'
+Jan-16 10:10:49.828 [main] DEBUG com.askimed.nf.test.core.AbstractTest - Stage 1 user provided files...
+Jan-16 10:10:49.828 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/tests/test_data/' --> '/Users/diders01/projects/jabba_prod/nf-jabba/tests/test_data'
+Jan-16 10:10:49.830 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Started test plan
+Jan-16 10:10:49.830 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Running testsuite 'Test Process GRIDSS_GRIDSS' from file '/Users/diders01/projects/jabba_prod/nf-jabba/tests/modules/local/gridss/gridss/main.nf.test'.
+Jan-16 10:10:49.830 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Run test '1a4fc5dc: Should run GRIDSS without failures'. type: com.askimed.nf.test.lang.process.ProcessTest

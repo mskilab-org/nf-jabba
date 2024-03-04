@@ -18,7 +18,7 @@ process ASCAT_SEG {
     val(from_maf)                                                    // channel: whether to start from MAF, default=FALSE
 
     output:
-    tuple val(meta), path("*ascat_pp.rds")        , emit: purityploidy, optional:true
+    tuple val(meta), path("*ascat_pp.rds")        , emit: purityploidy
     tuple val(meta), path("*ascat_seg.rds")       , emit: segments, optional:true
     path "versions.yml"                           , emit: versions
 

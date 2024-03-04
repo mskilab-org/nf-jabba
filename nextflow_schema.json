@@ -362,7 +362,7 @@
                     "description": "Dryclean PON",
                     "help_text": "Provide the PON .rds file based on genome version"
                 },
-                "centered_dryclean": {
+                "center_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Option to specify whether the samples are centered",
@@ -422,20 +422,12 @@
                     "help_text": "Path to file annotated with germline calls, if germline.filter == TRUE",
                     "default": "NA"
                 },
-                "human_dryclean": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Specify if the samples under consideration are human",
-                    "hidden": true,
-                    "help_text": "Specify if the samples under consideration are human",
-                    "default": "TRUE"
-                },
                 "field_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",
                     "description": "Field name in GRanges metadata to use for drycleaning",
                     "help_text": "Specify Field name in GRanges metadata to use for drycleaning",
-                    "default": "reads.corrected"
+                    "default": "reads"
                 },
                 "build_dryclean": {
                     "type": "string",
@@ -573,7 +565,8 @@
                     "type": "string",
                     "default": "TRUE",
                     "hidden": true,
-                    "fa_icon": "fas fa-forward"
+                    "fa_icon": "fas fa-forward",
+                    "description": "whether to rescue all lower confidence junctions within the window, or just the best one."
                 },
                 "nudgebalanced_jabba": {
                     "type": "string",
@@ -666,7 +659,8 @@
                 "fix_thres_jabba": {
                     "type": "integer",
                     "default": -1,
-                    "fa_icon": "fas fa-wrench"
+                    "fa_icon": "fas fa-wrench",
+                    "description": "threshold for calling convergence"
                 },
                 "lp_jabba": {
                     "type": "string",
@@ -698,7 +692,8 @@
                 "nonintegral_jabba": {
                     "type": "string",
                     "default": "FALSE",
-                    "fa_icon": "fas fa-forward"
+                    "fa_icon": "fas fa-forward",
+                    "description": "whether to allow non-integral solutions"
                 },
                 "verbose_jabba": {
                     "type": "string",

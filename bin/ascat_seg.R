@@ -625,6 +625,7 @@
 
     if (grepl(pattern = "txt$", x = opt$variants)) {
         variants.dt = fread(opt$variants)
+    	variants.dt[[1]] <- gsub("chr","",variants.dt[[1]])
         variants.dt[, ":="(alt.count.n = as.numeric(as.character(alt.count.n)),
                            ref.count.n = as.numeric(as.character(ref.count.n)),
                            alt.count.t = as.numeric(as.character(alt.count.t)),
@@ -677,11 +678,13 @@
     ## ## transfer ratio
     message("Transferring ratio")
     ## gc correct tumor and normal
+    ## Edit by Tanubrata: Adds a fix to the column names to do GC correction when passing CBS coverge, else
+    ## ASCAT breaks when passing raw drycleaned coverage without GC correction
     if (opt$gc) {
-        if ("tumor" %in% names(values(cov.gr)) & "normal" %in% names(values(cov.gr))) {
+        if ("tum.counts" %in% names(values(cov.gr)) & "norm.counts" %in% names(values(cov.gr))) {
             message("Applying GC correction")
-            tum.gr = khtools::.gc(cov.gr, "tumor")
-            norm.gr = khtools::.gc(cov.gr, "normal")
+            tum.gr = khtools::.gc(cov.gr, "tum.counts")
+            norm.gr = khtools::.gc(cov.gr, "norm.counts")
             ratio.gr = khtools::.gc(cov.gr, "ratio")
             values(cov.gr)[, opt$field] = values(ratio.gr)[, "ratio"]
         } else {
