@@ -3,8 +3,8 @@ process JABBA {
     label 'process_high'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://mskilab/jabba_cplex:latest':
-        'mskilab/jabba_cplex:latest' }"
+        'docker://mskilab/jabba:latest':
+        'mskilab/jabba:latest' }"
 
     input:
     tuple val(meta), path(cov_rds)
@@ -177,8 +177,8 @@ process COERCE_SEQNAMES {
     label 'process_low'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://mskilab/jabba_cplex:latest':
-        'mskilab/jabba_cplex:latest' }"
+        'docker://mskilab/jabba:latest':
+        'mskilab/jabba:latest' }"
 
     input:
     tuple val(meta), path(file)
