@@ -8,7 +8,7 @@ nextflow_pipeline {
         when {
             params {
                 outdir  = "results"
-                input   = "$projectDir/tests/test_data/samplesheet.csv"
+                input   = "$projectDir/tests/test_runs/integration_test_samplesheet.csv"
                 step    = "sv_calling"
             }
         }

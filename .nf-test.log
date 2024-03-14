@@ -1,12 +1,15 @@
-Jan-16 10:10:49.572 [main] INFO  com.askimed.nf.test.App - nf-test 0.8.2
-Jan-16 10:10:49.580 [main] INFO  com.askimed.nf.test.App - Arguments: [test, tests/modules/local/gridss/gridss/main.nf.test]
-Jan-16 10:10:49.580 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Load config from file /Users/diders01/projects/jabba_prod/nf-jabba/nf-test.config...
-Jan-16 10:10:49.758 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Detected 1 test files.
-Jan-16 10:10:49.827 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/bin' --> '/Users/diders01/projects/jabba_prod/nf-jabba/bin'
-Jan-16 10:10:49.828 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/lib' --> '/Users/diders01/projects/jabba_prod/nf-jabba/lib'
-Jan-16 10:10:49.828 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/assets' --> '/Users/diders01/projects/jabba_prod/nf-jabba/assets'
-Jan-16 10:10:49.828 [main] DEBUG com.askimed.nf.test.core.AbstractTest - Stage 1 user provided files...
-Jan-16 10:10:49.828 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/Users/diders01/projects/jabba_prod/nf-jabba/.nf-test/tests/1a4fc5dc640a75b58bcf88f15a9b2cb6/meta/tests/test_data/' --> '/Users/diders01/projects/jabba_prod/nf-jabba/tests/test_data'
-Jan-16 10:10:49.830 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Started test plan
-Jan-16 10:10:49.830 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Running testsuite 'Test Process GRIDSS_GRIDSS' from file '/Users/diders01/projects/jabba_prod/nf-jabba/tests/modules/local/gridss/gridss/main.nf.test'.
-Jan-16 10:10:49.830 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Run test '1a4fc5dc: Should run GRIDSS without failures'. type: com.askimed.nf.test.lang.process.ProcessTest
+Mar-07 12:49:11.211 [main] INFO  com.askimed.nf.test.App - nf-test 0.8.2
+Mar-07 12:49:11.231 [main] INFO  com.askimed.nf.test.App - Arguments: [test, tests/main.nf.test]
+Mar-07 12:49:11.232 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Load config from file /gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/nf-test.config...
+Mar-07 12:49:11.653 [main] INFO  com.askimed.nf.test.commands.RunTestsCommand - Detected 1 test files.
+Mar-07 12:49:11.865 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/.nf-test/tests/3bffb7994b63d3c3c0d3fe65d3c062fe/meta/bin' --> '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/bin'
+Mar-07 12:49:11.865 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/.nf-test/tests/3bffb7994b63d3c3c0d3fe65d3c062fe/meta/lib' --> '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/lib'
+Mar-07 12:49:11.866 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/.nf-test/tests/3bffb7994b63d3c3c0d3fe65d3c062fe/meta/assets' --> '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/assets'
+Mar-07 12:49:11.867 [main] DEBUG com.askimed.nf.test.core.AbstractTest - Stage 1 user provided files...
+Mar-07 12:49:11.868 [main] INFO  com.askimed.nf.test.config.FileStaging - Create symlink '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/.nf-test/tests/3bffb7994b63d3c3c0d3fe65d3c062fe/meta/tests/test_data/' --> '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/tests/test_data'
+Mar-07 12:49:11.875 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Started test plan
+Mar-07 12:49:11.875 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Running testsuite 'Test pipeline' from file '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/tests/main.nf.test'.
+Mar-07 12:49:11.876 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Run test '3bffb799: Should run entire nf-jabba pipeline without failure'. type: com.askimed.nf.test.lang.pipeline.PipelineTest
+Mar-07 13:32:40.336 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Test '3bffb799: Should run entire nf-jabba pipeline without failure' finished. status: PASSED
+Mar-07 13:32:40.340 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Testsuite 'Test pipeline' finished. snapshot file: false, skipped tests: false, failed tests: false
+Mar-07 13:32:40.340 [main] INFO  com.askimed.nf.test.core.TestExecutionEngine - Executed 1 tests. 0 tests failed. Done!

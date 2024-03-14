@@ -220,6 +220,7 @@ input_sample = ch_from_samplesheet
                 error("Missing or unknown field in csv file header. Please check your samplesheet")
             }
         }
+
 if (!params.dbsnp && !params.known_indels) {
     if (params.step in ['alignment', 'markduplicates', 'prepare_recalibration', 'recalibrate'] && (!params.skip_tools || (params.skip_tools && !params.skip_tools.split(',').contains('baserecalibrator')))) {
         log.warn "Base quality score recalibration requires at least one resource file. Please provide at least one of `--dbsnp` or `--known_indels`\nYou can skip this step in the workflow by adding `--skip_tools baserecalibrator` to the command."
@@ -524,23 +525,23 @@ include { COV_JUNC_JABBA as JABBA_WITH_SVABA          } from '../subworkflows/lo
 include { COV_JUNC_JABBA as JABBA_WITH_GRIDSS         } from '../subworkflows/local/jabba/main'
 
 // Events
-include { EVENTS                                      } from '../subworkflows/local/events/main'
-include { EVENTS as EVENTS_WITH_GRIDSS                } from '../subworkflows/local/events/main'
-include { EVENTS as EVENTS_WITH_SVABA                 } from '../subworkflows/local/events/main'
+include { GGRAPH_EVENTS as EVENTS                            } from '../subworkflows/local/events/main'
+include { GGRAPH_EVENTS as EVENTS_WITH_GRIDSS                } from '../subworkflows/local/events/main'
+include { GGRAPH_EVENTS as EVENTS_WITH_SVABA                 } from '../subworkflows/local/events/main'
 
 // Fusions
-include { FUSIONS                                       } from '../subworkflows/local/fusions/main'
-include { FUSIONS as FUSIONS_WITH_GRIDSS                } from '../subworkflows/local/fusions/main'
-include { FUSIONS as FUSIONS_WITH_SVABA                 } from '../subworkflows/local/fusions/main'
+include { GGRAPH_FUSIONS as FUSIONS                            } from '../subworkflows/local/fusions/main'
+include { GGRAPH_FUSIONS as FUSIONS_WITH_GRIDSS                } from '../subworkflows/local/fusions/main'
+include { GGRAPH_FUSIONS as FUSIONS_WITH_SVABA                 } from '../subworkflows/local/fusions/main'
 
 // Alleic CN
-include { NON_INTEGER_BALANCE                                       } from '../subworkflows/local/allelic_cn/main'
-include { NON_INTEGER_BALANCE as NON_INTEGER_BALANCE_WITH_GRIDSS                } from '../subworkflows/local/allelic_cn/main'
-include { NON_INTEGER_BALANCE as NON_INTEGER_BALANCE_WITH_SVABA                 } from '../subworkflows/local/allelic_cn/main'
+include { COV_GGRAPH_NON_INTEGER_BALANCE as NON_INTEGER_BALANCE                            } from '../subworkflows/local/allelic_cn/main'
+include { COV_GGRAPH_NON_INTEGER_BALANCE as NON_INTEGER_BALANCE_WITH_GRIDSS                } from '../subworkflows/local/allelic_cn/main'
+include { COV_GGRAPH_NON_INTEGER_BALANCE as NON_INTEGER_BALANCE_WITH_SVABA                 } from '../subworkflows/local/allelic_cn/main'
 
-include { LP_PHASED_BALANCE                                       } from '../subworkflows/local/allelic_cn/main'
-include { LP_PHASED_BALANCE as LP_PHASED_BALANCE_WITH_GRIDSS                } from '../subworkflows/local/allelic_cn/main'
-include { LP_PHASED_BALANCE as LP_PHASED_BALANCE_WITH_SVABA                 } from '../subworkflows/local/allelic_cn/main'
+include { COV_GGRAPH_LP_PHASED_BALANCE as LP_PHASED_BALANCE                            } from '../subworkflows/local/allelic_cn/main'
+include { COV_GGRAPH_LP_PHASED_BALANCE as LP_PHASED_BALANCE_WITH_GRIDSS                } from '../subworkflows/local/allelic_cn/main'
+include { COV_GGRAPH_LP_PHASED_BALANCE as LP_PHASED_BALANCE_WITH_SVABA                 } from '../subworkflows/local/allelic_cn/main'
 
 
 /*
@@ -710,7 +711,7 @@ workflow NFJABBA {
             runEvents = true
         case 'fusions':
             runFusions = true
-        case 'alleic_cn':
+        case 'allelic_cn':
             runAlleicCN = true
             break
         default:
@@ -1268,19 +1269,39 @@ workflow NFJABBA {
         }
         if (params.tools && params.tools.split(',').contains('dryclean')) {
             // Dryclean for both tumor & normal
-            TUMOR_DRYCLEAN(tumor_frag_cov, pon_dryclean, centered_dryclean,
-                    cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
-                    blacklist_dryclean, blacklist_path_dryclean,
-                    germline_filter_dryclean, germline_file_dryclean, human_dryclean,
-                    field_dryclean, build_dryclean)
+            TUMOR_DRYCLEAN(
+                    tumor_frag_cov,
+                    pon_dryclean,
+                    centered_dryclean,
+                    cbs_dryclean,
+                    cnsignif_dryclean,
+                    wholeGenome_dryclean,
+                    blacklist_dryclean,
+                    blacklist_path_dryclean,
+                    germline_filter_dryclean,
+                    germline_file_dryclean,
+                    human_dryclean,
+                    field_dryclean,
+                    build_dryclean
+                    )
 
             tumor_dryclean_cov = Channel.empty().mix(TUMOR_DRYCLEAN.out.dryclean_cov)
 
-            NORMAL_DRYCLEAN(normal_frag_cov, pon_dryclean, centered_dryclean,
-                    cbs_dryclean, cnsignif_dryclean, wholeGenome_dryclean,
-                    blacklist_dryclean, blacklist_path_dryclean,
-                    germline_filter_dryclean, germline_file_dryclean, human_dryclean,
-                    field_dryclean, build_dryclean)
+            NORMAL_DRYCLEAN(
+                    normal_frag_cov,
+                    pon_dryclean,
+                    centered_dryclean,
+                    cbs_dryclean,
+                    cnsignif_dryclean,
+                    wholeGenome_dryclean,
+                    blacklist_dryclean,
+                    blacklist_path_dryclean,
+                    germline_filter_dryclean,
+                    germline_file_dryclean,
+                    human_dryclean,
+                    field_dryclean,
+                    build_dryclean
+                    )
 
             normal_dryclean_cov = Channel.empty().mix(NORMAL_DRYCLEAN.out.dryclean_cov)
 
@@ -1622,27 +1643,26 @@ workflow NFJABBA {
     }
 
     if (runEvents) {
-        id = input_sample['meta']['sample']
         if (params.tools && params.tools.split(',').contains('events')) {
             if (params.step == 'events') {
                 input_events = input_sample
                                     .map{ meta, ggraph -> [ meta + [data_type: 'ggraph'], ggraph ] }
-                EVENTS(input_events, fasta, id)
+                EVENTS(input_events, fasta)
                 versions = versions.mix(EVENTS.out.versions)
 
                 events_output = Channel.empty().mix(EVENTS.out.events_output)
             } else {
                 if (params.tools && params.tools.split(',').contains('gridss')) {
-                    EVENTS_WITH_GRIDSS(jabba_rds_with_gridss, fasta, id)
-                    versions = versions.mix(EVENTS.out.versions)
+                    EVENTS_WITH_GRIDSS(jabba_rds_with_gridss, fasta)
+                    versions = versions.mix(EVENTS_WITH_GRIDSS.out.versions)
 
-                    events_output = Channel.empty().mix(EVENTS.out.events_output)
+                    events_output = Channel.empty().mix(EVENTS_WITH_GRIDSS.out.events_output)
                 }
                 if (params.tools && params.tools.split(',').contains('svaba')) {
-                    EVENTS_WITH_SVABA(jabba_rds_with_svaba, fasta, id)
-                    versions = versions.mix(EVENTS.out.versions)
+                    EVENTS_WITH_SVABA(jabba_rds_with_svaba, fasta)
+                    versions = versions.mix(EVENTS_WITH_SVABA.out.versions)
 
-                    events_output = Channel.empty().mix(EVENTS.out.events_output)
+                    events_output = Channel.empty().mix(EVENTS_WITH_SVABA.out.events_output)
                 }
             }
         }
@@ -1650,48 +1670,46 @@ workflow NFJABBA {
     }
 
     if (runFusions) {
-        id = input_sample['meta']['sample']
+        ids = input_sample.map{ row -> row[0].sample }
         if (params.tools && params.tools.split(',').contains('fusions')) {
             if (params.step == 'fusions') {
                 input_fusions = input_sample
                                     .map{ meta, ggraph -> [ meta + [data_type: 'ggraph'], ggraph ] }
-                FUSIONS(input_fusions, gencode_fusions, id)
+                FUSIONS(input_fusions, gencode_fusions)
                 versions = versions.mix(FUSIONS.out.versions)
 
                 fusions_output = Channel.empty().mix(FUSIONS.out.fusions_output)
             } else {
                 if (params.tools && params.tools.split(',').contains('gridss')) {
-                    FUSIONS_WITH_GRIDSS(jabba_rds_with_gridss, gencode_fusions, id)
-                    versions = versions.mix(FUSIONS.out.versions)
+                    FUSIONS_WITH_GRIDSS(jabba_rds_with_gridss, gencode_fusions)
+                    versions = versions.mix(FUSIONS_WITH_GRIDSS.out.versions)
 
-                    fusions_output = Channel.empty().mix(FUSIONS.out.fusions_output)
+                    fusions_output = Channel.empty().mix(FUSIONS_WITH_GRIDSS.out.fusions_output)
                 }
                 if (params.tools && params.tools.split(',').contains('svaba')) {
-                    FUSIONS_WITH_SVABA(jabba_rds_with_svaba, gencode_fusions, id)
-                    versions = versions.mix(FUSIONS.out.versions)
+                    FUSIONS_WITH_SVABA(jabba_rds_with_svaba, gencode_fusions)
+                    versions = versions.mix(FUSIONS_WITH_SVABA.out.versions)
 
-                    fusions_output = Channel.empty().mix(FUSIONS.out.fusions_output)
+                    fusions_output = Channel.empty().mix(FUSIONS_WITH_SVABA.out.fusions_output)
                 }
             }
         }
     }
 
     if (runAlleicCN) {
-        id_allelic_cn = input_sample['meta']['sample']
-        if (params.tools && params.tools.split(',').contains('alleic_cn')) {
-            if (params.step == 'alleic_cn') {
+        if (params.tools && params.tools.split(',').contains('allelic_cn')) {
+            if (params.step == 'allelic_cn') {
                 input_cov_non_integer_balance = input_sample
-                                    .map{ meta, cov, -> [ meta + [data_type: ['cov']], cov ] }
+                                    .map{ meta, cov -> [ meta + [data_type: ['cov']], cov ] }
                 input_hets_allelic_cn = input_sample
-                                    .map{ meta, hets, -> [ meta + [data_type: ['hets']], hets ] }
+                                    .map{ meta, hets -> [ meta + [data_type: ['hets']], hets ] }
                 input_ggraph_non_integer_balance = input_sample
-                                    .map{ meta, ggraph, -> [ meta + [data_type: ['ggraph']], ggraph ] }
+                                    .map{ meta, ggraph -> [ meta + [data_type: ['ggraph']], ggraph ] }
 
                 NON_INTEGER_BALANCE(
                     input_cov_non_integer_balance,
                     input_hets_allelic_cn,
                     input_ggraph_non_integer_balance,
-					id_allelic_cn,
 					field_non_integer_balance,
 					hets_thresh_non_integer_balance,
                     mask_non_integer_balance,
@@ -1706,7 +1724,7 @@ workflow NFJABBA {
 					tilim_non_integer_balance,
 					gurobi_non_integer_balance,
                     fasta,
-					pad_non_integer_balance,
+					pad_non_integer_balance
                 )
                 versions = versions.mix(NON_INTEGER_BALANCE.out.versions)
 
@@ -1716,7 +1734,6 @@ workflow NFJABBA {
                 LP_PHASED_BALANCE(
                     non_integer_balance_hets_gg,
                     input_hets_allelic_cn,
-					id_allelic_cn,
                     lambda_lp_phased_balance,
                     cnloh_lp_phased_balance,
                     major_lp_phased_balance,
@@ -1732,7 +1749,7 @@ workflow NFJABBA {
                     trelim_lp_phased_balance,
                     reward_lp_phased_balance,
                     nodefileind_lp_phased_balance,
-                    tilim_lp_phased_balance,
+                    tilim_lp_phased_balance
                 )
 
                 lp_phased_balance_balanced_gg = Channel.empty().mix(LP_PHASED_BALANCE.out.lp_phased_balance_balanced_gg)
@@ -1744,7 +1761,6 @@ workflow NFJABBA {
                         jabba_rds_with_gridss,
                         tumor_dryclean_cov,
                         sites_from_het_pileups_wgs,
-                        id_allelic_cn,
                         field_non_integer_balance,
                         hets_thresh_non_integer_balance,
                         mask_non_integer_balance,
@@ -1759,7 +1775,7 @@ workflow NFJABBA {
                         tilim_non_integer_balance,
                         gurobi_non_integer_balance,
                         fasta,
-                        pad_non_integer_balance,
+                        pad_non_integer_balance
                     )
                     versions = versions.mix(NON_INTEGER_BALANCE_WITH_GRIDSS.out.versions)
 
@@ -1769,7 +1785,6 @@ workflow NFJABBA {
                     LP_PHASED_BALANCE_WITH_GRIDSS(
                         non_integer_balance_hets_gg,
                         sites_from_het_pileups_wgs,
-                        id_allelic_cn,
                         lambda_lp_phased_balance,
                         cnloh_lp_phased_balance,
                         major_lp_phased_balance,
@@ -1785,7 +1800,7 @@ workflow NFJABBA {
                         trelim_lp_phased_balance,
                         reward_lp_phased_balance,
                         nodefileind_lp_phased_balance,
-                        tilim_lp_phased_balance,
+                        tilim_lp_phased_balance
                     )
 
                     lp_phased_balance_balanced_gg = Channel.empty().mix(LP_PHASED_BALANCE_WITH_GRIDSS.out.lp_phased_balance_balanced_gg)
@@ -1797,7 +1812,7 @@ workflow NFJABBA {
                         jabba_rds_with_svaba,
                         tumor_dryclean_cov,
                         sites_from_het_pileups_wgs,
-                        id_allelic_cn,
+                        field_non_integer_balance,
                         hets_thresh_non_integer_balance,
                         mask_non_integer_balance,
                         overwrite_non_integer_balance,
@@ -1811,17 +1826,16 @@ workflow NFJABBA {
                         tilim_non_integer_balance,
                         gurobi_non_integer_balance,
                         fasta,
-                        pad_non_integer_balance,
+                        pad_non_integer_balance
                     )
                     versions = versions.mix(NON_INTEGER_BALANCE_WITH_SVABA.out.versions)
 
                     non_integer_balance_balanced_gg = Channel.empty().mix(NON_INTEGER_BALANCE_WITH_SVABA.out.non_integer_balance_balanced_gg)
                     non_integer_balance_hets_gg = Channel.empty().mix(NON_INTEGER_BALANCE_WITH_SVABA.out.non_integer_balance_hets_gg)
 
-                    LP_PHASED_BALANCE(
+                    LP_PHASED_BALANCE_WITH_SVABA(
                         non_integer_balance_hets_gg,
                         sites_from_het_pileups_wgs,
-                        id_allelic_cn,
                         lambda_lp_phased_balance,
                         cnloh_lp_phased_balance,
                         major_lp_phased_balance,
@@ -1837,22 +1851,17 @@ workflow NFJABBA {
                         trelim_lp_phased_balance,
                         reward_lp_phased_balance,
                         nodefileind_lp_phased_balance,
-                        tilim_lp_phased_balance,
+                        tilim_lp_phased_balance
                     )
 
-                    lp_phased_balance_balanced_gg = Channel.empty().mix(LP_PHASED_BALANCE.out.lp_phased_balance_balanced_gg)
-                    lp_phased_balance_binstats_gg = Channel.empty().mix(LP_PHASED_BALANCE.out.lp_phased_balance_binstats_gg)
-                    lp_phased_balance_unphased_allelic_gg = Channel.empty().mix(LP_PHASED_BALANCE.out.lp_phased_balance_unphased_allelic_gg)
+                    lp_phased_balance_balanced_gg = Channel.empty().mix(LP_PHASED_BALANCE_WITH_SVABA.out.lp_phased_balance_balanced_gg)
+                    lp_phased_balance_binstats_gg = Channel.empty().mix(LP_PHASED_BALANCE_WITH_SVABA.out.lp_phased_balance_binstats_gg)
+                    lp_phased_balance_unphased_allelic_gg = Channel.empty().mix(LP_PHASED_BALANCE_WITH_SVABA.out.lp_phased_balance_unphased_allelic_gg)
                 }
             }
         }
     }
 }
-
-
-
-
-
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

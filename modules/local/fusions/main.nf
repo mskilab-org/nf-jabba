@@ -11,7 +11,6 @@ process FUSIONS {
     input:
     tuple val(meta), path(gGraph)
     path(gencode)
-    val(id)
 
     output:
     tuple val(meta), path("*fusions.rds") , emit: fusions_output
@@ -23,6 +22,7 @@ process FUSIONS {
     script:
     def args        = task.ext.args ?: ''
     def prefix      = task.ext.prefix ?: "${meta.id}"
+    def id          = "${meta.sample}"
     def VERSION    = '0.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """

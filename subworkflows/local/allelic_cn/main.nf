@@ -1,11 +1,11 @@
 include { NON_INTEGER_BALANCE } from '../../../modules/local/allelic_cn/main.nf'
+include { LP_PHASED_BALANCE } from '../../../modules/local/allelic_cn/main.nf'
 
-workflow NON_INTEGER_BALANCE {
+workflow COV_GGRAPH_NON_INTEGER_BALANCE {
     take:
 	jabba_rds_non_integer_balance           // [meta, ggraph]
 	decomposed_cov_non_integer_balance      // [meta, cov]
 	het_pileups_wgs_non_integer_balance     // [meta, hets]
-	id_non_integer_balance
 	field_non_integer_balance
 	hets_thresh_non_integer_balance
 	mask_non_integer_balance
@@ -31,7 +31,6 @@ workflow NON_INTEGER_BALANCE {
         jabba_rds_non_integer_balance,
         decomposed_cov_non_integer_balance,
         het_pileups_wgs_non_integer_balance,
-        id_non_integer_balance,
         field_non_integer_balance,
         hets_thresh_non_integer_balance,
         mask_non_integer_balance,
@@ -46,7 +45,7 @@ workflow NON_INTEGER_BALANCE {
         tilim_non_integer_balance,
         gurobi_non_integer_balance,
         fasta_non_integer_balance,
-        pad_non_integer_balance,
+        pad_non_integer_balance
     )
 
     non_integer_balance_balanced_gg = NON_INTEGER_BALANCE.out.non_integer_balance_balanced_gg
@@ -60,11 +59,10 @@ workflow NON_INTEGER_BALANCE {
     versions
 }
 
-workflow LP_PHASED_BALANCE {
+workflow COV_GGRAPH_LP_PHASED_BALANCE {
     take:
 	hets_gg_lp_phased_balance             // [meta, ggraph]
 	het_pileups_wgs_lp_phased_balance     // [meta, hets]
-    id_lp_phased_balance
     lambda_lp_phased_balance
     cnloh_lp_phased_balance
     major_lp_phased_balance
@@ -88,10 +86,9 @@ workflow LP_PHASED_BALANCE {
     lp_phased_balance_binstats_gg = Channel.empty()
     lp_phased_balance_unphased_allelic_gg = Channel.empty()
 
-    LP_PHASED_BALANCE_WITH_GRIDSS(
+    LP_PHASED_BALANCE(
         hets_gg_lp_phased_balance,             // [meta, ggraph]
         het_pileups_wgs_lp_phased_balance,     // [meta, hets]
-        id_lp_phased_balance,
         lambda_lp_phased_balance,
         cnloh_lp_phased_balance,
         major_lp_phased_balance,
@@ -107,7 +104,7 @@ workflow LP_PHASED_BALANCE {
         trelim_lp_phased_balance,
         reward_lp_phased_balance,
         nodefileind_lp_phased_balance,
-        tilim_lp_phased_balance,
+        tilim_lp_phased_balance
     )
 
     lp_phased_balance_balanced_gg = LP_PHASED_BALANCE.out.lp_phased_balance_balanced_gg

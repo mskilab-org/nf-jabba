@@ -10,7 +10,6 @@ process EVENTS {
     input:
     tuple val(meta), path(gGraph)
     path(ref)
-    val(id)
 
     output:
     tuple val(meta), path("*complex.rds") , emit: events_output
@@ -22,6 +21,7 @@ process EVENTS {
     script:
     def args        = task.ext.args ?: ''
     def prefix      = task.ext.prefix ?: "${meta.id}"
+    def id          = "${meta.sample}"
     def VERSION    = '0.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """

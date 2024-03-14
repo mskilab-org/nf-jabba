@@ -11,7 +11,6 @@ process NON_INTEGER_BALANCE {
     tuple val(meta), path(jabba_rds)
     tuple val(meta), path(decomposed_cov)
     tuple val(meta), path(het_pileups_wgs)
-    val(id)
     val(field)
     val(hets_thresh)
     path(mask)
@@ -39,6 +38,7 @@ process NON_INTEGER_BALANCE {
     script:
     def args        = task.ext.args ?: ''
     def prefix      = task.ext.prefix ?: "${meta.id}"
+    def id          = "${meta.sample}"
     def VERSION    = '0.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """
@@ -95,9 +95,8 @@ process LP_PHASED_BALANCE {
         'mskilab/allelic_cn:latest' }"
 
     input:
-    tuple val(meta), path(hets_gg)  \\ output from non_integer_balance
-    tuple val(meta), path(hets)     \\ sites.txt from hetpileups
-    val(id)
+    tuple val(meta), path(hets_gg)  // output from non_integer_balance
+    tuple val(meta), path(hets)     // sites.txt from hetpileups
     val(lambda)
     val(cnloh)
     val(major)
@@ -123,6 +122,7 @@ process LP_PHASED_BALANCE {
 
     script:
     def args = task.ext.args ?: ''
+    def id   = "${meta.sample}"
     def VERSION = '0.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """

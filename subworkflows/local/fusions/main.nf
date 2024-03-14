@@ -1,16 +1,15 @@
 include { FUSIONS } from '../../../modules/local/fusions/main.nf'
 
-workflow FUSIONS {
+workflow GGRAPH_FUSIONS {
     take:
     input           // required: format [val(meta), path(gGraph)]
     gencode
-    id
 
     main:
     versions            = Channel.empty()
     fusions_output       = Channel.empty()
 
-    FUSIONS(input, gencode, id)
+    FUSIONS(input, gencode)
 
     fusions_output = FUSIONS.out.fusions_output
     versions = FUSIONS.out.versions
