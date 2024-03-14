@@ -1316,7 +1316,18 @@ workflow NFJABBA {
                                                                 def (meta, cov) = tuple
                                                                 [meta.patient, meta + [id: meta.sample], cov] }
 
+            if (params.tools && (params.tools.split(',').contains('ascat') && params.tools.split(',').contains('hetpileups'))) {
 
+                input_ascat = tumor_dryclean_cov_to_cross.cross(het_pileups_to_cross)
+                        .map { cov, hets ->
+                            def meta = [:]
+                                meta.id             = cov[1].sample
+                                meta.patient        = cov[0]
+                                meta.sex            = cov[1].sex
+
+                                [ meta, cov[2], hets[2] ]
+                        }
+            }
         }
 
         // TODO: Add a subworkflow to write the output file paths into a csv
