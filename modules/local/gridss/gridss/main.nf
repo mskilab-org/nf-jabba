@@ -46,8 +46,8 @@ process GRIDSS_GRIDSS {
         $assembly_bam \\
         $blacklist \\
         --picardoptions VALIDATION_STRINGENCY=LENIENT \\
-        --jvmheap 2g \\
-        --otherjvmheap 1g \\
+        --jvmheap 32g \\
+        --otherjvmheap 32g \\
         ${normalbam} \\
         ${tumorbam}
 

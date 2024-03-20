@@ -515,6 +515,7 @@ include { COV_DRYCLEAN as NORMAL_DRYCLEAN              } from '../subworkflows/l
 
 //ASCAT
 include { COV_ASCAT                                   } from '../subworkflows/local/cov_ascat/main'
+include { EXTRACT_PURITYPLOIDY                        } from '../modules/local/ascat/main'
 
 // CBS
 include { COV_CBS as CBS                              } from '../subworkflows/local/cov_cbs/main'
@@ -1400,16 +1401,6 @@ workflow NFJABBA {
         if (params.step == 'ascat') {
             input_ascat = input_sample
                                 .map{ meta, cov, hets -> [ meta + [data_type: ['cov', 'hets']], cov, hets ] }
-
-            //input_cov_ascat = input_ascat
-            //                    .map{ meta, cov, hets -> [ meta, cov ] }
-
-            //input_hets_ascat = input_ascat
-            //                    .map{ meta, cov, hets -> [ meta, hets ] }
-
-            //sites_from_het_pileups_wgs  = Channel.empty().mix(input_hets_ascat)
-            //tumor_dryclean_cov   = Channel.empty().mix(input_cov_ascat)
-
         }
 
         if (params.tools && params.tools.split(',').contains('ascat')) {
@@ -1441,6 +1432,17 @@ workflow NFJABBA {
             input_jabba = input_sample
                                 .map{ meta, cov, hets, vcf, vcf2, seg, nseg -> [ meta + [data_type: ['cov','hets','vcf','seg']], cov, hets, vcf, vcf2, seg, nseg ] }
 
+            // Returns a channel with the extracted ploidy when provided with a
+            // file, and otherwise just passes the value through.
+            input_ploidy_jabba = input_jabba.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy ->
+                if (ploidy instanceof File) {
+                    EXTRACT_PURITYPLOIDY(meta, ploidy)
+                    return [ EXTRACT_PURITYPLOIDY.out.ploidy_val ]
+                } else {
+                    // If ploidy is a value, use it directly
+                    return [ meta, ploidy ]
+                }
+            }
         }
 
         if (params.tools && params.tools.split(',').contains('jabba')) {
@@ -1459,11 +1461,6 @@ workflow NFJABBA {
                                                         }
                     input_ploidy_jabba = input_jabba1_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, ploidy ] }
                 } else {
-                    //ploidy_jabba = ploidy_jabba.map{ meta, ploidy -> [ meta.patient, meta, ploidy ] }
-
-                    //input_jabba1_final = input_jabba1.cross(ploidy_jabba).map{ tuples ->
-                    //                                        [tuples[1]] + [tuples[2]] + [tuples[3]] + [tuples[4]] + [tuples[5]] + [tuples[6]] + [tuples[7]] + [tuples[9]]
-                    //                                    }
 
                     input_jabba1_final = input_jabba1.cross(ploidy_jabba).map{ tuples ->
                                                             [tuples[0][0]] + [tuples[0][1]] + [tuples[0][2]] + [tuples[0][3]] + [tuples[0][4]] + [tuples[0][5]] + [tuples[0][6]] + [tuples[1][1]]
@@ -1482,8 +1479,6 @@ workflow NFJABBA {
                 input_seg_jabba  = input_jabba1_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, seg ] }
 
                 input_nseg_jabba = input_jabba1_final.map{ meta, cov, hets, vcf, vcf2, seg, nseg, ploidy -> [ meta, nseg ] }
-
-
 
                 JABBA_WITH_SVABA(input_cov_jabba, input_vcf_jabba, input_ploidy_jabba,
                 input_hets_jabba, input_seg_jabba, input_nseg_jabba,
@@ -1911,25 +1906,3 @@ def flowcellLaneFromFastq(path) {
     THE END
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
