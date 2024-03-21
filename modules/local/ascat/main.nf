@@ -8,8 +8,7 @@ process ASCAT_SEG {
         'mskilab/ascat_seg:latest' }"
 
     input:
-    tuple val(meta), path(hets)                                      // channel: [mandatory] [ meta, hets ]
-    tuple val(meta), path(cbs_cov)                                   // channel: [mandatory] [ meta, cbs_cov ]
+    tuple val(meta), path(hets), path(cbs_cov)                       // channel: [mandatory] [ meta, hets ]
     val(field)                                                       // channel: [mandatory] "foreground" for dryclean/ "ratio"
     val(hets_thresh)                                                 // channel: cutoff for hetpileups; default=0.2
     val(penalty)                                                     // channel: penalty for ASCAT; default=70

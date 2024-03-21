@@ -10,6 +10,7 @@ nextflow_pipeline {
                 outdir  = "results"
                 input   = "$projectDir/tests/test_runs/integration_test_samplesheet.csv"
                 step    = "sv_calling"
+                tools = "svaba,hetpileups,fragcounter,dryclean,ascat,cbs,jabba,events,fusions,allelic_cn"
             }
         }
 

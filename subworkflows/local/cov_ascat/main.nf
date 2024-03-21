@@ -9,14 +9,13 @@ include { EXTRACT_PURITYPLOIDY } from '../../../modules/local/ascat/main'
 workflow COV_ASCAT {
 
     take:
-    hetpileups                                        // channel: [mandatory] [ meta, hets ]
-    cbs_cov                                           // channel: [mandatory] [ meta, cbs_cov ]
-    field                                             // channel: [mandatory] "foreground" for dryclean/ "ratio"
-    hets_threshold                                    // channel: cutoff for hetpileups; default=0.2
-    penalty                                           // channel: penalty for ASCAT; default=70
-    gc_correct                                        // channel: perform GC correction? Default=TRUE
-    rebin_width                                       // channel: width for rebinning, default=5e4
-    from_maf                                          // channel: whether to start from MAF, default=FALSE
+    inputs              // [ meta, hets, cbs_cov ]
+    field
+    hets_threshold
+    penalty
+    gc_correct
+    rebin_width
+    from_maf
 
 
     main:
@@ -26,7 +25,7 @@ workflow COV_ASCAT {
     purity       = Channel.empty()
     ploidy       = Channel.empty()
 
-    ASCAT_SEG(hetpileups, cbs_cov, field, hets_threshold, penalty, gc_correct, rebin_width, from_maf)
+    ASCAT_SEG(inputs, field, hets_threshold, penalty, gc_correct, rebin_width, from_maf)
 
     ascat_pp = Channel.empty().mix(ASCAT_SEG.out.purityploidy)
     EXTRACT_PURITYPLOIDY(ascat_pp)

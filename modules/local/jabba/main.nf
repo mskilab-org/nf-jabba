@@ -7,13 +7,7 @@ process JABBA {
         'mskilab/jabba:latest' }"
 
     input:
-    tuple val(meta), path(cov_rds)
-    tuple val(meta), path(junction)
-    tuple val(meta), val(ploidy)
-    tuple val(meta), val(het_pileups_wgs)
-    tuple val(meta), val(cbs_seg_rds)
-    tuple val(meta), val(cbs_nseg_rds)
-    tuple val(meta), val(j_supp)
+    tuple val(meta), path(junction), path(cov_rds), val(j_supp), val(het_pileups_wgs), val(ploidy), val(cbs_seg_rds), val(cbs_nseg_rds)
     val(blacklist_junctions)    // this is declared as val to allow for "NULL" default value, but is treated like a path
     val(geno)
     val(indel)
@@ -98,9 +92,13 @@ process JABBA {
     set +x
 
     export cmd="Rscript \$jba $junction $cov_rds    \\
+    $j_supp                                         \\
+    $het_pileups_wgs                                \\
+    --ploidy				$ploidy                 \\
+    $cbs_seg_rds                                    \\
+    $cbs_nseg_rds                                   \\
     --blacklist.junctions   $blacklist_junctions    \\
     $geno_switch                                    \\
-    $j_supp                                         \\
     --indel					$indel                  \\
     --tfield				$tfield                 \\
     --iterate				$iter                   \\
@@ -111,12 +109,8 @@ process JABBA {
     $strict_switch                                  \\
     $allin_switch                                   \\
     --field					$field                  \\
-    $cbs_seg_rds                                    \\
     --maxna					$maxna                  \\
     --blacklist.coverage	$blacklist_coverage     \\
-    $cbs_nseg_rds                                   \\
-    $het_pileups_wgs                                \\
-    --ploidy				$ploidy                 \\
     --purity				$purity                 \\
     --ppmethod				$pp_method              \\
     --cnsignif				$cnsignif               \\

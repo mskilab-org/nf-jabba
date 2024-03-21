@@ -3,9 +3,7 @@ include { LP_PHASED_BALANCE } from '../../../modules/local/allelic_cn/main.nf'
 
 workflow COV_GGRAPH_NON_INTEGER_BALANCE {
     take:
-	jabba_rds_non_integer_balance           // [meta, ggraph]
-	decomposed_cov_non_integer_balance      // [meta, cov]
-	het_pileups_wgs_non_integer_balance     // [meta, hets]
+    inputs_non_integer_balance          // [ meta, ggraph, cov, hets ]
 	field_non_integer_balance
 	hets_thresh_non_integer_balance
 	mask_non_integer_balance
@@ -19,7 +17,7 @@ workflow COV_GGRAPH_NON_INTEGER_BALANCE {
 	epgap_non_integer_balance
 	tilim_non_integer_balance
 	gurobi_non_integer_balance
-	fasta_non_integer_balance    // path to decoy fasta
+	fasta_non_integer_balance           // path to decoy fasta
 	pad_non_integer_balance
 
     main:
@@ -28,9 +26,7 @@ workflow COV_GGRAPH_NON_INTEGER_BALANCE {
     non_integer_balance_hets_gg = Channel.empty()
 
     NON_INTEGER_BALANCE(
-        jabba_rds_non_integer_balance,
-        decomposed_cov_non_integer_balance,
-        het_pileups_wgs_non_integer_balance,
+        inputs_non_integer_balance,
         field_non_integer_balance,
         hets_thresh_non_integer_balance,
         mask_non_integer_balance,
@@ -61,8 +57,7 @@ workflow COV_GGRAPH_NON_INTEGER_BALANCE {
 
 workflow COV_GGRAPH_LP_PHASED_BALANCE {
     take:
-	hets_gg_lp_phased_balance             // [meta, ggraph]
-	het_pileups_wgs_lp_phased_balance     // [meta, hets]
+    inputs_lp_phased_balance        // [ meta, ggraph, hets ]
     lambda_lp_phased_balance
     cnloh_lp_phased_balance
     major_lp_phased_balance
@@ -87,8 +82,7 @@ workflow COV_GGRAPH_LP_PHASED_BALANCE {
     lp_phased_balance_unphased_allelic_gg = Channel.empty()
 
     LP_PHASED_BALANCE(
-        hets_gg_lp_phased_balance,             // [meta, ggraph]
-        het_pileups_wgs_lp_phased_balance,     // [meta, hets]
+        inputs_lp_phased_balance,
         lambda_lp_phased_balance,
         cnloh_lp_phased_balance,
         major_lp_phased_balance,

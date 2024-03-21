@@ -18,41 +18,44 @@ nextflow_process {
 
                 meta = [ id: "test" ]
                 ploidy = 4.5
-                input[0] = tuple(meta, "$projectDir/tests/test_data/coverage_jabba.txt")
-                input[1] = tuple(meta, "$projectDir/tests/test_data/junctions_jabba.rds")
-                input[2] = tuple(meta, ploidy)
-                input[3] = tuple(meta, "$projectDir/tests/test_data/hets_jabba.txt")
-                input[4] = tuple(meta, "$projectDir/tests/test_data/segs_jabba.rds")
-                input[5] = tuple(meta, "$projectDir/tests/test_data/nsegs_jabba.rds")
-                input[6] = tuple(meta, "$projectDir/tests/test_data/unfiltered_som.vcf")
+                input[0] = tuple(
+                    meta,
+                    "$projectDir/tests/test_data/junctions_jabba.rds",
+                    "$projectDir/tests/test_data/coverage_jabba.txt",
+                    "$projectDir/tests/test_data/unfiltered_som.vcf",
+                    "$projectDir/tests/test_data/hets_jabba.txt",
+                    ploidy,
+                    "$projectDir/tests/test_data/segs_jabba.rds",
+                    "$projectDir/tests/test_data/nsegs_jabba.rds"
+                )
                 // Defaults from nextflow.config
-                input[7] = params.blacklist_junctions_jabba    // this is declared as val to allow for "NULL" default value, but is treated like a path
-                input[8] = params.geno_jabba
-                input[9] = params.indel_jabba
-                input[10] = params.tfield_jabba
-                input[11] = params.iter_jabba
-                input[12] = params.rescue_window_jabba
-                input[13] = params.rescue_all_jabba
-                input[14] = params.nudgebalanced_jabba
-                input[15] = params.edgenudge_jabba
-                input[16] = params.strict_jabba
-                input[17] = params.allin_jabba
-                input[18] = params.field_jabba
-                input[19] = params.maxna_jabba
-                input[20] = params.genomes['GATK.GRCh37'].blacklist_coverage_jabba
-                input[21] = params.purity_jabba
-                input[22] = params.pp_method_jabba
-                input[23] = params.cnsignif_jabba
-                input[24] = params.slack_jabba
-                input[25] = params.linear_jabba
-                input[26] = params.tilim_jabba
-                input[27] = params.epgap_jabba
-                input[28] = params.fix_thres_jabba
-                input[29] = params.lp_jabba
-                input[30] = params.ism_jabba
-                input[31] = params.filter_loose_jabba
-                input[32] = params.gurobi_jabba
-                input[33] = params.verbose_jabba
+                input[1] = params.blacklist_junctions_jabba    // this is declared as val to allow for "NULL" default value, but is treated like a path
+                input[2] = params.geno_jabba
+                input[3] = params.indel_jabba
+                input[4] = params.tfield_jabba
+                input[5] = params.iter_jabba
+                input[6] = params.rescue_window_jabba
+                input[7] = params.rescue_all_jabba
+                input[8] = params.nudgebalanced_jabba
+                input[9] = params.edgenudge_jabba
+                input[10] = params.strict_jabba
+                input[11] = params.allin_jabba
+                input[12] = params.field_jabba
+                input[13] = params.maxna_jabba
+                input[14] = params.genomes['GATK.GRCh37'].blacklist_coverage_jabba
+                input[15] = params.purity_jabba
+                input[16] = params.pp_method_jabba
+                input[17] = params.cnsignif_jabba
+                input[18] = params.slack_jabba
+                input[19] = params.linear_jabba
+                input[20] = params.tilim_jabba
+                input[21] = params.epgap_jabba
+                input[22] = params.fix_thres_jabba
+                input[23] = params.lp_jabba
+                input[24] = params.ism_jabba
+                input[25] = params.filter_loose_jabba
+                input[26] = params.gurobi_jabba
+                input[27] = params.verbose_jabba
                 """
             }
         }

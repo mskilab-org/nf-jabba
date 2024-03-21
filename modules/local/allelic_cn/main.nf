@@ -8,9 +8,7 @@ process NON_INTEGER_BALANCE {
         'mskilab/allelic_cn:latest' }"
 
     input:
-    tuple val(meta), path(jabba_rds)
-    tuple val(meta), path(decomposed_cov)
-    tuple val(meta), path(het_pileups_wgs)
+    tuple val(meta), path(jabba_rds), path(decomposed_cov), path(het_pileups_wgs)
     val(field)
     val(hets_thresh)
     path(mask)
@@ -95,8 +93,7 @@ process LP_PHASED_BALANCE {
         'mskilab/allelic_cn:latest' }"
 
     input:
-    tuple val(meta), path(hets_gg)  // output from non_integer_balance
-    tuple val(meta), path(hets)     // sites.txt from hetpileups
+    tuple val(meta), path(hets_gg), path(hets) // output from non_integer_balance, sites.txt from hetpileups
     val(lambda)
     val(cnloh)
     val(major)

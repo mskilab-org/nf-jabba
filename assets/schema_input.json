@@ -200,8 +200,8 @@
                 "format": "file-path",
                 "exists": true
             },
-            "ggraph": {
-                "errorMessage": "jabba.rds file and must have extension '.rds'",
+            "ploidy": {
+                "errorMessage": "purityploidy file must have extension '.rds' or be a number",
                 "anyOf": [
                     {
                         "type": "string",
@@ -218,10 +218,11 @@
                     {
                         "type": "string",
                         "maxLength": 0
+                    },
+                    {
+                        "type": "number"
                     }
                 ],
-                "format": "file-path",
-                "exists": true
             },
             "vcf": {
                 "errorMessage": "VCF file for reads 1 cannot contain spaces and must have extension '.vcf' or '.vcf.gz'",
@@ -286,6 +287,29 @@
             },
             "nseg": {
                 "errorMessage": "NSEG file cannot contain spaces and must have extension '.rds'",
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "pattern": "^\\S+\\.rds$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^NA$"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^/dev/null$"
+                    },
+                    {
+                        "type": "string",
+                        "maxLength": 0
+                    }
+                ],
+                "format": "file-path",
+                "exists": true
+            },
+            "ggraph": {
+                "errorMessage": "jabba.rds file and must have extension '.rds'",
                 "anyOf": [
                     {
                         "type": "string",
