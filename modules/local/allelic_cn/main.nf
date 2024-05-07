@@ -4,8 +4,8 @@ process NON_INTEGER_BALANCE {
     label 'process_medium'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://mskilab/allelic_cn:latest':
-        'mskilab/allelic_cn:latest' }"
+        '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/tests/test_runs/work/singularity/jabba_cplex_latest.sif':
+        'mskilab/jabba:latest' }"
 
     input:
     tuple val(meta), path(jabba_rds), path(decomposed_cov), path(het_pileups_wgs)
@@ -23,6 +23,8 @@ process NON_INTEGER_BALANCE {
     val(tilim)
     val(gurobi)
     path(fasta)     // path to decoy fasta
+    path(fasta_fai)     // path to decoy fasta
+    path(bwa_index)
     val(pad)
 
     output:
@@ -37,9 +39,11 @@ process NON_INTEGER_BALANCE {
     def args        = task.ext.args ?: ''
     def prefix      = task.ext.prefix ?: "${meta.id}"
     def id          = "${meta.sample}"
+    def bwa = bwa_index ? "ln -nfs \$(readlink -f ${bwa_index})/* \$(dirname \$(readlink -f $fasta))/" : ""
     def VERSION    = '0.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """
+    ${bwa}
 
     export RSCRIPT_PATH=\$(echo "${baseDir}/bin/non_integer_balance.R")
 
@@ -49,12 +53,12 @@ process NON_INTEGER_BALANCE {
         --cov $decomposed_cov \\
         --field $field \\
         --hets $het_pileups_wgs \\
-        --hets-thresh $hets_thresh \\
+        --hets_thresh $hets_thresh \\
         --mask $mask \\
         --overwrite $overwrite \\
         --lambda $lambda \\
         --allin $allin \\
-        --fix_thresh $fix_thres \\
+        --fix_thresh $fix_thresh \\
         --nodebounds $nodebounds \\
         --ism $ism \\
         --build $build \\
@@ -85,12 +89,12 @@ process NON_INTEGER_BALANCE {
 
 process LP_PHASED_BALANCE {
 
-    tag "$id"
+    tag "$meta.id"
     label 'process_medium'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://mskilab/allelic_cn:latest':
-        'mskilab/allelic_cn:latest' }"
+        '/gpfs/commons/groups/imielinski_lab/home/sdider/Projects/nf-jabba/tests/test_runs/work/singularity/jabba_cplex_latest.sif':
+        'mskilab/jabba:latest' }"
 
     input:
     tuple val(meta), path(hets_gg), path(hets) // output from non_integer_balance, sites.txt from hetpileups
@@ -123,7 +127,9 @@ process LP_PHASED_BALANCE {
     def VERSION = '0.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """
-    Rscript \${baseDir}/bin/lp_phased_balance.R \\
+    export RSCRIPT_PATH=\$(echo "${baseDir}/bin/lp_phased_balance.R")
+
+    Rscript \$RSCRIPT_PATH \\
         --id $id \\
         --jab $hets_gg \\
         --hets $hets \\
@@ -146,7 +152,7 @@ process LP_PHASED_BALANCE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        non_integer_balance: ${VERSION}
+        lp_phased_balance: ${VERSION}
     END_VERSIONS
     """
 }

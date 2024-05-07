@@ -60,6 +60,10 @@ params.build_dryclean        = WorkflowMain.getGenomeAttribute(params, 'build_dr
 params.hapmap_sites          = WorkflowMain.getGenomeAttribute(params, 'hapmap_sites')
 params.pon_dryclean          = WorkflowMain.getGenomeAttribute(params, 'pon_dryclean')
 params.blacklist_coverage_jabba     = WorkflowMain.getGenomeAttribute(params, 'blacklist_coverage_jabba')
+params.gencode_fusions     = WorkflowMain.getGenomeAttribute(params, 'gencode_fusions')
+params.build_non_integer_balance     = WorkflowMain.getGenomeAttribute(params, 'build_non_integer_balance')
+params.mask_non_integer_balance     = WorkflowMain.getGenomeAttribute(params, 'mask_non_integer_balance')
+params.mask_lp_phased_balance     = WorkflowMain.getGenomeAttribute(params, 'mask_lp_phased_balance')
 //params.blacklist_junctions_jabba     = WorkflowMain.getGenomeAttribute(params, 'blacklist_junctions_jabba')
 
 /*

@@ -422,14 +422,6 @@
                     "help_text": "Path to file annotated with germline calls, if germline.filter == TRUE",
                     "default": "NA"
                 },
-                "human_dryclean": {
-                    "type": "string",
-                    "fa_icon": "fas fa-forward",
-                    "description": "Specify if the samples under consideration are human",
-                    "hidden": true,
-                    "help_text": "Specify if the samples under consideration are human",
-                    "default": "TRUE"
-                },
                 "field_dryclean": {
                     "type": "string",
                     "fa_icon": "fas fa-forward",

@@ -10,10 +10,10 @@ process GRIDSS_GRIDSS {
 
 
     input:
-    tuple val(meta), path(normalbam, stageAs: "normal.bam"), path(normalbai, stageAs: "normal.bam.bai"), path(tumorbam, stageAs: "tumor.bam"), path(tumorbai, stageAs: "tumor.bam.bai")         // required: [meta, normal_cram, normal_crai, tumor_cram, tumor_crai]
-    path(fasta)                                                                               // required: reference fasta
+    tuple val(meta), path(normalbam, stageAs: "normal.bam"), path(normalbai, stageAs: "normal.bam.bai"), path(tumorbam, stageAs: "tumor.bam"), path(tumorbai, stageAs: "tumor.bam.bai")
+    path(fasta)
     path(fasta_fai)
-    path(bwa_index)                                                                           // required: bwa index folder
+    path(bwa_index)
     path(blacklist_gridss)                                                                    // optional: gridss blacklist bed file based on genome
 
 

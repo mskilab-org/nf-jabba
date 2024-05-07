@@ -27,12 +27,13 @@ process FUSIONS {
 
     """
 
-    export RSCRIPT_PATH=\$(echo "${baseDir}/bin/fusions.R")
+    export RSCRIPT_PATH=\$(echo "${baseDir}/bin/Fusions.R")
 
     Rscript \$RSCRIPT_PATH \\
 	--id $id \\
 	--gGraph $gGraph \\
 	--gencode $gencode \\
+    --cores ${task.cpus}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

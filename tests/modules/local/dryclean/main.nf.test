@@ -27,9 +27,8 @@ nextflow_process {
                 input[7] = params.blacklist_path_dryclean
                 input[8] = params.germline_filter_dryclean
                 input[9] = params.germline_file_dryclean
-                input[10] = params.human_dryclean
-                input[11] = params.field_dryclean
-                input[12] = params.genomes['GATK.GRCh37'].build_dryclean
+                input[10] = params.field_dryclean
+                input[11] = params.genomes['GATK.GRCh37'].build_dryclean
                 """
             }
         }

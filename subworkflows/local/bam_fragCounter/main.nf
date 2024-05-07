@@ -33,15 +33,16 @@ workflow BAM_FRAGCOUNTER {
     versions          = FRAGCOUNTER.out.versions
     corrected_bw      = FRAGCOUNTER.out.corrected_bw
 
-    REBIN_RAW_FRAGCOUNTER(fragcounter_raw_cov, "reads", 1000)
+    // REBIN_RAW_FRAGCOUNTER(fragcounter_cov, "reads", 1000)
 
-    rebinned_raw_cov  = REBIN_RAW_FRAGCOUNTER.out.raw_fragcounter_cov_1kb
+    // rebinned_raw_cov  = REBIN_RAW_FRAGCOUNTER.out.raw_fragcounter_cov_1kb
+    // rebinned_raw_cov  = fragcounter_cov
 
     //
     emit:
     fragcounter_raw_cov
     fragcounter_cov
-    rebinned_raw_cov
+    // rebinned_raw_cov
     corrected_bw
 
     versions

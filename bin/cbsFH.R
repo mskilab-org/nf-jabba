@@ -8506,7 +8506,7 @@ ppgrid = function(
   else ## only row, only go left right
       M = (NLLc < NLLcl & NLLc < NLLcr)[-c(1, nrow(NLLc)), -c(1, ncol(NLLc)), drop = FALSE]
 
-  if (length(M)>1)
+  if (length(M)>1 & any(M, na.rm=TRUE))
       {
           ix = which(M, arr.ind= T);
           if (nrow(ix)>1)

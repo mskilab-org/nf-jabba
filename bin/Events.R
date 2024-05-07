@@ -39,7 +39,7 @@ withAutoprint(
               min.span = 1e6,
               max.small = 1e4)
     newtic = tic
-    overwritefun("newtic", "tic", "gGnome")
+    # overwritefun("newtic", "tic", "gGnome")
 
 
     ## call complex events

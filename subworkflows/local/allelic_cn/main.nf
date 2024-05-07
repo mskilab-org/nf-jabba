@@ -18,6 +18,8 @@ workflow COV_GGRAPH_NON_INTEGER_BALANCE {
 	tilim_non_integer_balance
 	gurobi_non_integer_balance
 	fasta_non_integer_balance           // path to decoy fasta
+	fasta_fai_non_integer_balance       // path to decoy fasta.fai
+    bwa_non_integer_balance
 	pad_non_integer_balance
 
     main:
@@ -41,6 +43,8 @@ workflow COV_GGRAPH_NON_INTEGER_BALANCE {
         tilim_non_integer_balance,
         gurobi_non_integer_balance,
         fasta_non_integer_balance,
+        fasta_fai_non_integer_balance,
+        bwa_non_integer_balance,
         pad_non_integer_balance
     )
 

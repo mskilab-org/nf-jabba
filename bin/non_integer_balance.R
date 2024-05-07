@@ -41,8 +41,46 @@
     library(skitools)
     library(JaBbA)
     library(gGnome)
+    library(zitools)
     ## devtools::load_all("~/git/gGnome") ## noninteger capacity now added to master branch
-    devtools::load_all("~/git/zitools")
+
+    #' @name grab.hets
+    #' @title grab.hets
+    #'
+    #' @description
+    #'
+    #' returns allele gtrack given sites.txt from het pileup
+    #'
+    #' @param agt.fname (character) path to sites.txt
+    #' @param min.frac (numeric) between 0 and 1, min frequency in normal to count as het site
+    #' @param max.frac (numeric) between 0 and 1, max frequency in normal to count as het site
+    #'
+    #' @return allele gTrack
+    grab.hets = function(agt.fname = NULL,
+                        min.frac = 0.2,
+                        max.frac = 0.8)
+    {
+        if (is.null(agt.fname) || !file.exists(agt.fname)) {
+            stop("agt.fname does not exist")
+        }
+
+        ## prepare and filter
+        agt.dt = fread(agt.fname)[alt.frac.n > min.frac & alt.frac.n < max.frac,]
+        ## add major and minor
+        agt.dt[, which.major := ifelse(alt.count.t > ref.count.t, "alt", "ref")]
+        agt.dt[, major.count := ifelse(which.major == "alt", alt.count.t, ref.count.t)]
+        agt.dt[, minor.count := ifelse(which.major == "alt", ref.count.t, alt.count.t)]
+
+        ## melt the data frame
+        agt.melted = rbind(agt.dt[, .(seqnames, start, end, count = major.count, allele = "major")],
+                        agt.dt[, .(seqnames, start, end, count = minor.count, allele = "minor")]
+                        )
+
+        ## make GRanges
+        agt.gr = dt2gr(agt.melted[, .(seqnames, start, end, count, allele)])
+
+        return (agt.gr)
+    }
 
     #' @name grab.hets.from.maf
     #' @title grab.hets.from.maf
