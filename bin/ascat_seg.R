@@ -1,6 +1,6 @@
 {
     library(optparse)
-    
+
     ## DO NOT FAIL SILENTLY
     options(error = function() {traceback(2); quit("no", 1)})
 
@@ -35,7 +35,7 @@
         opt = parse_args(parseobj)
 
         print(opt)
-        
+
         print(.libPaths())
         options(error=function()traceback(2))
 
@@ -59,7 +59,7 @@
     #'
     #' @param gg (gGraph) diploid gGraph (expect cn.low and cn.high as node metadata)
     #' @param verbose (logical) default FALSE
-    #' 
+    #'
     #' @return gGraph with field allele and cn
     diploid2haploid = function(gg, verbose = FALSE) {
         og.nodes.gr = gg$nodes$gr[, c("cn.low", "cn.high", "var.low", "var.high", "cn", "node.id", "nhets")]
@@ -286,7 +286,7 @@
                 ##                                                          log.p = T) +
                 ##                                                  pnbinom(y, mu = centers[tot.cn - j + 1],
                 ##                                                          size = centers[tot.cn - j + 1],
-                ##                                                          log.p = T))) 
+                ##                                                          log.p = T)))
                 ll = sapply(0:(floor(tot.cn/2)), function(j) sum(ppois(x,centers[j+1], log.p = T) +
                                                                 ppois(y,centers[tot.cn-j+1],log.p = T)))
                 ll = ll - min(ll)
@@ -300,7 +300,7 @@
                         ##                                                          log.p = T) +
                         ##                                                  pnbinom(y, mu = centers[tot.cn - j],
                         ##                                                          size = centers[tot.cn - j] / 2,
-                        ##                                                          log.p = T))) 
+                        ##                                                          log.p = T)))
                         ll = sapply(0:(floor((tot.cn - 1)/2)), function(j) sum(ppois(x,centers[j+1], log.p = T) +
                                                                     ppois(y,centers[tot.cn-j],log.p = T)))
                         ll = ll - min(ll)
@@ -315,7 +315,7 @@
                     ##                                                          log.p = T) +
                     ##                                                  pnbinom(y, mu = centers[tot.cn - j + 2],
                     ##                                                          size = centers[tot.cn - j + 2],
-                    ##                                                          log.p = T))) 
+                    ##                                                          log.p = T)))
                     ll = sapply(0:(floor((tot.cn + 1)/2)), function(j) sum(ppois(x,centers[j+1], log.p = T) +
                                                                             ppois(y,centers[tot.cn-j+2],log.p = T)))
                     ll = ll - min(ll)
@@ -363,7 +363,7 @@
 
         ## ## ###########
         ## ## phasing
-        ## ## ########### 
+        ## ## ###########
 
         ## ## iterate through all reference junctions and apply (wishful thinking) heuristic
         ## ##
@@ -561,7 +561,7 @@
     #' @param agt.fname (character) path to sites.txt
     #' @param min.frac (numeric) between 0 and 1, min frequency in normal to count as het site
     #' @param max.frac (numeric) between 0 and 1, max frequency in normal to count as het site
-    #' 
+    #'
     #' @return allele gTrack
     grab.hets = function(agt.fname = NULL,
                         min.frac = 0.2,
@@ -605,7 +605,7 @@
         if (!file.exists(agt.fname)) {
             stop("invalid file")
         }
-        
+
         gr = readRDS(agt.fname)
 
         if (!inherits(gr, "GRanges")) {
@@ -748,6 +748,8 @@
                             median(ratio, na.rm = T)] > 0.8,
                     "XX",
                     "XY")
+    # handle single chr case as XY
+    gender = ifelse(!is.na(gender), gender, "XY")
     message("The gender of this sample: ", gender)
 
     message("Starting ASCAT!!")
