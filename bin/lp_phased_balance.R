@@ -783,6 +783,7 @@
     }
 
     if(!opt$from_maf) {
+        gg$meta$ploidy = ifelse(is.null(gg$meta$ploidy), NA, gg$meta$ploidy)
         jab = zitools:::gg2jab(gg, purity = gg$meta$purity, ploidy = gg$meta$ploidy)
         jab = jabba.alleles2(jab, hets.gr, verbose = TRUE, uncoupled = TRUE, marginal = opt$marginal)
 
