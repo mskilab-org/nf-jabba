@@ -93,7 +93,8 @@ nextflow run mskilab-org/nf-jabba \
    --input samplesheet.csv \
    --outdir <OUTDIR> \
    --tools <svaba,fragcounter,dryclean,cbs,hetpileups,ascat,jabba> \
-   --genome <GATK.GRCh37/GATK.GRCh38>
+   --genome <GATK.GRCh37/GATK.GRCh38> \
+   --step <sv_calling,fragcounter,dryclean,hetpileups,jabba,...>
 ```
 > **Warning:**
 > Please provide pipeline parameters via the CLI or Nextflow [`-params-file`](https://www.nextflow.io/blog/2020/cli-docs-release.html) option. Custom config files including those
@@ -123,7 +124,7 @@ A typical sample sheet should populate with the column names as shown below:
 |   hets          | Full path to HetPileups .txt file. **Required** for `--step jabba`.                                                                                       |
 
 
-For more information regarding the pipeline usage and the inputs necesaary for each step, please follow the [Usage](docs//usage.md) documentation.
+For more information regarding the pipeline usage and the inputs necessary for each step, please follow the [Usage](docs//usage.md) documentation.
 
 ### Helpful Core Nextflow Commands:
 
