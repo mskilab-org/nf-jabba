@@ -1,3 +1,5 @@
+**This repo is deprecated! Please use our new [nf-gOS](https://github.com/mskilab-org/nf-gos) pipeline via our [gosh CLI tool](https://pypi.org/project/gosh-cli/)**
+
 # NF-JaBbA (Nextflow - Junction Balance Analysis Pipeline)
 ```
 ▐▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▌
